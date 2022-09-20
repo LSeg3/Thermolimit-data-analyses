@@ -1,0 +1,864 @@
+---
+title: "Temperature analyses"
+author: "Laura Segura Hernández"
+date: "2022-08-06"
+output:
+  html_document:
+    df_print: paged
+    theme: cerulean
+    toc: true
+    toc_depth: 4
+    number_sections: true
+    toc_float: false
+---
+
+```{r setup, include=FALSE} 
+knitr::opts_chunk$set(warning = FALSE, message = FALSE) 
+knitr::opts_knit$set(root.dir = "C:/Users/laus1/OneDrive - University of Nebraska-Lincoln/UNL/PhD Tesis/Methods/Thermolimit/Thermolimit data analyses")
+getwd()
+```
+
+
+# Libraries
+```{r}
+library(data.table)
+library(tidyr)
+library(dplyr)
+library(lubridate)
+library(ggplot2)
+
+
+```
+
+# Organizing data
+
+## Reading files
+
+```{r}
+cnames<-c("#", "datetime", "temp1", "temp2", "detached", "attached", "connected", "end","x")
+
+t1.3<-read.csv("Data/Temperature/Thermal_block_trials1-3_1.csv", skip=2, header=F, col.names=cnames)
+
+t4.7<-read.csv("Data/Temperature/Thermal_block_trials_4-7_0.csv", skip=2, header=F, col.names=cnames)
+
+t8.13<-read.csv("Data/Temperature/Thermal_block_trials_8-13.csv", skip=2, header=F,col.names=cnames)
+
+head(t1.3)
+
+```
+
+## Organizing and adding data
+
+
+```{r}
+t1.3<- t1.3 %>%
+  na.omit() %>% #removing NAs
+  select(1:4) %>% #removing non-relevant columns
+  mutate(datetime=as_datetime(datetime, format="%m/%d/%y %I:%M:%S %p")) %>% #converting the datetime column from character into a datetime format 
+  separate(datetime, c("date", "time"), remove=FALSE, sep=" ") %>% #separating date and time into two columns
+  mutate(date=ymd(date), #formatting date 
+         tempav=rowMeans(.[,5:6]), #calculating averages for the two temperature sensors
+        trial=case_when(datetime >= ymd_hms("2022-06-21 09:53:00") &  
+                               datetime <= ymd_hms("2022-06-21 10:50:00")~1, #Assigning trial 1
+                        datetime >= ymd_hms("2022-06-21 14:58:00") &  
+                               datetime <= ymd_hms("2022-06-21 17:08:00")~2,#Assigning trial 2
+                        datetime >= ymd_hms("2022-06-21 18:19:00") &  
+                               datetime <= ymd_hms("2022-06-21 20:28:00")~3,#Assigning trial 3
+                        
+                        TRUE~0))
+
+t4.7<- t4.7 %>%
+  na.omit() %>% #removing NAs
+  select(1:4) %>% #removing non-relevant columns
+  mutate(datetime=as_datetime(datetime, format="%m/%d/%y %I:%M:%S %p")) %>% #converting the datetime column from character into a datetime format 
+  separate(datetime, c("date", "time"), remove=FALSE, sep=" ") %>% #separating date and time into two columns
+  mutate(date=ymd(date), #formatting date 
+         tempav=rowMeans(.[,5:6]), #calculating averages for the two temperature sensors
+        trial=case_when(datetime >= ymd_hms("2022-06-22 11:07:00") &  
+                               datetime <= ymd_hms("2022-06-22 13:19:00")~4, #Assigning trial 4
+                        datetime >= ymd_hms("2022-06-22 14:10:00") &  
+                               datetime <= ymd_hms("2022-06-22 16:24:00")~5,#Assigning trial 5
+                        datetime >= ymd_hms("2022-06-22 17:26:00") &  
+                               datetime <= ymd_hms("2022-06-22 19:50:00")~6,#Assigning trial 6
+                        datetime >= ymd_hms("2022-06-22 20:23:00") &  
+                               datetime <= ymd_hms("2022-06-22 22:29:00")~7,#Assigning trial 7
+                        TRUE~0))
+
+
+t8.13<- t8.13 %>%
+  na.omit() %>% #removing NAs
+  select(1:4) %>% #removing non-relevant columns 
+  mutate(datetime=as_datetime(datetime, format="%m/%d/%y %I:%M:%S %p")) %>% #converting the datetime column from character into a datetime format 
+  separate(datetime, c("date", "time"), remove=FALSE, sep=" ") %>% #separating date and time into two columns
+  mutate(date=ymd(date), #formatting date 
+          tempav=rowMeans(.[,5:6]), #calculating averages for the two temperature sensors
+        trial=case_when(datetime >= ymd_hms("2022-06-23 09:37:00") &  
+                               datetime <= ymd_hms("2022-06-23 11:48:00")~8, #Assigning trial 8
+                        datetime >= ymd_hms("2022-06-23 12:39:00") &  
+                               datetime <= ymd_hms("2022-06-23 14:56:00")~9,#Assigning trial 9
+                        datetime >= ymd_hms("2022-06-23 15:38:00") &  
+                               datetime <= ymd_hms("2022-06-23 17:55:00")~10,#Assigning trial 10
+                        datetime >= ymd_hms("2022-06-23 18:33:00") &  
+                               datetime <= ymd_hms("2022-06-23 20:50:00")~11,#Assigning trial 11
+                        datetime >= ymd_hms("2022-06-23 21:43:00") &  
+                               datetime <= ymd_hms("2022-06-24 00:00:00")~12,#Assigning trial 12
+                        datetime >= ymd_hms("2022-06-24 00:44:00") &  
+                               datetime <= ymd_hms("2022-06-24 03:01:00")~13,#Assigning trial 13
+                        TRUE~0))
+
+head(t1.3)
+ 
+
+```
+
+## Merging dataframes into a single one
+```{r}
+loggers<-bind_rows(t1.3,t4.7, t8.13) %>%
+  mutate(datetime2=round_date(datetime, unit="minute")) #creating a coluns of datetime rounded by minutes to facilitate merging later
+
+head(loggers)
+```
+
+
+## Creating dataframe for thermocouple variables
+```{r}
+
+# Trial 4
+trial<-rep(4)
+datetime<-c("2022-06-22 11:12:00", "2022-06-22 11:16:00","2022-06-22 11:48:00","2022-06-22 12:30:00","2022-06-22 12:55:00","2022-06-22 13:19:00")
+tempblock<-c(30,30,38,48,55,57)
+tempcouple<-c(28.3,28.3,37.1,47.1,53.7,55.5)
+
+t4<-data.frame(trial, datetime,tempblock, tempcouple)
+t4<-t4%>%
+  mutate(datetime2=ymd_hms(datetime))
+
+
+# Trial 5
+trial<-rep(5)
+datetime<-c("2022-06-22 14:14:00", "2022-06-22 14:34:00","2022-06-22 15:11:00","2022-06-22 15:45:00","2022-06-22 16:07:00","2022-06-22 16:18:00")
+tempblock<-c(30,33,42,51,57,57)
+tempcouple<-c(28.2,32.1,40.9,49.5,55.6,55.3)
+
+t5<-data.frame(trial, datetime, tempblock,tempcouple)
+t5<-t5%>%
+  mutate(datetime2=ymd_hms(datetime))
+
+# Trial 6
+trial<-rep(6)
+datetime<-c("2022-06-22 17:34:00", "2022-06-22 17:57:00","2022-06-22 18:27:00","2022-06-22 18:47:00","2022-06-22 19:07:00","2022-06-22 19:29:00", "2022-06-22 19:31:00", "2022-06-22 19:50:00")
+tempblock<-c(30,33,40,45,50,56,56,57)
+tempcouple<-c(28.1,32.2,38.9,43.7,48.6,54.7,54.7,55.5)
+
+t6<-data.frame(trial, datetime,tempblock, tempcouple)
+t6<-t6%>%
+  mutate(datetime2=ymd_hms(datetime))
+
+# Trial 7
+trial<-rep(7)
+datetime<-c("2022-06-22 20:25:00", "2022-06-22 21:37:00","2022-06-22 22:08:00","2022-06-22 22:18:00","2022-06-22 22:28:00")
+tempblock<-c(30,46,54,56,57)
+tempcouple<-c(27.2,44.9,52.8,54.7,55.6)
+
+t7<-data.frame(trial, datetime,tempblock, tempcouple)
+t7<-t7%>%
+  mutate(datetime2=ymd_hms(datetime))
+
+# Trial 8
+trial<-rep(8)
+datetime<-c("2022-06-23 09:39:00", "2022-06-23 09:45:00","2022-06-23 09:55:00","2022-06-23 10:08:00","2022-06-23 10:15:00","2022-06-23 10:25:00","2022-06-23 10:36:00","2022-06-23 10:46:00","2022-06-23 11:06:00","2022-06-23 11:16:00","2022-06-23 11:26:00","2022-06-23 11:30:00")
+tempblock<-c(30,30,32,35,37,40,43,45,50,53,55,56)
+tempcouple<-c(27.6,28.1,31.3,34.2,36.3,39.3,42.3,44.2,49.0,52.0,53.8,55)
+
+t8<-data.frame(trial, datetime,tempblock, tempcouple)
+t8<-t8%>%
+  mutate(datetime2=ymd_hms(datetime))
+
+# Trial 9
+trial<-rep(9)
+datetime<-c("2022-06-23 12:50:00", "2022-06-23 13:10:00","2022-06-23 14:01:00","2022-06-23 14:37:00")
+tempblock<-c(30,34,47,56)
+tempcouple<-c(29.0,33.2,46.2,55)
+
+t9<-data.frame(trial, datetime,tempblock, tempcouple)
+t9<-t9%>%
+  mutate(datetime2=ymd_hms(datetime))
+
+# Trial 10
+trial<-rep(10)
+datetime<-c("2022-06-23 15:48:00", "2022-06-23 16:08:00","2022-06-23 17:08:00","2022-06-23 17:33:00","2022-06-23 17:36:00","2022-06-23 17:56:00")
+tempblock<-c(30,34,49,56,56,57)
+tempcouple<-c(29.2,33.5,48.2,55.0,55,55)
+
+t10<-data.frame(trial, datetime,tempblock, tempcouple)
+t10<-t10%>%
+  mutate(datetime2=ymd_hms(datetime))
+
+# Trial 11
+trial<-rep(11)
+datetime<-c("2022-06-23 18:37:00", "2022-06-23 18:43:00","2022-06-23 20:00:00","2022-06-23 20:31:00","2022-06-23 20:42:00")
+tempblock<-c(30,30,49,56,57)
+tempcouple<-c(29,29.3,48.2,55.1,56)
+
+t11<-data.frame(trial, datetime,tempblock, tempcouple)
+t11<-t11%>%
+  mutate(datetime2=ymd_hms(datetime))
+
+# Trial 12
+trial<-rep(12)
+datetime<-c("2022-06-23 21:53:00", "2022-06-23 23:40:00","2022-06-23 23:41:00")
+tempblock<-c(30,56,56)
+tempcouple<-c(28.6,54.8,54.9)
+
+t12<-data.frame(trial, datetime,tempblock, tempcouple)
+t12<-t12%>%
+  mutate(datetime2=ymd_hms(datetime))
+
+# Trial 13
+trial<-rep(13)
+datetime<-c("2022-06-24 00:52:00", "2022-06-24 00:55:00","2022-06-24 01:51:00","2022-06-24 02:25:00","2022-06-24 02:42:00","2022-06-24 02:57:00")
+tempblock<-c(30,30,43,52,56,57)
+tempcouple<-c(28.5,28.9,42.4,50.8,54.9,56.1)
+
+t13<-data.frame(trial, datetime,tempblock, tempcouple)
+t13<-t13%>%
+  mutate(datetime2=ymd_hms(datetime))
+
+
+#Merging all into a single frame
+couples<-bind_rows(t4,t5,t6,t7,t8,t9,t10,t11,t12,t13)
+
+head(couples)
+
+```
+
+
+## Merging loggers and thermocouple data into a single dataframe
+```{r}
+all<-full_join(loggers, couples, by=c("datetime2","trial"), suffix=c("", ".cb"))
+head(all)
+```
+
+# Exploring data
+
+## Looking at the differences between loggers, thermalblock and thermocouple
+```{r,fig.show="hold", out.width="50%"}
+diffs<-all %>%
+  mutate(diffblock=tempblock-tempav,
+         diffcouple=tempcouple-tempav) %>%
+  na.omit() 
+
+head(diffs)
+
+ggplot(diffs, aes(x=tempav,y=diffblock, color=trial))+
+  geom_point()+ylim(-0.5,5) +theme_classic()+ggtitle("Difference between thermal block and loggers across temperatures")
+
+ggplot(diffs, aes(x=tempav,y=diffcouple, color=trial))+
+  geom_point()+ylim(-2.5,2.55)+theme_classic()+ggtitle("Difference between thermocouple  and loggers across temperatures")
+
+ggplot(diffs, aes(x=tempav,y=tempblock, color=trial))+
+  geom_point()+theme_classic()+ggtitle("Relationship between thermal block and loggers")
+
+ggplot(diffs, aes(x=tempav,y=tempcouple, color=trial))+
+  geom_point()+theme_classic()+ggtitle("Relationship between thermocouple and loggers")
+```
+
+***
+
+> I think using the block temperatures would be better to correct the logger temperatures because:
+ 
+1. The block sensor is always in the same position, but the thermocouple wire might have been placed on different spots or moved in between trials
+
+2. The thermal block was done to keep track of specific temperatures to do PCRs, etc, therefore, it should be fairly accurate on how much the samples were heat up
+
+***
+
+#Correcting data
+
+## Estimating the slope to correct the logger temperatures
+```{r}
+#Removing the extreme values
+all2<-all%>%
+  filter(X.!=1200) %>%
+  filter(X.!=1201)
+
+
+ggplot(all2, aes(x=tempav,y=tempblock, color=trial))+
+  geom_point()+theme_classic()+ggtitle("Relationship between thermal block and loggers without outliers")
+
+lm1<-lm(tempblock~tempav, data=all2)
+lm1
+slope<-lm1$coefficients[2]
+int<-lm1$coefficients[1]
+```
+
+***
+
+> As it is a linear relationship, I can now correct the loggers temps (x) to get the block temperature by using the formula:
+
+\begin{align*}
+y=m&x+b \\
+o&r \\ 
+block temperature = slope * l&ogger temperature + intercept \\
+\end{align*}
+
+***
+
+## Correcting the temperatures for each trial
+```{r}
+# Removing trial 0 and correcting all other temperatures
+all_corr<-all%>%
+  filter(trial!=0) %>%
+  mutate(tempcorr=(slope*tempav)+int)
+
+head(all_corr)
+```
+
+## Estimating temperature slope for each trial
+
+### Without removing bump at the begining of ramp
+```{r, uncorrected}
+# Trial 1
+r1<-all_corr %>%
+  filter(trial==1,
+         datetime2 >= ymd_hms("2022-06-21 10:03:00") &  
+                               datetime <= ymd_hms("2022-06-21 10:50:00"))  
+
+ggplot(r1, aes(x=X.,y=tempcorr))+
+  geom_point()+theme_classic()+ggtitle("Trial 1")
+
+lmtemp<-lm(tempcorr~X., data=r1)
+sl1<-lmtemp$coefficients[2]
+round(sl1, digits=2)
+
+# Trial 2
+r2<-all_corr %>%
+  filter(trial==2,
+         datetime2 >= ymd_hms("2022-06-21 15:02:00") &  
+                               datetime <= ymd_hms("2022-06-21 16:52:00"))  
+
+ggplot(r2, aes(x=X.,y=tempcorr))+
+  geom_point()+theme_classic()+ggtitle("Trial 2")
+
+lmtemp<-lm(tempcorr~X., data=r2)
+sl2<-lmtemp$coefficients[2]
+round(sl2, digits=2) #it remains the same independentaly of removing the curve at the begining of the ramp or not
+sl2 
+
+# Trial 3
+r3<-all_corr %>%
+  filter(trial==3,
+         datetime2 >= ymd_hms("2022-06-21 18:49:00") & datetime <= ymd_hms("2022-06-21 20:11:00"))  
+
+ggplot(r3, aes(x=X.,y=tempcorr))+
+  geom_point()+theme_classic()+ggtitle("Trial 3")
+
+lmtemp<-lm(tempcorr~X., data=r3)
+sl3<-lmtemp$coefficients[2]
+round(sl3, digits=2) 
+sl3 
+
+# Trial 4
+r4<-all_corr %>%
+  filter(trial==4,
+         datetime2 >= ymd_hms("2022-06-22 11:18:00") &  
+                               datetime <= ymd_hms("2022-06-22 13:02:00")) %>%
+  mutate(timeseq=seq(from=0, to=104,by=0.5))
+
+ggplot(r4, aes(x=timeseq,y=tempcorr))+
+  geom_point()+theme_classic()+ggtitle("Trial 4")
+
+lmtemp<-lm(tempcorr~timeseq, data=r4)
+sl4<-lmtemp$coefficients[2]
+round(sl4, digits=2) 
+sl4 
+
+# Trial 5
+r5<-all_corr %>%
+  filter(trial==5,
+         datetime2 >= ymd_hms("2022-06-22 14:23:00") &  
+                               datetime <= ymd_hms("2022-06-22 16:06:00"))  %>%
+  mutate(timeseq=seq(from=0, to=103,by=0.5))
+
+ggplot(r5, aes(x=timeseq,y=tempcorr))+
+  geom_point()+theme_classic()+ggtitle("Trial 5")
+
+lmtemp<-lm(tempcorr~timeseq, data=r5)
+sl5<-lmtemp$coefficients[2]
+round(sl5, digits=2) 
+sl5 
+
+#Trial 6
+r6<-all_corr %>%
+  filter(trial==6,
+         datetime2 >= ymd_hms("2022-06-22 17:38:00") &  
+                               datetime <= ymd_hms("2022-06-22 19:32:00")) %>%
+  mutate(timeseq=seq(from=0, to=114,by=0.5)) 
+
+ggplot(r6, aes(x=timeseq,y=tempcorr))+
+  geom_point()+theme_classic()+ggtitle("Trial 6")
+
+lmtemp<-lm(tempcorr~timeseq, data=r6)
+sl6<-lmtemp$coefficients[2]
+round(sl6, digits=2) 
+sl6 
+
+#Trial 7
+r7<-all_corr %>%
+  filter(trial==7,
+         datetime2 >= ymd_hms("2022-06-22 20:35:00") &  
+                               datetime <= ymd_hms("2022-06-22 22:19:00"))  %>%
+  mutate(timeseq=seq(from=0, to=104,by=0.5))
+
+ggplot(r7, aes(x=timeseq,y=tempcorr))+
+  geom_point()+theme_classic()+ggtitle("Trial 7")
+
+lmtemp<-lm(tempcorr~timeseq, data=r7)
+sl7<-lmtemp$coefficients[2]
+round(sl7, digits=2) 
+sl7 
+
+#Trial 8
+r8<-all_corr %>%
+  filter(trial==8,
+         datetime2 >= ymd_hms("2022-06-23 09:48:00") &  
+                               datetime <= ymd_hms("2022-06-23 11:31:00"))  %>%
+  mutate(timeseq=seq(from=0, to=103,by=0.5))
+
+ggplot(r8, aes(x=timeseq, y=tempcorr))+
+  geom_point()+theme_classic()+ggtitle("Trial 8")
+
+lmtemp<-lm(tempcorr~timeseq, data=r8)
+sl8<-lmtemp$coefficients[2]
+round(sl8, digits=2) 
+sl8
+
+#Trial 9
+r9<-all_corr %>%
+  filter(trial==9,
+         datetime2 >= ymd_hms("2022-06-23 13:08:00") &  
+                               datetime <= ymd_hms("2022-06-23 14:38:00"))  %>%
+  mutate(timeseq=seq(from=0, to=90,by=0.5))
+
+ggplot(r9, aes(x=timeseq, y=tempcorr))+
+  geom_point()+theme_classic()+ggtitle("Trial 9")
+
+lmtemp<-lm(tempcorr~timeseq, data=r9)
+sl9<-lmtemp$coefficients[2]
+round(sl9, digits=2) 
+sl9
+
+#Trial 10
+r10<-all_corr %>%
+  filter(trial==10,
+         datetime2 >= ymd_hms("2022-06-23 15:50:00") &  
+                               datetime <= ymd_hms("2022-06-23 17:37:00"))  %>%
+  mutate(timeseq=seq(from=0, to=107,by=0.5))
+
+ggplot(r10, aes(x=timeseq, y=tempcorr))+
+  geom_point()+theme_classic()+ggtitle("Trial 10")
+
+lmtemp<-lm(tempcorr~timeseq, data=r10)
+sl10<-lmtemp$coefficients[2]
+round(sl10, digits=2) 
+sl10
+
+#Trial 11
+r11<-all_corr %>%
+  filter(trial==11,
+         datetime2 >= ymd_hms("2022-06-23 18:45:00") &  
+                               datetime <= ymd_hms("2022-06-23 20:32:00"))  %>%
+  mutate(timeseq=seq(from=0, to=107,by=0.5))
+
+ggplot(r11, aes(x=timeseq, y=tempcorr))+
+  geom_point()+theme_classic()+ggtitle("Trial 11")
+
+lmtemp<-lm(tempcorr~timeseq, data=r11)
+sl11<-lmtemp$coefficients[2]
+round(sl11, digits=2) 
+sl11
+
+#Trial 12
+r12<-all_corr %>%
+  filter(trial==12,
+         datetime2 >= ymd_hms("2022-06-23 21:57:00") &  
+                               datetime <= ymd_hms("2022-06-23 23:41:00"))  %>%
+  mutate(timeseq=seq(from=0, to=104,by=0.5))
+
+ggplot(r12, aes(x=timeseq, y=tempcorr))+
+  geom_point()+theme_classic()+ggtitle("Trial 12")
+
+lmtemp<-lm(tempcorr~timeseq, data=r12)
+sl12<-lmtemp$coefficients[2]
+round(sl12, digits=2) 
+sl12
+
+#Trial 13
+r13<-all_corr %>%
+  filter(trial==13,
+         datetime2 >= ymd_hms("2022-06-24 00:58:00") &  
+                               datetime <= ymd_hms("2022-06-24 02:43:00"))  %>%
+  mutate(timeseq=seq(from=0, to=105,by=0.5))
+
+ggplot(r13, aes(x=timeseq, y=tempcorr))+
+  geom_point()+theme_classic()+ggtitle("Trial 13")
+
+lmtemp<-lm(tempcorr~timeseq, data=r13)
+sl13<-lmtemp$coefficients[2]
+round(sl13, digits=2) 
+sl13
+
+slopes<-as.data.frame(c(sl1, sl2, sl3, sl4, sl5,sl6,sl7,sl8,sl9,sl10,sl11,sl12,sl13))
+colnames(slopes)<-"uncorr"
+```
+### Removing bump at the begining of ramp
+
+```{r, eval=TRUE}
+# Trial 1
+r1<-all_corr %>%
+  filter(trial==1,
+         datetime2 >= ymd_hms("2022-06-21 10:07:00") &  
+                               datetime <= ymd_hms("2022-06-21 10:50:00"))  
+
+ggplot(r1, aes(x=X.,y=tempcorr))+
+  geom_point()+theme_classic()+ggtitle("Trial 1")
+
+lmtemp<-lm(tempcorr~X., data=r1)
+sl1<-lmtemp$coefficients[2]
+round(sl1, digits=2)
+
+# Trial 2
+r2<-all_corr %>%
+  filter(trial==2,
+         datetime2 >= ymd_hms("2022-06-21 15:16:00") &  
+                               datetime <= ymd_hms("2022-06-21 16:52:00"))  
+
+ggplot(r2, aes(x=X.,y=tempcorr))+
+  geom_point()+theme_classic()+ggtitle("Trial 2")
+
+lmtemp<-lm(tempcorr~X., data=r2)
+sl2<-lmtemp$coefficients[2]
+round(sl2, digits=2) #it remains the same independentaly of removing the curve at the begining of the ramp or not
+sl2 
+
+# Trial 3
+r3<-all_corr %>%
+  filter(trial==3,
+         datetime2 >= ymd_hms("2022-06-21 18:49:00") &  
+                               datetime <= ymd_hms("2022-06-21 20:11:00"))  
+
+ggplot(r3, aes(x=X.,y=tempcorr))+
+  geom_point()+theme_classic()+ggtitle("Trial 3")
+
+lmtemp<-lm(tempcorr~X., data=r3)
+sl3<-lmtemp$coefficients[2]
+round(sl3, digits=2) 
+sl3 
+
+# Trial 4
+r4<-all_corr %>%
+  filter(trial==4,
+         datetime2 >= ymd_hms("2022-06-22 11:22:00") &  
+                               datetime <= ymd_hms("2022-06-22 13:02:00")) %>%
+  mutate(timeseq=seq(from=0, to=100,by=0.5))
+
+ggplot(r4, aes(x=timeseq,y=tempcorr))+
+  geom_point()+theme_classic()+ggtitle("Trial 4")
+
+lmtemp<-lm(tempcorr~timeseq, data=r4)
+sl4<-lmtemp$coefficients[2]
+round(sl4, digits=2) 
+sl4 
+
+# Trial 5
+r5<-all_corr %>%
+  filter(trial==5,
+         datetime2 >= ymd_hms("2022-06-22 14:27:00") &  
+                               datetime <= ymd_hms("2022-06-22 16:06:00"))  %>%
+  mutate(timeseq=seq(from=0, to=99,by=0.5))
+
+ggplot(r5, aes(x=timeseq,y=tempcorr))+
+  geom_point()+theme_classic()+ggtitle("Trial 5")
+
+lmtemp<-lm(tempcorr~timeseq, data=r5)
+sl5<-lmtemp$coefficients[2]
+round(sl5, digits=2) 
+sl5 
+
+#Trial 6
+r6<-all_corr %>%
+  filter(trial==6,
+         datetime2 >= ymd_hms("2022-06-22 17:47:00") &  
+                               datetime <= ymd_hms("2022-06-22 19:32:00")) %>%
+  mutate(timeseq=seq(from=0, to=105,by=0.5)) 
+
+ggplot(r6, aes(x=timeseq,y=tempcorr))+
+  geom_point()+theme_classic()+ggtitle("Trial 6")
+
+lmtemp<-lm(tempcorr~timeseq, data=r6)
+sl6<-lmtemp$coefficients[2]
+round(sl6, digits=2) 
+sl6 
+
+#Trial 7
+r7<-all_corr %>%
+  filter(trial==7,
+         datetime2 >= ymd_hms("2022-06-22 20:40:00") &  
+                               datetime <= ymd_hms("2022-06-22 22:19:00"))  %>%
+  mutate(timeseq=seq(from=0, to=99,by=0.5))
+
+ggplot(r7, aes(x=timeseq,y=tempcorr))+
+  geom_point()+theme_classic()+ggtitle("Trial 7")
+
+lmtemp<-lm(tempcorr~timeseq, data=r7)
+sl7<-lmtemp$coefficients[2]
+round(sl7, digits=2) 
+sl7 
+
+#Trial 8
+r8<-all_corr %>%
+  filter(trial==8,
+         datetime2 >= ymd_hms("2022-06-23 09:52:00") &  
+                               datetime <= ymd_hms("2022-06-23 11:31:00"))  %>%
+  mutate(timeseq=seq(from=0, to=99,by=0.5))
+
+ggplot(r8, aes(x=timeseq, y=tempcorr))+
+  geom_point()+theme_classic()+ggtitle("Trial 8")
+
+lmtemp<-lm(tempcorr~timeseq, data=r8)
+sl8<-lmtemp$coefficients[2]
+round(sl8, digits=2) 
+sl8
+
+#Trial 9
+r9<-all_corr %>%
+  filter(trial==9,
+         datetime2 >= ymd_hms("2022-06-23 13:08:00") &  
+                               datetime <= ymd_hms("2022-06-23 14:38:00"))  %>%
+  mutate(timeseq=seq(from=0, to=90,by=0.5))
+
+ggplot(r9, aes(x=timeseq, y=tempcorr))+
+  geom_point()+theme_classic()+ggtitle("Trial 9")
+
+lmtemp<-lm(tempcorr~timeseq, data=r9)
+sl9<-lmtemp$coefficients[2]
+round(sl9, digits=2) 
+sl9
+
+#Trial 10
+r10<-all_corr %>%
+  filter(trial==10,
+         datetime2 >= ymd_hms("2022-06-23 15:55:00") &  
+                               datetime <= ymd_hms("2022-06-23 17:37:00"))  %>%
+  mutate(timeseq=seq(from=0, to=102,by=0.5))
+
+ggplot(r10, aes(x=timeseq, y=tempcorr))+
+  geom_point()+theme_classic()+ggtitle("Trial 10")
+
+lmtemp<-lm(tempcorr~timeseq, data=r10)
+sl10<-lmtemp$coefficients[2]
+round(sl10, digits=2) 
+sl10
+
+#Trial 11
+r11<-all_corr %>%
+  filter(trial==11,
+         datetime2 >= ymd_hms("2022-06-23 19:02:00") &  
+                               datetime <= ymd_hms("2022-06-23 20:32:00"))  %>%
+  mutate(timeseq=seq(from=0, to=90,by=0.5))
+
+ggplot(r11, aes(x=timeseq, y=tempcorr))+
+  geom_point()+theme_classic()+ggtitle("Trial 11")
+
+lmtemp<-lm(tempcorr~timeseq, data=r11)
+sl11<-lmtemp$coefficients[2]
+round(sl11, digits=2) 
+sl11
+
+#Trial 12
+r12<-all_corr %>%
+  filter(trial==12,
+         datetime2 >= ymd_hms("2022-06-23 22:00:00") &  
+                               datetime <= ymd_hms("2022-06-23 23:41:00"))  %>%
+  mutate(timeseq=seq(from=0, to=101,by=0.5))
+
+ggplot(r12, aes(x=timeseq, y=tempcorr))+
+  geom_point()+theme_classic()+ggtitle("Trial 12")
+
+lmtemp<-lm(tempcorr~timeseq, data=r12)
+sl12<-lmtemp$coefficients[2]
+round(sl12, digits=2) 
+sl12
+
+#Trial 13
+r13<-all_corr %>%
+  filter(trial==13,
+         datetime2 >= ymd_hms("2022-06-24 01:01:00") &  
+                               datetime <= ymd_hms("2022-06-24 02:43:00"))  %>%
+  mutate(timeseq=seq(from=0, to=102,by=0.5))
+
+ggplot(r13, aes(x=timeseq, y=tempcorr))+
+  geom_point()+theme_classic()+ggtitle("Trial 13")
+
+lmtemp<-lm(tempcorr~timeseq, data=r13)
+sl13<-lmtemp$coefficients[2]
+round(sl13, digits=2) 
+sl13
+```
+
+### Comparing slopes
+```{r, eval=TRUE}
+slopes$corr<-c(sl1, sl2, sl3, sl4, sl5,sl6,sl7,sl8,sl9,sl10,sl11,sl12,sl13)
+slopes2<-slopes %>%
+  mutate(uncround=round(uncorr, digits=2),
+         corround=round(corr, digits=2),
+         comparison= (uncround-corround))
+slopes2
+mean(slopes2$uncround)
+mean(slopes2$corround)
+
+```
+
+***
+
+# ASK FOR SECOND OPINION!!!
+
+It seems like either group of slopes (mean corrected = 0.2485 ~ 0.25 or not corrected- mean=0.2446 ~ 0.24) shows similar slopes. I will use the uncorrected ones for the analyses
+
+***
+
+
+
+
+## Adding ramping slope to the dataframe
+
+
+
+
+```{r}
+all_corr<-all_corr %>%
+  mutate(ramp=case_when(trial==1~sl1,
+                        trial==2~sl2,
+                        trial==3~sl3,
+                        trial==4~sl4,
+                        trial==5~sl5,
+                        trial==6~sl6,
+                        trial==7~sl7,
+                        trial==8~sl8,
+                        trial==9~sl9,
+                        trial==10~sl10,
+                        trial==11~sl11,
+                        trial==12~sl12,
+                        trial==13~sl13,
+                        TRUE~0))
+```
+
+
+
+```{r}
+write.csv(all_corr, "Outputs/temperatures_corrected.csv")
+```
+
+## Plotting corrected vs raw temperatures
+```{r, fig.show="hold", out.width="50%"}
+p1<-all_corr %>%
+  filter(trial==1) %>%
+  pivot_longer(cols=c("tempav", "tempcorr"), values_to="temps", names_to = "type")%>%
+  ggplot(.,aes(x=time,y=temps, color=type))+
+  geom_point()+theme_classic()+ylim(25,57)+ ggtitle("Trial 1")
+p1
+
+p2<-all_corr %>%
+  filter(trial==2) %>%
+  pivot_longer(cols=c("tempav", "tempcorr"), values_to="temps", names_to = "type")%>%
+  ggplot(.,aes(x=time,y=temps, color=type))+
+  geom_point()+theme_classic()+ylim(25,57)+ ggtitle("Trial 2")
+p2
+
+p3<-all_corr %>%
+  filter(trial==3) %>%
+  pivot_longer(cols=c("tempav", "tempcorr"), values_to="temps", names_to = "type")%>%
+  ggplot(.,aes(x=time,y=temps, color=type))+
+  geom_point()+theme_classic()+ylim(25,57)+ ggtitle("Trial 3")
+p3
+
+p4<-all_corr %>%
+  filter(trial==4) %>%
+  pivot_longer(cols=c("tempav", "tempcorr"), values_to="temps", names_to = "type")%>%
+  ggplot(.,aes(x=time,y=temps, color=type))+
+  geom_point()+theme_classic()+ylim(25,57)+ ggtitle("Trial 4")
+p4
+
+
+p5<-all_corr %>%
+  filter(trial==5) %>%
+  pivot_longer(cols=c("tempav", "tempcorr"), values_to="temps", names_to = "type")%>%
+  ggplot(.,aes(x=time,y=temps, color=type))+
+  geom_point()+theme_classic()+ylim(25,57)+ ggtitle("Trial 5")
+p5
+
+p6<-all_corr %>%
+  filter(trial==6) %>%
+  pivot_longer(cols=c("tempav", "tempcorr"), values_to="temps", names_to = "type")%>%
+  ggplot(.,aes(x=time,y=temps, color=type))+
+  geom_point()+theme_classic()+ylim(25,57)+ ggtitle("Trial 6")
+p6
+
+p7<-all_corr %>%
+  filter(trial==7) %>%
+  pivot_longer(cols=c("tempav", "tempcorr"), values_to="temps", names_to = "type")%>%
+  ggplot(.,aes(x=time,y=temps, color=type))+
+  geom_point()+theme_classic()+ylim(25,57)+ ggtitle("Trial 7")
+p7
+
+p8<-all_corr %>%
+  filter(trial==8) %>%
+  pivot_longer(cols=c("tempav", "tempcorr"), values_to="temps", names_to = "type")%>%
+  ggplot(.,aes(x=time,y=temps, color=type))+
+  geom_point()+theme_classic()+ylim(25,57)+ ggtitle("Trial 8")
+p8
+
+p9<-all_corr %>%
+  filter(trial==9) %>%
+  pivot_longer(cols=c("tempav", "tempcorr"), values_to="temps", names_to = "type")%>%
+  ggplot(.,aes(x=time,y=temps, color=type))+
+  geom_point()+theme_classic()+ylim(25,57)+ ggtitle("Trial 9")
+p9
+
+p10<-all_corr %>%
+  filter(trial==10) %>%
+  pivot_longer(cols=c("tempav", "tempcorr"), values_to="temps", names_to = "type")%>%
+  ggplot(.,aes(x=time,y=temps, color=type))+
+  geom_point()+theme_classic()+ylim(25,57)+ ggtitle("Trial 10")
+p10
+
+p11<-all_corr %>%
+  filter(trial==11) %>%
+  pivot_longer(cols=c("tempav", "tempcorr"), values_to="temps", names_to = "type")%>%
+  ggplot(.,aes(x=time,y=temps, color=type))+
+  geom_point()+theme_classic()+ylim(25,57)+ ggtitle("Trial 11")
+p11
+
+p12<-all_corr %>%
+  filter(trial==12) %>%
+  pivot_longer(cols=c("tempav", "tempcorr"), values_to="temps", names_to = "type")%>%
+  ggplot(.,aes(x=time,y=temps, color=type))+
+  geom_point()+theme_classic()+ylim(25,57)+ ggtitle("Trial 12")
+p12
+
+p13<-all_corr %>%
+  filter(trial==13) %>%
+  pivot_longer(cols=c("tempav", "tempcorr"), values_to="temps", names_to = "type")%>%
+  ggplot(.,aes(x=time,y=temps, color=type))+
+  geom_point()+theme_classic()+ylim(25,57)+ ggtitle("Trial 13")
+p13
+```
+
+# Saving workspace file
+
+```{r, eval=FALSE}
+#save(list = ls(.GlobalEnv), file = "Outputs/Temperature analyses.RData") #saves all the objects in the global environment
+save(all_corr,file = "Outputs/Temperature analyses.RData")
+```
+
+

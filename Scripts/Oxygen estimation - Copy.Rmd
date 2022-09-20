@@ -1,0 +1,2258 @@
+---
+title: "Oxygen estimation"
+author: "Laura Segura Hernández"
+date: "2022-08-07"
+output:
+  html_document:
+    df_print: paged
+    theme: cerulean
+    toc: true
+    toc_depth: 4
+    number_sections: true
+    toc_float: false
+---
+
+```{r setup, include=FALSE} 
+knitr::opts_chunk$set(warning = FALSE, message = FALSE) 
+knitr::opts_knit$set(root.dir = "C:/Users/laus1/OneDrive - University of Nebraska-Lincoln/UNL/PhD Tesis/Methods/Thermolimit/Thermolimit data analyses")
+getwd()
+```
+
+# Libraries
+```{r}
+library(data.table)
+library(tidyr)
+library(dplyr)
+library(lubridate)
+library(ggplot2)
+library(readr)
+library(stringr)
+library(purrr)
+library(knitr)
+library(magick)
+library(jpeg)
+library(fuzzyjoin)
+library(forcats)
+library(ggpubr)
+library(grid)
+
+
+```
+
+# Organizing data
+
+## Getting objects from Temperature Analyses 
+```{r}
+load("Outputs/Temperature analyses.RData")
+```
+## Calling and arranging data
+
+### Trial 2
+```{r}
+# creating vector for columns names
+cnames<-c("date", "time", "logtime", "oxygen", "phase", "amplitude", "temperature")
+
+# creating vector for path
+path<-"Data/Oxygen/Trial 2/" #MODIFY FOR EACH TRIAL
+
+# Creating list of file names
+list <- list.files(path = path, pattern=".*txt") # creates the list of all the txt files in the directory
+
+# Renaming files to remove the "-"
+newname <- sub('-','', list) ## new name
+file.rename(file.path(path,list), file.path(path, newname)) ## renaming it.
+
+# Creating list of file names again
+list <- list.files(path = path, pattern=".*txt") # creates the list of all the txt files in the directory
+
+#Reading all files at once
+for (i in list) {
+  filename <- paste0( "frame",sub(pattern = "(.*)\\..*$", replacement = "\\1", basename(i)))
+  wd <- paste0(path, i)
+  assign(filename, read.delim2(wd,sep=";", skip=38, header=F, col.names=cnames)) #CHECK FOR EACH TRIALS IF THE SAME NUMBRE OF ROWS APPLIES
+
+}
+
+
+# Merging all into a single table
+pattern<-grep("framepstrial2",names(.GlobalEnv),value=TRUE) #MODIFY FOR EACH TRIAL
+list2<-do.call("list",mget(pattern))
+
+t2a<-bind_rows(list2, .id="id") #MODIFY FOR EACH TRIAL
+
+
+# Adding and modifying data to phase files 
+t2b<-t2a %>% #MODIFY FOR EACH TRIAL
+  select(c("id", "date", "time", "logtime", "phase")) %>%
+  mutate(trial=2,#MODIFY FOR EACH TRIAL
+         date=mdy(date), #formatting date
+         datetime=paste0(date," ", time), #copying date and time together
+         datetime=as_datetime(datetime, format="%Y-%m-%d %I:%M:%S %p")-minutes(9), #adjusting pc time to real time
+         datetime2=round_date(datetime, unit="minute"),
+         channel=case_when(str_detect(id, "ch10")~10, # Assigning channels 
+                       str_detect(id, "ch1")~1,
+                       str_detect(id, "ch2")~2,
+                       str_detect(id, "ch3")~3,
+                       str_detect(id, "ch4")~4,
+                       str_detect(id, "ch5")~5,
+                       str_detect(id, "ch6")~6,
+                       str_detect(id, "ch7")~7,
+                       str_detect(id, "ch8")~8,
+                       str_detect(id, "ch9")~9,
+                       TRUE~0),
+         ind=case_when(str_detect(id, "ch10")~250, # Assigning individuals MODIFY FOR EACH TRIAL
+                       str_detect(id, "ch1")~239,
+                       str_detect(id, "ch2")~311,
+                       str_detect(id, "ch3")~65,
+                       str_detect(id, "ch4")~136,
+                       str_detect(id, "ch5")~168,
+                       str_detect(id, "ch6")~294,
+                       str_detect(id, "ch7")~322,
+                       str_detect(id, "ch8")~022,
+                       str_detect(id, "ch9")~258,
+                       TRUE~0), 
+         stage=case_when(str_detect(id, "ch10")~"Female",#Assigning stage MODIFY FOR EACH TRIAL
+                       str_detect(id, "ch1")~"Tritonymph",
+                         str_detect(id, "ch2")~"Protonymph",
+                       str_detect(id, "ch3")~"Female",
+                       str_detect(id, "ch4")~"Deutonymph",
+                       str_detect(id, "ch5")~"Male",
+                       str_detect(id, "ch6")~"Protonymph",
+                       str_detect(id, "ch7")~"Tritonymph",
+                       str_detect(id, "ch8")~"Deutonymph",
+                       #str_detect(id, "ch9")~"Male",
+                       TRUE~"Male"),
+         weight=case_when(str_detect(id, "ch10")~1.269, # Assigning weights MODIFY FOR EACH TRIAL
+                       str_detect(id, "ch1")~0.792,
+                       str_detect(id, "ch2")~0.189,
+                       str_detect(id, "ch3")~1.714,
+                       str_detect(id, "ch4")~0.330,
+                       str_detect(id, "ch5")~1.219,
+                       str_detect(id, "ch6")~0.240,
+                       str_detect(id, "ch7")~0.749,
+                       str_detect(id, "ch8")~0.339,
+                       #str_detect(id, "ch9")~1.001,
+                       TRUE~1.001),
+         atm=round(33.864*28.81)) #MODIFY FOR EACH TRIAL: 33.864 * pressure in inHg
+
+# Getting temperature for this trial 
+temp2<-all_corr %>%
+  filter(trial==2) %>% #MODIFY FOR EACH TRIAL
+  select(c("datetime2","datetime", "tempcorr", "ramp"))
+
+#Merging phase and temperature data
+t2<- full_join(t2b, temp2, by="datetime2", suffix=c("",".temp")) 
+  
+
+head(t2) #MODIFY FOR EACH TRIAL
+
+#Estimating Oxygen 
+f<-pi/180
+f
+
+
+ox2<-t2 %>% #MODIFY FOR EACH TRIAL
+  na.omit() %>%
+  mutate(phase=as.numeric(phase),
+         ind=as.factor(ind),
+         logtime=as.numeric(logtime),
+         phaseangle=62.14-0.08915*tempcorr,
+         sternvolmer=0.04899+4.965*10^(-4)*tempcorr,
+         bunsen=(48.998-1.335*tempcorr+2.755*10^(-2)*tempcorr^2-3.22*10^(-4)*tempcorr^3+1.598*10^(-6)*tempcorr^4)*10^(-3),
+         tempK=tempcorr+273,
+         watervapor=exp(52.57-(6690.9/tempK)-4.681*log(tempK)),
+         oxysat=(tan((pi/180)*phaseangle)-tan((pi/180)*phase))/tan((pi/180)*phase)*sternvolmer,
+         oxymgl=(atm-watervapor)/1013*oxysat*0.2095*bunsen*1000*(32/22.414)*10)
+
+head(ox2) #MODIFY FOR EACH TRIAL
+
+ggplot(ox2, aes(x=logtime, y=oxymgl,group=ind, color=stage))+ #MODIFY FOR EACH TRIAL
+  geom_line()+
+  theme_classic()+
+  theme(text = element_text(size = 15))+
+  ylim(8.5,12) +
+  facet_wrap(~ind)+
+  xlab("Time logged (min)")+
+  ylab("Oxygen (mg/L")
+
+```
+
+### Trial 3
+```{r}
+# creating vector for columns names
+cnames<-c("date", "time", "logtime", "oxygen", "phase", "amplitude", "temperature")
+
+# creating vector for path
+path<-"Data/Oxygen/Trial 3/" #MODIFY FOR EEACH TRIAL
+
+# Creating list of file names
+list <- list.files(path = path, pattern=".*txt") # creates the list of all the txt files in the directory
+
+# Renaming files to remove the "-"
+newname <- sub('-','', list) ## new name
+file.rename(file.path(path,list), file.path(path, newname)) ## renaming it.
+
+# Creating list of file names again
+list <- list.files(path = path, pattern=".*txt") # creates the list of all the txt files in the directory
+
+#Reading all files at once
+for (i in list) {
+  filename <- paste0( "frame",sub(pattern = "(.*)\\..*$", replacement = "\\1", basename(i)))
+  wd <- paste0(path, i)
+  assign(filename, read.delim2(wd,sep=";", skip=38, header=F, col.names=cnames)) #CHECK FOR EACH TRIALS IF THE SAME NUMBRE OF ROWS APPLIES
+
+}
+
+
+# Merging all into a single table
+pattern<-grep("framepstrial3",names(.GlobalEnv),value=TRUE) #MODIFY FOR EACH TRIAL
+list2<-do.call("list",mget(pattern))
+
+t3a<-bind_rows(list2, .id="id") #MODIFY FOR EACH TRIAL
+
+
+# Adding and modifying data to phase files 
+t3b<-t3a %>% #MODIFY FOR EACH TRIAL
+  select(c("id", "date", "time", "logtime", "phase")) %>%
+  mutate(trial=3,#MODIFY FOR EACH TRIAL
+         date=mdy(date), #formatting date
+         datetime=paste0(date," ", time), #copying date and time together
+         datetime=as_datetime(datetime, format="%Y-%m-%d %I:%M:%S %p")-minutes(9), #adjusting pc time to real time
+         datetime2=round_date(datetime, unit="minute"),
+         channel=case_when(str_detect(id, "ch10")~10, # Assigning channels 
+                       str_detect(id, "ch1")~1,
+                       str_detect(id, "ch2")~2,
+                       str_detect(id, "ch3")~3,
+                       str_detect(id, "ch4")~4,
+                       str_detect(id, "ch5")~5,
+                       str_detect(id, "ch6")~6,
+                       str_detect(id, "ch7")~7,
+                       str_detect(id, "ch8")~8,
+                       str_detect(id, "ch9")~9,
+                       TRUE~0),
+         ind=case_when(str_detect(id, "ch10")~010, # Assigning individuals MODIFY FOR EACH TRIAL
+                       str_detect(id, "ch1")~231,
+                       str_detect(id, "ch2")~029,
+                       str_detect(id, "ch3")~087,
+                       str_detect(id, "ch4")~166,
+                       str_detect(id, "ch5")~300,
+                       str_detect(id, "ch6")~121,
+                       str_detect(id, "ch7")~014,
+                       str_detect(id, "ch8")~271,
+                       str_detect(id, "ch9")~143,
+                       TRUE~0), 
+         stage=case_when(str_detect(id, "ch10")~"Female",#Assigning stage MODIFY FOR EACH TRIAL
+                       str_detect(id, "ch1")~"Tritonymph",
+                         str_detect(id, "ch2")~"Male",
+                       str_detect(id, "ch3")~"Protonymph",
+                       str_detect(id, "ch4")~"Female",
+                       str_detect(id, "ch5")~"Deutonymph",
+                       str_detect(id, "ch6")~"Protonymph",
+                       str_detect(id, "ch7")~"Deutonymph",
+                       str_detect(id, "ch8")~"Tritonymph",
+                       #str_detect(id, "ch9")~"Male",
+                       TRUE~"Male"),
+         weight=case_when(str_detect(id, "ch10")~1.228, # Assigning weights MODIFY FOR EACH TRIAL
+                       str_detect(id, "ch1")~0.931,
+                       str_detect(id, "ch2")~0.924,
+                       str_detect(id, "ch3")~0.251,
+                       str_detect(id, "ch4")~1.376,
+                       str_detect(id, "ch5")~0.289,
+                       str_detect(id, "ch6")~0.189,
+                       str_detect(id, "ch7")~0.347,
+                       str_detect(id, "ch8")~0.647,
+                       #str_detect(id, "ch9")~1.001,
+                       TRUE~1.021),
+         atm=round(33.864*28.81)) #MODIFY FOR EACH TRIAL: 33.864 * pressure in inHg
+
+# Getting temperature for this trial 
+temp2<-all_corr %>%
+  filter(trial==3) %>% #MODIFY FOR EACH TRIAL
+  select(c("datetime2","datetime", "tempcorr", "ramp"))
+
+#Merging phase and temperature data
+t3<- full_join(t3b, temp2, by="datetime2", suffix=c("",".temp")) #MODIFY FOR EACH TRIAL 
+  
+
+head(t3) #MODIFY FOR EACH TRIAL
+
+#Estimating Oxygen 
+f<-pi/180
+f
+
+
+ox3<-t3 %>% #MODIFY FOR EACH TRIAL
+  na.omit() %>%
+  mutate(phase=as.numeric(phase),
+         ind=as.factor(ind),
+         logtime=as.numeric(logtime),
+         phaseangle=62.14-0.08915*tempcorr,
+         sternvolmer=0.04899+4.965*10^(-4)*tempcorr,
+         bunsen=(48.998-1.335*tempcorr+2.755*10^(-2)*tempcorr^2-3.22*10^(-4)*tempcorr^3+1.598*10^(-6)*tempcorr^4)*10^(-3),
+         tempK=tempcorr+273,
+         watervapor=exp(52.57-(6690.9/tempK)-4.681*log(tempK)),
+         oxysat=(tan((pi/180)*phaseangle)-tan((pi/180)*phase))/tan((pi/180)*phase)*sternvolmer,
+         oxymgl=(atm-watervapor)/1013*oxysat*0.2095*bunsen*1000*(32/22.414)*10)
+
+head(ox3) #MODIFY FOR EACH TRIAL
+
+ggplot(ox3, aes(x=logtime, y=oxymgl,group=ind, color=stage))+ #MODIFY FOR EACH TRIAL
+  geom_line()+
+  theme_classic()+
+  theme(text = element_text(size = 15))+
+  ylim(7,12) +
+  facet_wrap(~ind)+
+  xlab("Time logged (min)")+
+  ylab("Oxygen (mg/L")
+
+```
+
+### Trial 4
+```{r}
+# creating vector for columns names
+cnames<-c("date", "time", "logtime", "oxygen", "phase", "amplitude", "temperature")
+
+# creating vector for path
+path<-"Data/Oxygen/Trial 4/" #MODIFY FOR EEACH TRIAL
+
+# Creating list of file names
+list <- list.files(path = path, pattern=".*txt") # creates the list of all the txt files in the directory
+
+# Renaming files to remove the "-"
+newname <- sub('-','', list) ## new name
+file.rename(file.path(path,list), file.path(path, newname)) ## renaming it.
+
+# Creating list of file names again
+list <- list.files(path = path, pattern=".*txt") # creates the list of all the txt files in the directory
+
+#Reading all files at once
+for (i in list) {
+  filename <- paste0( "frame",sub(pattern = "(.*)\\..*$", replacement = "\\1", basename(i)))
+  wd <- paste0(path, i)
+  assign(filename, read.delim2(wd,sep=";", skip=38, header=F, col.names=cnames)) #CHECK FOR EACH TRIALS IF THE SAME NUMBRE OF ROWS APPLIES
+
+}
+
+
+# Merging all into a single table
+pattern<-grep("framepstrial4",names(.GlobalEnv),value=TRUE) #MODIFY FOR EACH TRIAL
+list2<-do.call("list",mget(pattern))
+
+t4a<-bind_rows(list2, .id="id") #MODIFY FOR EACH TRIAL
+
+
+# Adding and modifying data to phase files 
+t4b<-t4a %>% #MODIFY FOR EACH TRIAL
+  select(c("id", "date", "time", "logtime", "phase")) %>%
+  mutate(trial=4,#MODIFY FOR EACH TRIAL
+         date=mdy(date), #formatting date
+         datetime=paste0(date," ", time), #copying date and time together
+         datetime=as_datetime(datetime, format="%Y-%m-%d %I:%M:%S %p")-minutes(9), #adjusting pc time to real time
+         datetime2=round_date(datetime, unit="minute"),
+         channel=case_when(str_detect(id, "ch10")~10, # Assigning channels 
+                       str_detect(id, "ch1")~1,
+                       str_detect(id, "ch2")~2,
+                       str_detect(id, "ch3")~3,
+                       str_detect(id, "ch4")~4,
+                       str_detect(id, "ch5")~5,
+                       str_detect(id, "ch6")~6,
+                       str_detect(id, "ch7")~7,
+                       str_detect(id, "ch8")~8,
+                       str_detect(id, "ch9")~9,
+                       TRUE~0),
+         ind=case_when(str_detect(id, "ch10")~213, # Assigning individuals MODIFY FOR EACH TRIAL
+                       str_detect(id, "ch1")~337,
+                       str_detect(id, "ch2")~051,
+                       str_detect(id, "ch3")~109,
+                       str_detect(id, "ch4")~245,
+                       str_detect(id, "ch5")~037,
+                       str_detect(id, "ch6")~131,
+                       str_detect(id, "ch7")~005,
+                       str_detect(id, "ch8")~194,
+                       str_detect(id, "ch9")~154,
+                       TRUE~0), 
+         stage=case_when(str_detect(id, "ch10")~"Deutonymph",#Assigning stage MODIFY FOR EACH TRIAL
+                       str_detect(id, "ch1")~"Protonymph",
+                         str_detect(id, "ch2")~"Deutonymph",
+                       str_detect(id, "ch3")~"Tritonymph",
+                       str_detect(id, "ch4")~"Male",
+                       str_detect(id, "ch5")~"Female",
+                       str_detect(id, "ch6")~"Tritonymph",
+                       str_detect(id, "ch7")~"Female",
+                       str_detect(id, "ch8")~"Male",
+                       #str_detect(id, "ch9")~"Male",
+                       TRUE~"Protonymph"),
+         weight=case_when(str_detect(id, "ch10")~0.241, # Assigning weights MODIFY FOR EACH TRIAL
+                       str_detect(id, "ch1")~0.163,
+                       str_detect(id, "ch2")~0.350,
+                       str_detect(id, "ch3")~0.730,
+                       str_detect(id, "ch4")~0.963,
+                       str_detect(id, "ch5")~1.332,
+                       str_detect(id, "ch6")~0.509,
+                       str_detect(id, "ch7")~1.582,
+                       str_detect(id, "ch8")~0.999,
+                       #str_detect(id, "ch9")~1.001,
+                       TRUE~0.109),
+         atm=round(33.864*28.90)) #MODIFY FOR EACH TRIAL: 33.864 * pressure in inHg
+
+# Getting temperature for this trial 
+temp2<-all_corr %>%
+  filter(trial==4) %>% #MODIFY FOR EACH TRIAL
+  select(c("datetime2","datetime", "tempcorr", "ramp"))
+
+#Merging phase and temperature data
+t4<- full_join(t4b, temp2, by="datetime2", suffix=c("",".temp")) #MODIFY FOR EACH TRIAL 
+  
+
+head(t4) #MODIFY FOR EACH TRIAL
+
+#Estimating Oxygen 
+f<-pi/180
+f
+
+
+ox4<-t4 %>% #MODIFY FOR EACH TRIAL
+  na.omit() %>%
+  mutate(phase=as.numeric(phase),
+         ind=as.factor(ind),
+         logtime=as.numeric(logtime),
+         phaseangle=62.14-0.08915*tempcorr,
+         sternvolmer=0.04899+4.965*10^(-4)*tempcorr,
+         bunsen=(48.998-1.335*tempcorr+2.755*10^(-2)*tempcorr^2-3.22*10^(-4)*tempcorr^3+1.598*10^(-6)*tempcorr^4)*10^(-3),
+         tempK=tempcorr+273,
+         watervapor=exp(52.57-(6690.9/tempK)-4.681*log(tempK)),
+         oxysat=(tan((pi/180)*phaseangle)-tan((pi/180)*phase))/tan((pi/180)*phase)*sternvolmer,
+         oxymgl=(atm-watervapor)/1013*oxysat*0.2095*bunsen*1000*(32/22.414)*10)
+
+head(ox4) #MODIFY FOR EACH TRIAL
+
+ggplot(ox4, aes(x=logtime, y=oxymgl,group=ind, color=stage))+ #MODIFY FOR EACH TRIAL
+  geom_line()+
+  theme_classic()+
+  theme(text = element_text(size = 15))+
+  ylim(8,12) +
+  facet_wrap(~ind)+
+  xlab("Time logged (min)")+
+  ylab("Oxygen (mg/L")
+
+```
+
+### Trial 5
+```{r}
+# creating vector for columns names
+cnames<-c("date", "time", "logtime", "oxygen", "phase", "amplitude", "temperature")
+
+# creating vector for path
+path<-"Data/Oxygen/Trial 5/" #MODIFY FOR EEACH TRIAL
+
+# Creating list of file names
+list <- list.files(path = path, pattern=".*txt") # creates the list of all the txt files in the directory
+
+# Renaming files to remove the "-"
+newname <- sub('-','', list) ## new name
+file.rename(file.path(path,list), file.path(path, newname)) ## renaming it.
+
+# Creating list of file names again
+list <- list.files(path = path, pattern=".*txt") # creates the list of all the txt files in the directory
+
+#Reading all files at once
+for (i in list) {
+  filename <- paste0( "frame",sub(pattern = "(.*)\\..*$", replacement = "\\1", basename(i)))
+  wd <- paste0(path, i)
+  assign(filename, read.delim2(wd,sep=";", skip=38, header=F, col.names=cnames)) #CHECK FOR EACH TRIALS IF THE SAME NUMBRE OF ROWS APPLIES
+
+}
+
+
+# Merging all into a single table
+pattern<-grep("framepstrial5",names(.GlobalEnv),value=TRUE) #MODIFY FOR EACH TRIAL
+list2<-do.call("list",mget(pattern))
+
+t5a<-bind_rows(list2, .id="id") #MODIFY FOR EACH TRIAL
+
+
+# Adding and modifying data to phase files 
+t5b<-t5a %>% #MODIFY FOR EACH TRIAL
+  select(c("id", "date", "time", "logtime", "phase")) %>%
+  mutate(trial=5,#MODIFY FOR EACH TRIAL
+         date=mdy(date), #formatting date
+         datetime=paste0(date," ", time), #copying date and time together
+         datetime=as_datetime(datetime, format="%Y-%m-%d %I:%M:%S %p")-minutes(9), #adjusting pc time to real time
+         datetime2=round_date(datetime, unit="minute"),
+         channel=case_when(str_detect(id, "ch10")~10, # Assigning channels 
+                       str_detect(id, "ch1")~1,
+                       str_detect(id, "ch2")~2,
+                       str_detect(id, "ch3")~3,
+                       str_detect(id, "ch4")~4,
+                       str_detect(id, "ch5")~5,
+                       str_detect(id, "ch6")~6,
+                       str_detect(id, "ch7")~7,
+                       str_detect(id, "ch8")~8,
+                       str_detect(id, "ch9")~9,
+                       TRUE~0),
+         ind=case_when(str_detect(id, "ch10")~324, # Assigning individuals MODIFY FOR EACH TRIAL
+                       str_detect(id, "ch1")~024,
+                       str_detect(id, "ch2")~253,
+                       str_detect(id, "ch3")~025,
+                       str_detect(id, "ch4")~003,
+                       str_detect(id, "ch5")~290,
+                       str_detect(id, "ch6")~244,
+                       str_detect(id, "ch7")~257,
+                       str_detect(id, "ch8")~032,
+                       str_detect(id, "ch9")~159,
+                       TRUE~0), 
+         stage=case_when(str_detect(id, "ch10")~"Protonymph",#Assigning stage MODIFY FOR EACH TRIAL
+                       str_detect(id, "ch1")~"Female",
+                         str_detect(id, "ch2")~"Male",
+                       str_detect(id, "ch3")~"Tritonymph",
+                       str_detect(id, "ch4")~"Deutonymph",
+                       str_detect(id, "ch5")~"Protonymph",
+                       str_detect(id, "ch6")~"Female",
+                       str_detect(id, "ch7")~"Male",
+                       str_detect(id, "ch8")~"Tritonymph",
+                       #str_detect(id, "ch9")~"Male",
+                       TRUE~"Deutonymph"),
+         weight=case_when(str_detect(id, "ch10")~0.158, # Assigning weights MODIFY FOR EACH TRIAL
+                       str_detect(id, "ch1")~1.472,
+                       str_detect(id, "ch2")~0.900,
+                       str_detect(id, "ch3")~0.688,
+                       str_detect(id, "ch4")~0.328,
+                       str_detect(id, "ch5")~0.166,
+                       str_detect(id, "ch6")~1.454,
+                       str_detect(id, "ch7")~0.946,
+                       str_detect(id, "ch8")~0.613,
+                       #str_detect(id, "ch9")~1.001,
+                       TRUE~0.278),
+         atm=round(33.864*28.84)) #MODIFY FOR EACH TRIAL: 33.864 * pressure in inHg
+
+# Getting temperature for this trial 
+temp2<-all_corr %>%
+  filter(trial==5) %>% #MODIFY FOR EACH TRIAL
+  select(c("datetime2","datetime", "tempcorr", "ramp"))
+
+#Merging phase and temperature data
+t5<- full_join(t5b, temp2, by="datetime2", suffix=c("",".temp")) #MODIFY FOR EACH TRIAL 
+  
+
+head(t5) #MODIFY FOR EACH TRIAL
+
+#Estimating Oxygen 
+f<-pi/180
+f
+
+
+ox5<-t5 %>% #MODIFY FOR EACH TRIAL
+  na.omit() %>%
+  mutate(phase=as.numeric(phase),
+         ind=as.factor(ind),
+         logtime=as.numeric(logtime),
+         phaseangle=62.14-0.08915*tempcorr,
+         sternvolmer=0.04899+4.965*10^(-4)*tempcorr,
+         bunsen=(48.998-1.335*tempcorr+2.755*10^(-2)*tempcorr^2-3.22*10^(-4)*tempcorr^3+1.598*10^(-6)*tempcorr^4)*10^(-3),
+         tempK=tempcorr+273,
+         watervapor=exp(52.57-(6690.9/tempK)-4.681*log(tempK)),
+         oxysat=(tan((pi/180)*phaseangle)-tan((pi/180)*phase))/tan((pi/180)*phase)*sternvolmer,
+         oxymgl=(atm-watervapor)/1013*oxysat*0.2095*bunsen*1000*(32/22.414)*10)
+
+head(ox5) #MODIFY FOR EACH TRIAL
+
+ggplot(ox5, aes(x=logtime, y=oxymgl,group=ind, color=stage))+ #MODIFY FOR EACH TRIAL
+  geom_line()+
+  theme_classic()+
+  theme(text = element_text(size = 15))+
+  ylim(8,12) +
+  facet_wrap(~ind)+
+  xlab("Time logged (min)")+
+  ylab("Oxygen (mg/L")
+
+```
+
+### Trial 6
+```{r}
+# creating vector for columns names
+cnames<-c("date", "time", "logtime", "oxygen", "phase", "amplitude", "temperature")
+
+# creating vector for path
+path<-"Data/Oxygen/Trial 6/" #MODIFY FOR EEACH TRIAL
+
+# Creating list of file names
+list <- list.files(path = path, pattern=".*txt") # creates the list of all the txt files in the directory
+
+# Renaming files to remove the "-"
+newname <- sub('-','', list) ## new name
+file.rename(file.path(path,list), file.path(path, newname)) ## renaming it.
+
+# Creating list of file names again
+list <- list.files(path = path, pattern=".*txt") # creates the list of all the txt files in the directory
+
+#Reading all files at once
+for (i in list) {
+  filename <- paste0( "frame",sub(pattern = "(.*)\\..*$", replacement = "\\1", basename(i)))
+  wd <- paste0(path, i)
+  assign(filename, read.delim2(wd,sep=";", skip=38, header=F, col.names=cnames)) #CHECK FOR EACH TRIALS IF THE SAME NUMBRE OF ROWS APPLIES
+
+}
+
+
+# Merging all into a single table
+pattern<-grep("framepstrial6",names(.GlobalEnv),value=TRUE) #MODIFY FOR EACH TRIAL
+list2<-do.call("list",mget(pattern))
+
+t6a<-bind_rows(list2, .id="id") #MODIFY FOR EACH TRIAL
+
+
+# Adding and modifying data to phase files 
+t6b<-t6a %>% #MODIFY FOR EACH TRIAL
+  select(c("id", "date", "time", "logtime", "phase")) %>%
+  mutate(trial=6,#MODIFY FOR EACH TRIAL
+         date=mdy(date), #formatting date
+         datetime=paste0(date," ", time), #copying date and time together
+         datetime=as_datetime(datetime, format="%Y-%m-%d %I:%M:%S %p")-minutes(9), #adjusting pc time to real time
+         datetime2=round_date(datetime, unit="minute"),
+         channel=case_when(str_detect(id, "ch10")~10, # Assigning channels 
+                       str_detect(id, "ch1")~1,
+                       str_detect(id, "ch2")~2,
+                       str_detect(id, "ch3")~3,
+                       str_detect(id, "ch4")~4,
+                       str_detect(id, "ch5")~5,
+                       str_detect(id, "ch6")~6,
+                       str_detect(id, "ch7")~7,
+                       str_detect(id, "ch8")~8,
+                       str_detect(id, "ch9")~9,
+                       TRUE~0),
+         ind=case_when(str_detect(id, "ch10")~267, # Assigning individuals MODIFY FOR EACH TRIAL
+                       str_detect(id, "ch1")~288,
+                       str_detect(id, "ch2")~030,
+                       str_detect(id, "ch3")~1000,
+                       str_detect(id, "ch4")~287,
+                       str_detect(id, "ch5")~218,
+                       str_detect(id, "ch6")~238,
+                       str_detect(id, "ch7")~165,
+                       str_detect(id, "ch8")~298,
+                       str_detect(id, "ch9")~066,
+                       TRUE~0), 
+         stage=case_when(str_detect(id, "ch10")~"Deutonymph",#Assigning stage MODIFY FOR EACH TRIAL
+                       str_detect(id, "ch1")~"Deutonymph",
+                         str_detect(id, "ch2")~"Female",
+                       str_detect(id, "ch3")~"NA",
+                       str_detect(id, "ch4")~"Tritonymph",
+                       str_detect(id, "ch5")~"Tritonymph",
+                       str_detect(id, "ch6")~"Male",
+                       str_detect(id, "ch7")~"Protonymph",
+                       str_detect(id, "ch8")~"Protonymph",
+                       #str_detect(id, "ch9")~"Male",
+                       TRUE~"Female"),
+         weight=case_when(str_detect(id, "ch10")~0.221, # Assigning weights MODIFY FOR EACH TRIAL
+                       str_detect(id, "ch1")~0.257,
+                       str_detect(id, "ch2")~1.583,
+                       str_detect(id, "ch3")~1000,
+                       str_detect(id, "ch4")~0.583,
+                       str_detect(id, "ch5")~0.715,
+                       str_detect(id, "ch6")~0.794,
+                       str_detect(id, "ch7")~0.142,
+                       str_detect(id, "ch8")~0.201,
+                       #str_detect(id, "ch9")~1.001,
+                       TRUE~2.208),
+         atm=round(33.864*28.81)) #MODIFY FOR EACH TRIAL: 33.864 * pressure in inHg
+
+# Getting temperature for this trial 
+temp2<-all_corr %>%
+  filter(trial==6) %>% #MODIFY FOR EACH TRIAL
+  select(c("datetime2","datetime", "tempcorr", "ramp"))
+
+#Merging phase and temperature data
+t6<- full_join(t6b, temp2, by="datetime2", suffix=c("",".temp")) #MODIFY FOR EACH TRIAL 
+  
+
+head(t6) #MODIFY FOR EACH TRIAL
+
+#Estimating Oxygen 
+f<-pi/180
+f
+
+
+ox6<-t6 %>% #MODIFY FOR EACH TRIAL
+  na.omit() %>%
+  filter(ind < 900) %>%
+  mutate(phase=as.numeric(phase),
+         ind=as.factor(ind),
+         logtime=as.numeric(logtime),
+         phaseangle=62.14-0.08915*tempcorr,
+         sternvolmer=0.04899+4.965*10^(-4)*tempcorr,
+         bunsen=(48.998-1.335*tempcorr+2.755*10^(-2)*tempcorr^2-3.22*10^(-4)*tempcorr^3+1.598*10^(-6)*tempcorr^4)*10^(-3),
+         tempK=tempcorr+273,
+         watervapor=exp(52.57-(6690.9/tempK)-4.681*log(tempK)),
+         oxysat=(tan((pi/180)*phaseangle)-tan((pi/180)*phase))/tan((pi/180)*phase)*sternvolmer,
+         oxymgl=(atm-watervapor)/1013*oxysat*0.2095*bunsen*1000*(32/22.414)*10)
+
+head(ox6) #MODIFY FOR EACH TRIAL
+
+ggplot(ox6, aes(x=logtime, y=oxymgl,group=ind, color=stage))+ #MODIFY FOR EACH TRIAL
+  geom_line()+
+  theme_classic()+
+  theme(text = element_text(size = 15))+
+  ylim(8,12) +
+  facet_wrap(~ind)+
+  xlab("Time logged (min)")+
+  ylab("Oxygen (mg/L")
+
+```
+
+### Trial 7
+```{r}
+# creating vector for columns names
+cnames<-c("date", "time", "logtime", "oxygen", "phase", "amplitude", "temperature")
+
+# creating vector for path
+path<-"Data/Oxygen/Trial 7/" #MODIFY FOR EEACH TRIAL
+
+# Creating list of file names
+list <- list.files(path = path, pattern=".*txt") # creates the list of all the txt files in the directory
+
+# Renaming files to remove the "-"
+newname <- sub('-','', list) ## new name
+file.rename(file.path(path,list), file.path(path, newname)) ## renaming it.
+
+# Creating list of file names again
+list <- list.files(path = path, pattern=".*txt") # creates the list of all the txt files in the directory
+
+#Reading all files at once
+for (i in list) {
+  filename <- paste0( "frame",sub(pattern = "(.*)\\..*$", replacement = "\\1", basename(i)))
+  wd <- paste0(path, i)
+  assign(filename, read.delim2(wd,sep=";", skip=38, header=F, col.names=cnames)) #CHECK FOR EACH TRIALS IF THE SAME NUMBRE OF ROWS APPLIES
+
+}
+
+
+# Merging all into a single table
+pattern<-grep("framepstrial7",names(.GlobalEnv),value=TRUE) #MODIFY FOR EACH TRIAL
+list2<-do.call("list",mget(pattern))
+
+t7a<-bind_rows(list2, .id="id") #MODIFY FOR EACH TRIAL
+
+
+# Adding and modifying data to phase files 
+t7b<-t7a %>% #MODIFY FOR EACH TRIAL
+  select(c("id", "date", "time", "logtime", "phase")) %>%
+  mutate(trial=7,#MODIFY FOR EACH TRIAL
+         date=mdy(date), #formatting date
+         datetime=paste0(date," ", time), #copying date and time together
+         datetime=as_datetime(datetime, format="%Y-%m-%d %I:%M:%S %p")-minutes(9), #adjusting pc time to real time
+         datetime2=round_date(datetime, unit="minute"),
+         channel=case_when(str_detect(id, "ch10")~10, # Assigning channels 
+                       str_detect(id, "ch1")~1,
+                       str_detect(id, "ch2")~2,
+                       str_detect(id, "ch3")~3,
+                       str_detect(id, "ch4")~4,
+                       str_detect(id, "ch5")~5,
+                       str_detect(id, "ch6")~6,
+                       str_detect(id, "ch7")~7,
+                       str_detect(id, "ch8")~8,
+                       str_detect(id, "ch9")~9,
+                       TRUE~0),
+         ind=case_when(str_detect(id, "ch10")~274, # Assigning individuals MODIFY FOR EACH TRIAL
+                       str_detect(id, "ch1")~235,
+                       str_detect(id, "ch2")~216,
+                       str_detect(id, "ch3")~1000,
+                       str_detect(id, "ch4")~237,
+                       str_detect(id, "ch5")~175,
+                       str_detect(id, "ch6")~246,
+                       str_detect(id, "ch7")~232,
+                       str_detect(id, "ch8")~269,
+                       str_detect(id, "ch9")~043,
+                       TRUE~0), 
+         stage=case_when(str_detect(id, "ch10")~"Deutonymph",#Assigning stage MODIFY FOR EACH TRIAL
+                       str_detect(id, "ch1")~"Male",
+                         str_detect(id, "ch2")~"Male",
+                       str_detect(id, "ch3")~"NA",
+                       str_detect(id, "ch4")~"Female",
+                       str_detect(id, "ch5")~"Protonymph",
+                       str_detect(id, "ch6")~"Female",
+                       str_detect(id, "ch7")~"Tritonymph",
+                       str_detect(id, "ch8")~"Tritonymph",
+                       #str_detect(id, "ch9")~"Male",
+                       TRUE~"Protonymph"),
+         weight=case_when(str_detect(id, "ch10")~0.324, # Assigning weights MODIFY FOR EACH TRIAL
+                       str_detect(id, "ch1")~0.900,
+                       str_detect(id, "ch2")~1.126,
+                       str_detect(id, "ch3")~1000,
+                       str_detect(id, "ch4")~1.345,
+                       str_detect(id, "ch5")~0.213,
+                       str_detect(id, "ch6")~1.937,
+                       str_detect(id, "ch7")~0.748,
+                       str_detect(id, "ch8")~0.622,
+                       #str_detect(id, "ch9")~1.001,
+                       TRUE~0.139),
+         atm=round(33.864*28.78)) #MODIFY FOR EACH TRIAL: 33.864 * pressure in inHg
+
+# Getting temperature for this trial 
+temp2<-all_corr %>%
+  filter(trial==7) %>% #MODIFY FOR EACH TRIAL
+  select(c("datetime2","datetime", "tempcorr", "ramp"))
+
+#Merging phase and temperature data
+t7<- full_join(t7b, temp2, by="datetime2", suffix=c("",".temp")) #MODIFY FOR EACH TRIAL 
+  
+
+head(t7) #MODIFY FOR EACH TRIAL
+
+#Estimating Oxygen 
+f<-pi/180
+f
+
+
+ox7<-t7 %>% #MODIFY FOR EACH TRIAL
+  na.omit() %>%
+  filter(ind < 900) %>%
+  mutate(phase=as.numeric(phase),
+         ind=as.factor(ind),
+         logtime=as.numeric(logtime),
+         phaseangle=62.14-0.08915*tempcorr,
+         sternvolmer=0.04899+4.965*10^(-4)*tempcorr,
+         bunsen=(48.998-1.335*tempcorr+2.755*10^(-2)*tempcorr^2-3.22*10^(-4)*tempcorr^3+1.598*10^(-6)*tempcorr^4)*10^(-3),
+         tempK=tempcorr+273,
+         watervapor=exp(52.57-(6690.9/tempK)-4.681*log(tempK)),
+         oxysat=(tan((pi/180)*phaseangle)-tan((pi/180)*phase))/tan((pi/180)*phase)*sternvolmer,
+         oxymgl=(atm-watervapor)/1013*oxysat*0.2095*bunsen*1000*(32/22.414)*10)
+
+head(ox7) #MODIFY FOR EACH TRIAL
+
+ggplot(ox7, aes(x=logtime, y=oxymgl,group=ind, color=stage))+ #MODIFY FOR EACH TRIAL
+  geom_line()+
+  theme_classic()+
+  theme(text = element_text(size = 15))+
+  ylim(8,12) +
+  facet_wrap(~ind)+
+  xlab("Time logged (min)")+
+  ylab("Oxygen (mg/L")
+
+```
+
+### Trial 8
+```{r}
+# creating vector for columns names
+cnames<-c("date", "time", "logtime", "oxygen", "phase", "amplitude", "temperature")
+
+# creating vector for path
+path<-"Data/Oxygen/Trial 8/" #MODIFY FOR EEACH TRIAL
+
+# Creating list of file names
+list <- list.files(path = path, pattern=".*txt") # creates the list of all the txt files in the directory
+
+# Renaming files to remove the "-"
+newname <- sub('-','', list) ## new name
+file.rename(file.path(path,list), file.path(path, newname)) ## renaming it.
+
+# Creating list of file names again
+list <- list.files(path = path, pattern=".*txt") # creates the list of all the txt files in the directory
+
+#Reading all files at once
+for (i in list) {
+  filename <- paste0( "frame",sub(pattern = "(.*)\\..*$", replacement = "\\1", basename(i)))
+  wd <- paste0(path, i)
+  assign(filename, read.delim2(wd,sep=";", skip=38, header=F, col.names=cnames)) #CHECK FOR EACH TRIALS IF THE SAME NUMBRE OF ROWS APPLIES
+
+}
+
+
+# Merging all into a single table
+pattern<-grep("framepstrial8",names(.GlobalEnv),value=TRUE) #MODIFY FOR EACH TRIAL
+list2<-do.call("list",mget(pattern))
+
+t8a<-bind_rows(list2, .id="id") #MODIFY FOR EACH TRIAL
+
+
+# Adding and modifying data to phase files 
+t8b<-t8a %>% #MODIFY FOR EACH TRIAL
+  select(c("id", "date", "time", "logtime", "phase")) %>%
+  mutate(trial=8,#MODIFY FOR EACH TRIAL
+         date=mdy(date), #formatting date
+         datetime=paste0(date," ", time), #copying date and time together
+         datetime=as_datetime(datetime, format="%Y-%m-%d %I:%M:%S %p")-minutes(9), #adjusting pc time to real time
+         datetime2=round_date(datetime, unit="minute"),
+         channel=case_when(str_detect(id, "ch10")~10, # Assigning channels 
+                       str_detect(id, "ch1")~1,
+                       str_detect(id, "ch2")~2,
+                       str_detect(id, "ch3")~3,
+                       str_detect(id, "ch4")~4,
+                       str_detect(id, "ch5")~5,
+                       str_detect(id, "ch6")~6,
+                       str_detect(id, "ch7")~7,
+                       str_detect(id, "ch8")~8,
+                       str_detect(id, "ch9")~9,
+                       TRUE~0),
+         ind=case_when(str_detect(id, "ch10")~345, # Assigning individuals MODIFY FOR EACH TRIAL
+                       str_detect(id, "ch1")~301,
+                       str_detect(id, "ch2")~107,
+                       str_detect(id, "ch3")~54,
+                       str_detect(id, "ch4")~270,
+                       str_detect(id, "ch5")~85,
+                       str_detect(id, "ch6")~36,
+                       str_detect(id, "ch7")~112,
+                       str_detect(id, "ch8")~138,
+                       str_detect(id, "ch9")~80,
+                       TRUE~0), 
+         stage=case_when(str_detect(id, "ch10")~"Tritonymph",#Assigning stage MODIFY FOR EACH TRIAL
+                       str_detect(id, "ch1")~"Protonymph",
+                         str_detect(id, "ch2")~"Male",
+                       str_detect(id, "ch3")~"Tritonymph",
+                       str_detect(id, "ch4")~"Deutonymph",
+                       str_detect(id, "ch5")~"Female",
+                       str_detect(id, "ch6")~"Protonymph",
+                       str_detect(id, "ch7")~"Female",
+                       str_detect(id, "ch8")~"Deutonymph",
+                       #str_detect(id, "ch9")~"Male",
+                       TRUE~"Male"),
+         weight=case_when(str_detect(id, "ch10")~0.863, # Assigning weights MODIFY FOR EACH TRIAL
+                       str_detect(id, "ch1")~0.176,
+                       str_detect(id, "ch2")~0.648,
+                       str_detect(id, "ch3")~0.858,
+                       str_detect(id, "ch4")~0.325,
+                       str_detect(id, "ch5")~1.863,
+                       str_detect(id, "ch6")~0.146,
+                       str_detect(id, "ch7")~1.522,
+                       str_detect(id, "ch8")~0.329,
+                       #str_detect(id, "ch9")~1.001,
+                       TRUE~1.199),
+         atm=round(33.864*28.72)) #MODIFY FOR EACH TRIAL: 33.864 * pressure in inHg
+
+# Getting temperature for this trial 
+temp2<-all_corr %>%
+  filter(trial==8) %>% #MODIFY FOR EACH TRIAL
+  select(c("datetime2","datetime", "tempcorr", "ramp"))
+
+#Merging phase and temperature data
+t8<- full_join(t8b, temp2, by="datetime2", suffix=c("",".temp")) #MODIFY FOR EACH TRIAL 
+  
+
+head(t8) #MODIFY FOR EACH TRIAL
+
+#Estimating Oxygen 
+f<-pi/180
+f
+
+
+ox8<-t8 %>% #MODIFY FOR EACH TRIAL
+  na.omit() %>%
+  filter(ind < 900) %>%
+  mutate(phase=as.numeric(phase),
+         ind=as.factor(ind),
+         logtime=as.numeric(logtime),
+         phaseangle=62.14-0.08915*tempcorr,
+         sternvolmer=0.04899+4.965*10^(-4)*tempcorr,
+         bunsen=(48.998-1.335*tempcorr+2.755*10^(-2)*tempcorr^2-3.22*10^(-4)*tempcorr^3+1.598*10^(-6)*tempcorr^4)*10^(-3),
+         tempK=tempcorr+273,
+         watervapor=exp(52.57-(6690.9/tempK)-4.681*log(tempK)),
+         oxysat=(tan((pi/180)*phaseangle)-tan((pi/180)*phase))/tan((pi/180)*phase)*sternvolmer,
+         oxymgl=(atm-watervapor)/1013*oxysat*0.2095*bunsen*1000*(32/22.414)*10)
+
+head(ox8) #MODIFY FOR EACH TRIAL
+
+ggplot(ox8, aes(x=logtime, y=oxymgl,group=ind, color=stage))+ #MODIFY FOR EACH TRIAL
+  geom_line()+
+  theme_classic()+
+  theme(text = element_text(size = 15))+
+  ylim(8,12) +
+  facet_wrap(~ind)+
+  xlab("Time logged (min)")+
+  ylab("Oxygen (mg/L")
+
+```
+
+### Trial 9
+```{r}
+# creating vector for columns names
+cnames<-c("date", "time", "logtime", "oxygen", "phase", "amplitude", "temperature")
+
+# creating vector for path
+path<-"Data/Oxygen/Trial 9/" #MODIFY FOR EEACH TRIAL
+
+# Creating list of file names
+list <- list.files(path = path, pattern=".*txt") # creates the list of all the txt files in the directory
+
+# Renaming files to remove the "-"
+newname <- sub('-','', list) ## new name
+file.rename(file.path(path,list), file.path(path, newname)) ## renaming it.
+
+# Creating list of file names again
+list <- list.files(path = path, pattern=".*txt") # creates the list of all the txt files in the directory
+
+#Reading all files at once
+for (i in list) {
+  filename <- paste0( "frame",sub(pattern = "(.*)\\..*$", replacement = "\\1", basename(i)))
+  wd <- paste0(path, i)
+  assign(filename, read.delim2(wd,sep=";", skip=38, header=F, col.names=cnames)) #CHECK FOR EACH TRIALS IF THE SAME NUMBRE OF ROWS APPLIES
+
+}
+
+
+# Merging all into a single table
+pattern<-grep("framepstrial9",names(.GlobalEnv),value=TRUE) #MODIFY FOR EACH TRIAL
+list2<-do.call("list",mget(pattern))
+
+t9a<-bind_rows(list2, .id="id") #MODIFY FOR EACH TRIAL
+
+
+# Adding and modifying data to phase files 
+t9b<-t9a %>% #MODIFY FOR EACH TRIAL
+  select(c("id", "date", "time", "logtime", "phase")) %>%
+  mutate(trial=9,#MODIFY FOR EACH TRIAL
+         date=mdy(date), #formatting date
+         datetime=paste0(date," ", time), #copying date and time together
+         datetime=as_datetime(datetime, format="%Y-%m-%d %I:%M:%S %p")-minutes(9), #adjusting pc time to real time
+         datetime2=round_date(datetime, unit="minute"),
+         channel=case_when(str_detect(id, "ch10")~10, # Assigning channels 
+                       str_detect(id, "ch1")~1,
+                       str_detect(id, "ch2")~2,
+                       str_detect(id, "ch3")~3,
+                       str_detect(id, "ch4")~4,
+                       str_detect(id, "ch5")~5,
+                       str_detect(id, "ch6")~6,
+                       str_detect(id, "ch7")~7,
+                       str_detect(id, "ch8")~8,
+                       str_detect(id, "ch9")~9,
+                       TRUE~0),
+         ind=case_when(str_detect(id, "ch10")~007, # Assigning individuals MODIFY FOR EACH TRIAL
+                       str_detect(id, "ch1")~242,
+                       str_detect(id, "ch2")~035,
+                       str_detect(id, "ch3")~146,
+                       str_detect(id, "ch4")~153,
+                       str_detect(id, "ch5")~334,
+                       str_detect(id, "ch6")~264,
+                       str_detect(id, "ch7")~1000,
+                       str_detect(id, "ch8")~004,
+                       str_detect(id, "ch9")~228,
+                       TRUE~0), 
+         stage=case_when(str_detect(id, "ch10")~"Male",#Assigning stage MODIFY FOR EACH TRIAL
+                       str_detect(id, "ch1")~"Female",
+                         str_detect(id, "ch2")~"Protonymph",
+                       str_detect(id, "ch3")~"Male",
+                       str_detect(id, "ch4")~"Tritonymph",
+                       str_detect(id, "ch5")~"Deutonymph",
+                       str_detect(id, "ch6")~"Deutonymph",
+                       str_detect(id, "ch7")~"NA",
+                       str_detect(id, "ch8")~"Female",
+                       #str_detect(id, "ch9")~"Male",
+                       TRUE~"Tritonymph"),
+         weight=case_when(str_detect(id, "ch10")~0.983, # Assigning weights MODIFY FOR EACH TRIAL
+                       str_detect(id, "ch1")~1.775,
+                       str_detect(id, "ch2")~0.185,
+                       str_detect(id, "ch3")~1.118,
+                       str_detect(id, "ch4")~0.551,
+                       str_detect(id, "ch5")~0.302,
+                       str_detect(id, "ch6")~0.342,
+                       str_detect(id, "ch7")~1000,
+                       str_detect(id, "ch8")~1.425,
+                       #str_detect(id, "ch9")~1.001,
+                       TRUE~0.569),
+         atm=round(33.864*28.66)) #MODIFY FOR EACH TRIAL: 33.864 * pressure in inHg
+
+# Getting temperature for this trial 
+temp2<-all_corr %>%
+  filter(trial==9) %>% #MODIFY FOR EACH TRIAL
+  select(c("datetime2","datetime", "tempcorr", "ramp"))
+
+#Merging phase and temperature data
+t9<- full_join(t9b, temp2, by="datetime2", suffix=c("",".temp")) #MODIFY FOR EACH TRIAL 
+  
+
+head(t9) #MODIFY FOR EACH TRIAL
+
+#Estimating Oxygen 
+f<-pi/180
+f
+
+
+ox9<-t9 %>% #MODIFY FOR EACH TRIAL
+  na.omit() %>%
+  filter(ind < 900) %>%
+  mutate(phase=as.numeric(phase),
+         ind=as.factor(ind),
+         logtime=as.numeric(logtime),
+         phaseangle=62.14-0.08915*tempcorr,
+         sternvolmer=0.04899+4.965*10^(-4)*tempcorr,
+         bunsen=(48.998-1.335*tempcorr+2.755*10^(-2)*tempcorr^2-3.22*10^(-4)*tempcorr^3+1.598*10^(-6)*tempcorr^4)*10^(-3),
+         tempK=tempcorr+273,
+         watervapor=exp(52.57-(6690.9/tempK)-4.681*log(tempK)),
+         oxysat=(tan((pi/180)*phaseangle)-tan((pi/180)*phase))/tan((pi/180)*phase)*sternvolmer,
+         oxymgl=(atm-watervapor)/1013*oxysat*0.2095*bunsen*1000*(32/22.414)*10)
+
+head(ox9) #MODIFY FOR EACH TRIAL
+
+ggplot(ox9, aes(x=logtime, y=oxymgl,group=ind, color=stage))+ #MODIFY FOR EACH TRIAL
+  geom_line()+
+  theme_classic()+
+  theme(text = element_text(size = 15))+
+  ylim(8,12) +
+  facet_wrap(~ind)+
+  xlab("Time logged (min)")+
+  ylab("Oxygen (mg/L")
+
+```
+
+### Trial 10
+```{r}
+# creating vector for columns names
+cnames<-c("date", "time", "logtime", "oxygen", "phase", "amplitude", "temperature")
+
+# creating vector for path
+path<-"Data/Oxygen/Trial 10/" #MODIFY FOR EEACH TRIAL
+
+# Creating list of file names
+list <- list.files(path = path, pattern=".*txt") # creates the list of all the txt files in the directory
+
+# Renaming files to remove the "-"
+newname <- sub('-','', list) ## new name
+file.rename(file.path(path,list), file.path(path, newname)) ## renaming it.
+
+# Creating list of file names again
+list <- list.files(path = path, pattern=".*txt") # creates the list of all the txt files in the directory
+
+#Reading all files at once
+for (i in list) {
+  filename <- paste0( "frame",sub(pattern = "(.*)\\..*$", replacement = "\\1", basename(i)))
+  wd <- paste0(path, i)
+  assign(filename, read.delim2(wd,sep=";", skip=38, header=F, col.names=cnames)) #CHECK FOR EACH TRIALS IF THE SAME NUMBRE OF ROWS APPLIES
+
+}
+
+
+# Merging all into a single table
+pattern<-grep("framepstrial10",names(.GlobalEnv),value=TRUE) #MODIFY FOR EACH TRIAL
+list2<-do.call("list",mget(pattern))
+
+t10a<-bind_rows(list2, .id="id") #MODIFY FOR EACH TRIAL
+
+
+# Adding and modifying data to phase files 
+t10b<-t10a %>% #MODIFY FOR EACH TRIAL
+  select(c("id", "date", "time", "logtime", "phase")) %>%
+  mutate(trial=10,#MODIFY FOR EACH TRIAL
+         date=mdy(date), #formatting date
+         datetime=paste0(date," ", time), #copying date and time together
+         datetime=as_datetime(datetime, format="%Y-%m-%d %I:%M:%S %p")-minutes(9), #adjusting pc time to real time
+         datetime2=round_date(datetime, unit="minute"),
+         channel=case_when(str_detect(id, "ch10")~10, # Assigning channels 
+                       str_detect(id, "ch1")~1,
+                       str_detect(id, "ch2")~2,
+                       str_detect(id, "ch3")~3,
+                       str_detect(id, "ch4")~4,
+                       str_detect(id, "ch5")~5,
+                       str_detect(id, "ch6")~6,
+                       str_detect(id, "ch7")~7,
+                       str_detect(id, "ch8")~8,
+                       str_detect(id, "ch9")~9,
+                       TRUE~0),
+         ind=case_when(str_detect(id, "ch10")~179, # Assigning individuals MODIFY FOR EACH TRIAL
+                       str_detect(id, "ch1")~048,
+                       str_detect(id, "ch2")~158,
+                       str_detect(id, "ch3")~079,
+                       str_detect(id, "ch4")~145,
+                       str_detect(id, "ch5")~057,
+                       str_detect(id, "ch6")~251,
+                       str_detect(id, "ch7")~248,
+                       str_detect(id, "ch8")~314,
+                       str_detect(id, "ch9")~212,
+                       TRUE~0), 
+         stage=case_when(str_detect(id, "ch10")~"Tritonymph",#Assigning stage MODIFY FOR EACH TRIAL
+                       str_detect(id, "ch1")~"Deutonymph",
+                         str_detect(id, "ch2")~"Female",
+                       str_detect(id, "ch3")~"Female",
+                       str_detect(id, "ch4")~"Male",
+                       str_detect(id, "ch5")~"Tritonymph",
+                       str_detect(id, "ch6")~"Male",
+                       str_detect(id, "ch7")~"Male",
+                       str_detect(id, "ch8")~"Deutonymph",
+                       #str_detect(id, "ch9")~"",
+                       TRUE~"Female"),
+         weight=case_when(str_detect(id, "ch10")~0.653, # Assigning weights MODIFY FOR EACH TRIAL
+                       str_detect(id, "ch1")~0.451,
+                       str_detect(id, "ch2")~1.178,
+                       str_detect(id, "ch3")~1.781,
+                       str_detect(id, "ch4")~0.929,
+                       str_detect(id, "ch5")~0.866,
+                       str_detect(id, "ch6")~0.941,
+                       str_detect(id, "ch7")~0.864,
+                       str_detect(id, "ch8")~0.188,
+                       #str_detect(id, "ch9")~1.001,
+                       TRUE~1.582),
+         atm=round(33.864*28.64)) #MODIFY FOR EACH TRIAL: 33.864 * pressure in inHg
+
+# Getting temperature for this trial 
+temp2<-all_corr %>%
+  filter(trial==10) %>% #MODIFY FOR EACH TRIAL
+  select(c("datetime2","datetime", "tempcorr", "ramp"))
+
+#Merging phase and temperature data
+t10<- full_join(t10b, temp2, by="datetime2", suffix=c("",".temp")) #MODIFY FOR EACH TRIAL 
+  
+
+head(t10) #MODIFY FOR EACH TRIAL
+
+#Estimating Oxygen 
+f<-pi/180
+f
+
+
+ox10<-t10 %>% #MODIFY FOR EACH TRIAL
+  na.omit() %>%
+  filter(ind < 900) %>%
+  mutate(phase=as.numeric(phase),
+         ind=as.factor(ind),
+         logtime=as.numeric(logtime),
+         phaseangle=62.14-0.08915*tempcorr,
+         sternvolmer=0.04899+4.965*10^(-4)*tempcorr,
+         bunsen=(48.998-1.335*tempcorr+2.755*10^(-2)*tempcorr^2-3.22*10^(-4)*tempcorr^3+1.598*10^(-6)*tempcorr^4)*10^(-3),
+         tempK=tempcorr+273,
+         watervapor=exp(52.57-(6690.9/tempK)-4.681*log(tempK)),
+         oxysat=(tan((pi/180)*phaseangle)-tan((pi/180)*phase))/tan((pi/180)*phase)*sternvolmer,
+         oxymgl=(atm-watervapor)/1013*oxysat*0.2095*bunsen*1000*(32/22.414)*10)
+
+head(ox10) #MODIFY FOR EACH TRIAL
+
+ggplot(ox10, aes(x=logtime, y=oxymgl,group=ind, color=stage))+ #MODIFY FOR EACH TRIAL
+  geom_line()+
+  theme_classic()+
+  theme(text = element_text(size = 15))+
+  ylim(8,12) +
+  facet_wrap(~ind)+
+  xlab("Time logged (min)")+
+  ylab("Oxygen (mg/L")
+
+```
+
+### Trial 11
+```{r}
+# creating vector for columns names
+cnames<-c("date", "time", "logtime", "oxygen", "phase", "amplitude", "temperature")
+
+# creating vector for path
+path<-"Data/Oxygen/Trial 11/" #MODIFY FOR EEACH TRIAL
+
+# Creating list of file names
+list <- list.files(path = path, pattern=".*txt") # creates the list of all the txt files in the directory
+
+# Renaming files to remove the "-"
+newname <- sub('-','', list) ## new name
+file.rename(file.path(path,list), file.path(path, newname)) ## renaming it.
+
+# Creating list of file names again
+list <- list.files(path = path, pattern=".*txt") # creates the list of all the txt files in the directory
+
+#Reading all files at once
+for (i in list) {
+  filename <- paste0( "frame",sub(pattern = "(.*)\\..*$", replacement = "\\1", basename(i)))
+  wd <- paste0(path, i)
+  assign(filename, read.delim2(wd,sep=";", skip=38, header=F, col.names=cnames)) #CHECK FOR EACH TRIALS IF THE SAME NUMBRE OF ROWS APPLIES
+
+}
+
+
+# Merging all into a single table
+pattern<-grep("framepstrial11",names(.GlobalEnv),value=TRUE) #MODIFY FOR EACH TRIAL
+list2<-do.call("list",mget(pattern))
+
+t11a<-bind_rows(list2, .id="id") #MODIFY FOR EACH TRIAL
+
+
+# Adding and modifying data to phase files 
+t11b<-t11a %>% #MODIFY FOR EACH TRIAL
+  select(c("id", "date", "time", "logtime", "phase")) %>%
+  mutate(trial=11,#MODIFY FOR EACH TRIAL
+         date=mdy(date), #formatting date
+         datetime=paste0(date," ", time), #copying date and time together
+         datetime=as_datetime(datetime, format="%Y-%m-%d %I:%M:%S %p")-minutes(9), #adjusting pc time to real time
+         datetime2=round_date(datetime, unit="minute"),
+         channel=case_when(str_detect(id, "ch10")~10, # Assigning channels 
+                       str_detect(id, "ch1")~1,
+                       str_detect(id, "ch2")~2,
+                       str_detect(id, "ch3")~3,
+                       str_detect(id, "ch4")~4,
+                       str_detect(id, "ch5")~5,
+                       str_detect(id, "ch6")~6,
+                       str_detect(id, "ch7")~7,
+                       str_detect(id, "ch8")~8,
+                       str_detect(id, "ch9")~9,
+                       TRUE~0),
+         ind=case_when(str_detect(id, "ch10")~141, # Assigning individuals MODIFY FOR EACH TRIAL
+                       str_detect(id, "ch1")~272,
+                       str_detect(id, "ch2")~305,
+                       str_detect(id, "ch3")~326,
+                       str_detect(id, "ch4")~224,
+                       str_detect(id, "ch5")~173,
+                       str_detect(id, "ch6")~214,
+                       str_detect(id, "ch7")~082,
+                       str_detect(id, "ch8")~113,
+                       str_detect(id, "ch9")~329,
+                       TRUE~0), 
+         stage=case_when(str_detect(id, "ch10")~"Female",#Assigning stage MODIFY FOR EACH TRIAL
+                       str_detect(id, "ch1")~"Tritonymph",
+                         str_detect(id, "ch2")~"Deutonymph",
+                       str_detect(id, "ch3")~"Deutonymph",
+                       str_detect(id, "ch4")~"Female",
+                       str_detect(id, "ch5")~"Tritonymph",
+                       str_detect(id, "ch6")~"Deutonymph",
+                       str_detect(id, "ch7")~"Male",
+                       str_detect(id, "ch8")~"Male",
+                       #str_detect(id, "ch9")~"",
+                       TRUE~"Tritonymph"),
+         weight=case_when(str_detect(id, "ch10")~1.853, # Assigning weights MODIFY FOR EACH TRIAL
+                       str_detect(id, "ch1")~0.675,
+                       str_detect(id, "ch2")~0.312,
+                       str_detect(id, "ch3")~0.283,
+                       str_detect(id, "ch4")~1.785,
+                       str_detect(id, "ch5")~0.566,
+                       str_detect(id, "ch6")~0.184,
+                       str_detect(id, "ch7")~1.095,
+                       str_detect(id, "ch8")~1.046,
+                       #str_detect(id, "ch9")~1.001,
+                       TRUE~0.591),
+         atm=round(33.864*28.55)) #MODIFY FOR EACH TRIAL: 33.864 * pressure in inHg
+
+# Getting temperature for this trial 
+temp2<-all_corr %>%
+  filter(trial==11) %>% #MODIFY FOR EACH TRIAL
+  select(c("datetime2","datetime", "tempcorr", "ramp"))
+
+#Merging phase and temperature data
+t11<- full_join(t11b, temp2, by="datetime2", suffix=c("",".temp")) #MODIFY FOR EACH TRIAL 
+  
+
+head(t11) #MODIFY FOR EACH TRIAL
+
+#Estimating Oxygen 
+f<-pi/180
+f
+
+
+ox11<-t11 %>% #MODIFY FOR EACH TRIAL
+  na.omit() %>%
+  filter(ind < 900) %>%
+  mutate(phase=as.numeric(phase),
+         ind=as.factor(ind),
+         logtime=as.numeric(logtime),
+         phaseangle=62.14-0.08915*tempcorr,
+         sternvolmer=0.04899+4.965*10^(-4)*tempcorr,
+         bunsen=(48.998-1.335*tempcorr+2.755*10^(-2)*tempcorr^2-3.22*10^(-4)*tempcorr^3+1.598*10^(-6)*tempcorr^4)*10^(-3),
+         tempK=tempcorr+273,
+         watervapor=exp(52.57-(6690.9/tempK)-4.681*log(tempK)),
+         oxysat=(tan((pi/180)*phaseangle)-tan((pi/180)*phase))/tan((pi/180)*phase)*sternvolmer,
+         oxymgl=(atm-watervapor)/1013*oxysat*0.2095*bunsen*1000*(32/22.414)*10)
+
+head(ox11) #MODIFY FOR EACH TRIAL
+
+ggplot(ox11, aes(x=logtime, y=oxymgl,group=ind, color=stage))+ #MODIFY FOR EACH TRIAL
+  geom_line()+
+  theme_classic()+
+  theme(text = element_text(size = 15))+
+  ylim(8,12) +
+  facet_wrap(~ind)+
+  xlab("Time logged (min)")+
+  ylab("Oxygen (mg/L")
+
+```
+
+### Trial 12
+```{r}
+# creating vector for columns names
+cnames<-c("date", "time", "logtime", "oxygen", "phase", "amplitude", "temperature")
+
+# creating vector for path
+path<-"Data/Oxygen/Trial 12/" #MODIFY FOR EEACH TRIAL
+
+# Creating list of file names
+list <- list.files(path = path, pattern=".*txt") # creates the list of all the txt files in the directory
+
+# Renaming files to remove the "-"
+newname <- sub('-','', list) ## new name
+file.rename(file.path(path,list), file.path(path, newname)) ## renaming it.
+
+# Creating list of file names again
+list <- list.files(path = path, pattern=".*txt") # creates the list of all the txt files in the directory
+
+#Reading all files at once
+for (i in list) {
+  filename <- paste0( "frame",sub(pattern = "(.*)\\..*$", replacement = "\\1", basename(i)))
+  wd <- paste0(path, i)
+  assign(filename, read.delim2(wd,sep=";", skip=38, header=F, col.names=cnames)) #CHECK FOR EACH TRIALS IF THE SAME NUMBRE OF ROWS APPLIES
+
+}
+
+
+# Merging all into a single table
+pattern<-grep("framepstrial12",names(.GlobalEnv),value=TRUE) #MODIFY FOR EACH TRIAL
+list2<-do.call("list",mget(pattern))
+
+t12a<-bind_rows(list2, .id="id") #MODIFY FOR EACH TRIAL
+
+
+# Adding and modifying data to phase files 
+t12b<-t12a %>% #MODIFY FOR EACH TRIAL
+  select(c("id", "date", "time", "logtime", "phase")) %>%
+  mutate(trial=12,#MODIFY FOR EACH TRIAL
+         date=mdy(date), #formatting date
+         datetime=paste0(date," ", time), #copying date and time together
+         datetime=as_datetime(datetime, format="%Y-%m-%d %I:%M:%S %p")-minutes(9), #adjusting pc time to real time
+         datetime2=round_date(datetime, unit="minute"),
+         channel=case_when(str_detect(id, "ch10")~10, # Assigning channels 
+                       str_detect(id, "ch1")~1,
+                       str_detect(id, "ch2")~2,
+                       str_detect(id, "ch3")~3,
+                       str_detect(id, "ch4")~4,
+                       str_detect(id, "ch5")~5,
+                       str_detect(id, "ch6")~6,
+                       str_detect(id, "ch7")~7,
+                       str_detect(id, "ch8")~8,
+                       str_detect(id, "ch9")~9,
+                       TRUE~0),
+         ind=case_when(str_detect(id, "ch10")~339, # Assigning individuals MODIFY FOR EACH TRIAL
+                       str_detect(id, "ch1")~256,
+                       str_detect(id, "ch2")~341,
+                       str_detect(id, "ch3")~18,
+                       str_detect(id, "ch4")~83,
+                       str_detect(id, "ch5")~50,
+                       str_detect(id, "ch6")~201,
+                       str_detect(id, "ch7")~211,
+                       str_detect(id, "ch8")~317,
+                       str_detect(id, "ch9")~335,
+                       TRUE~0), 
+         stage=case_when(str_detect(id, "ch10")~"Deutonymph",#Assigning stage MODIFY FOR EACH TRIAL
+                       str_detect(id, "ch1")~"Female",
+                         str_detect(id, "ch2")~"Tritonymph",
+                       str_detect(id, "ch3")~"Male",
+                       str_detect(id, "ch4")~"Male",
+                       str_detect(id, "ch5")~"Male",
+                       str_detect(id, "ch6")~"Female",
+                       str_detect(id, "ch7")~"Female",
+                       str_detect(id, "ch8")~"Tritonymph",
+                       #str_detect(id, "ch9")~"",
+                       TRUE~"Deutonymph"),
+         weight=case_when(str_detect(id, "ch10")~0.314, # Assigning weights MODIFY FOR EACH TRIAL
+                       str_detect(id, "ch1")~1.450,
+                       str_detect(id, "ch2")~0.790,
+                       str_detect(id, "ch3")~1.23,
+                       str_detect(id, "ch4")~1.015,
+                       str_detect(id, "ch5")~1.229,
+                       str_detect(id, "ch6")~1.49,
+                       str_detect(id, "ch7")~1.500,
+                       str_detect(id, "ch8")~0.905,
+                       #str_detect(id, "ch9")~1.001,
+                       TRUE~0.268),
+         atm=round(33.864*28.58)) #MODIFY FOR EACH TRIAL: 33.864 * pressure in inHg
+
+# Getting temperature for this trial 
+temp2<-all_corr %>%
+  filter(trial==12) %>% #MODIFY FOR EACH TRIAL
+  select(c("datetime2","datetime", "tempcorr", "ramp"))
+
+#Merging phase and temperature data
+t12<- full_join(t12b, temp2, by="datetime2", suffix=c("",".temp")) #MODIFY FOR EACH TRIAL 
+  
+
+head(t12) #MODIFY FOR EACH TRIAL
+
+#Estimating Oxygen 
+f<-pi/180
+f
+
+
+ox12<-t12 %>% #MODIFY FOR EACH TRIAL
+  na.omit() %>%
+  filter(ind < 900) %>%
+  mutate(phase=as.numeric(phase),
+         ind=as.factor(ind),
+         logtime=as.numeric(logtime),
+         phaseangle=62.14-0.08915*tempcorr,
+         sternvolmer=0.04899+4.965*10^(-4)*tempcorr,
+         bunsen=(48.998-1.335*tempcorr+2.755*10^(-2)*tempcorr^2-3.22*10^(-4)*tempcorr^3+1.598*10^(-6)*tempcorr^4)*10^(-3),
+         tempK=tempcorr+273,
+         watervapor=exp(52.57-(6690.9/tempK)-4.681*log(tempK)),
+         oxysat=(tan((pi/180)*phaseangle)-tan((pi/180)*phase))/tan((pi/180)*phase)*sternvolmer,
+         oxymgl=(atm-watervapor)/1013*oxysat*0.2095*bunsen*1000*(32/22.414)*10)
+
+head(ox12) #MODIFY FOR EACH TRIAL
+
+ggplot(ox12, aes(x=logtime, y=oxymgl,group=ind, color=stage))+ #MODIFY FOR EACH TRIAL
+  geom_line()+
+  theme_classic()+
+  theme(text = element_text(size = 15))+
+  ylim(8,12) +
+  facet_wrap(~ind)+
+  xlab("Time logged (min)")+
+  ylab("Oxygen (mg/L")
+
+```
+
+### Trial 13
+```{r}
+# creating vector for columns names
+cnames<-c("date", "time", "logtime", "oxygen", "phase", "amplitude", "temperature")
+
+# creating vector for path
+path<-"Data/Oxygen/Trial 13/" #MODIFY FOR EEACH TRIAL
+
+# Creating list of file names
+list <- list.files(path = path, pattern=".*txt") # creates the list of all the txt files in the directory
+
+# Renaming files to remove the "-"
+newname <- sub('-','', list) ## new name
+file.rename(file.path(path,list), file.path(path, newname)) ## renaming it.
+
+# Creating list of file names again
+list <- list.files(path = path, pattern=".*txt") # creates the list of all the txt files in the directory
+
+#Reading all files at once
+for (i in list) {
+  filename <- paste0( "frame",sub(pattern = "(.*)\\..*$", replacement = "\\1", basename(i)))
+  wd <- paste0(path, i)
+  assign(filename, read.delim2(wd,sep=";", skip=38, header=F, col.names=cnames)) #CHECK FOR EACH TRIALS IF THE SAME NUMBRE OF ROWS APPLIES
+
+}
+
+
+# Merging all into a single table
+pattern<-grep("framepstrial13",names(.GlobalEnv),value=TRUE) #MODIFY FOR EACH TRIAL
+list2<-do.call("list",mget(pattern))
+
+t13a<-bind_rows(list2, .id="id") #MODIFY FOR EACH TRIAL
+
+
+# Adding and modifying data to phase files 
+t13b<-t13a %>% #MODIFY FOR EACH TRIAL
+  select(c("id", "date", "time", "logtime", "phase")) %>%
+  mutate(trial=13,#MODIFY FOR EACH TRIAL
+         date=mdy(date), #formatting date
+         datetime=paste0(date," ", time), #copying date and time together
+         datetime=as_datetime(datetime, format="%Y-%m-%d %I:%M:%S %p")-minutes(9), #adjusting pc time to real time
+         datetime2=round_date(datetime, unit="minute"),
+         channel=case_when(str_detect(id, "ch10")~10, # Assigning channels 
+                       str_detect(id, "ch1")~1,
+                       str_detect(id, "ch2")~2,
+                       str_detect(id, "ch3")~3,
+                       str_detect(id, "ch4")~4,
+                       str_detect(id, "ch5")~5,
+                       str_detect(id, "ch6")~6,
+                       str_detect(id, "ch7")~7,
+                       str_detect(id, "ch8")~8,
+                       str_detect(id, "ch9")~9,
+                       TRUE~0),
+         ind=case_when(str_detect(id, "ch10")~1000, # Assigning individuals MODIFY FOR EACH TRIAL
+                       str_detect(id, "ch1")~296,
+                       str_detect(id, "ch2")~263,
+                       str_detect(id, "ch3")~156,
+                       str_detect(id, "ch4")~073,
+                       str_detect(id, "ch5")~171,
+                       str_detect(id, "ch6")~002,
+                       str_detect(id, "ch7")~247,
+                       str_detect(id, "ch8")~233,
+                       str_detect(id, "ch9")~028,
+                       TRUE~0), 
+         stage=case_when(str_detect(id, "ch10")~"NA",#Assigning stage MODIFY FOR EACH TRIAL
+                       str_detect(id, "ch1")~"Deutonymph",
+                         str_detect(id, "ch2")~"Tritonymph",
+                       str_detect(id, "ch3")~"Male",
+                       str_detect(id, "ch4")~"Male",
+                       str_detect(id, "ch5")~"Deutonymph",
+                       str_detect(id, "ch6")~"Tritonymph",
+                       str_detect(id, "ch7")~"Female",
+                       str_detect(id, "ch8")~"Female",
+                       #str_detect(id, "ch9")~"",
+                       TRUE~"Tritonymph"),
+         weight=case_when(str_detect(id, "ch10")~1000, # Assigning weights MODIFY FOR EACH TRIAL
+                       str_detect(id, "ch1")~0.272,
+                       str_detect(id, "ch2")~0.764,
+                       str_detect(id, "ch3")~0.656,
+                       str_detect(id, "ch4")~1.18,
+                       str_detect(id, "ch5")~0.361,
+                       str_detect(id, "ch6")~0.767,
+                       str_detect(id, "ch7")~1.256,
+                       str_detect(id, "ch8")~1.693,
+                       #str_detect(id, "ch9")~1.001,
+                       TRUE~0.866),
+         atm=round(33.864*28.55)) #MODIFY FOR EACH TRIAL: 33.864 * pressure in inHg
+
+# Getting temperature for this trial 
+temp2<-all_corr %>%
+  filter(trial==13) %>% #MODIFY FOR EACH TRIAL
+  select(c("datetime2","datetime", "tempcorr", "ramp"))
+
+#Merging phase and temperature data
+t13<- full_join(t13b, temp2, by="datetime2", suffix=c("",".temp")) #MODIFY FOR EACH TRIAL 
+  
+
+head(t13) #MODIFY FOR EACH TRIAL
+
+#Estimating Oxygen 
+f<-pi/180
+f
+
+
+ox13<-t13 %>% #MODIFY FOR EACH TRIAL
+  na.omit() %>%
+  filter(ind < 900) %>%
+  mutate(phase=as.numeric(phase),
+         ind=as.factor(ind),
+         logtime=as.numeric(logtime),
+         phaseangle=62.14-0.08915*tempcorr,
+         sternvolmer=0.04899+4.965*10^(-4)*tempcorr,
+         bunsen=(48.998-1.335*tempcorr+2.755*10^(-2)*tempcorr^2-3.22*10^(-4)*tempcorr^3+1.598*10^(-6)*tempcorr^4)*10^(-3),
+         tempK=tempcorr+273,
+         watervapor=exp(52.57-(6690.9/tempK)-4.681*log(tempK)),
+         oxysat=(tan((pi/180)*phaseangle)-tan((pi/180)*phase))/tan((pi/180)*phase)*sternvolmer,
+         oxymgl=(atm-watervapor)/1013*oxysat*0.2095*bunsen*1000*(32/22.414)*10)
+
+head(ox13) #MODIFY FOR EACH TRIAL
+
+ggplot(ox13, aes(x=logtime, y=oxymgl,group=ind, color=stage))+ #MODIFY FOR EACH TRIAL
+  geom_line()+
+  theme_classic()+
+  theme(text = element_text(size = 15))+
+  ylim(8,12) +
+  facet_wrap(~ind)+
+  xlab("Time logged (min)")+
+  ylab("Oxygen (mg/L")
+
+```
+
+Go back to each trial and annotate the best beginning and end of trial, and change it in the temperature data, then re-run this analysis again, to only get the curves that actual pertain to the trial (i.e. get it from the start and also remove the tail when it warms up again at the end)
+
+
+
+# Merging trials into a single dataframe FALTA
+
+```{r, eval=F}
+oxall<-bind_rows(ox2,ox3,ox4,ox5,ox6,ox7,ox8,ox9,ox10,ox11,ox12,ox13) #%>%
+#filter(!ind%in%c("22","83", "131", "136", "159", "168", "267", "270")) # Cambiar por individuos ahogados
+  
+#FALTA REMOVER INDIVIDUOS AHOGADOS
+
+write.csv(oxall,"Outputs/oxygenall_aftercodedeletion.csv")
+
+```
+
+# Trying which function to use
+```{r}
+
+# Filtering for a single individuals to just see the fit
+func<-ox7%>%
+  filter(ind==232) %>%
+  group_by(logtime) %>%
+  filter(duplicated(logtime|n()==2))
+
+#Trying different curves
+fit2<-lm(oxymgl~poly(logtime, 2, raw=TRUE), data=func)
+fit3<-lm(oxymgl~poly(logtime, 3, raw=TRUE), data=func)
+fit4<-lm(oxymgl~poly(logtime, 4, raw=TRUE), data=func)
+fit5<-lm(oxymgl~poly(logtime, 5, raw=TRUE), data=func)
+fit6<-lm(oxymgl~poly(logtime, 6, raw=TRUE), data=func)
+fit7<-lm(oxymgl~poly(logtime, 7, raw=TRUE), data=func)
+fit8<-lm(oxymgl~poly(logtime, 8, raw=TRUE), data=func)
+fit9<-lm(oxymgl~poly(logtime, 9, raw=TRUE), data=func)
+fit10<-lm(oxymgl~poly(logtime, 10, raw=TRUE), data=func)
+
+# CReating a dataframe to build the prediction
+logtime <- seq(1, 125, length=125)  
+
+# Plotting each predicted function line to the real data
+plot(func$logtime, func$oxymgl, pch=19, xlab='Logtime', ylab='Oxygen(mg/l)')
+lines(logtime, predict(fit7, data.frame(x=logtime)), col='grey')
+lines(logtime, predict(fit2, data.frame(x=logtime)), col='red')
+lines(logtime, predict(fit3, data.frame(x=logtime)), col='purple')
+lines(logtime, predict(fit4, data.frame(x=logtime)), col='blue')
+lines(logtime, predict(fit5, data.frame(x=logtime)), col='orange')
+lines(logtime, predict(fit6, data.frame(x=logtime)), col='green')
+lines(logtime, predict(fit7, data.frame(x=logtime)), col='grey')
+lines(logtime, predict(fit8, data.frame(x=logtime)), col='yellow')
+lines(logtime, predict(fit9, data.frame(x=logtime)), col='red')
+lines(logtime, predict(fit10, data.frame(x=logtime)), col='grey')
+
+#calculated adjusted R-squared of each model
+
+# The adjusted r squared is the percent of the variance of Y intact after subtracting the error of the model. The more the R Squared value the better the model is for that data frame.
+summary(fit2)$adj.r.squared
+summary(fit3)$adj.r.squared
+summary(fit4)$adj.r.squared
+summary(fit5)$adj.r.squared
+summary(fit6)$adj.r.squared
+summary(fit7)$adj.r.squared
+summary(fit8)$adj.r.squared
+summary(fit9)$adj.r.squared
+summary(fit10)$adj.r.squared
+
+coef7<-as.data.frame(fit7$coefficients)
+a0<-coef7[1,1]
+a1<-coef7[2,1]
+a2<-coef7[3,1]
+a3<-coef7[4,1]
+a4<-coef7[5,1]
+a5<-coef7[6,1]
+a6<-coef7[7,1]
+a7<-coef7[8,1] #cambiar a A
+x<-func$logtime
+form7<-expression((a7*x^7)+(a6*x^6)+(a5*x^5)+(a4*x^4)+(a3*x^3)+(a2*x^2)+(a1*x^1)+(a0*x^0))
+d7<-D(form7, "x") 
+d7b<-D(d7, "x")
+
+ggplot(aes(x=logtime, y=oxymgl), data=func)+geom_point()
+plot(x, func$oxymgl, pch=19, xlab='Logtime', ylab='Oxygen(mg/l)')
+lines(logtime, predict(fit7, data.frame(x=logtime)), col='red')
+
+#Primera derivada: tasa con la que consume oxigeno
+d7b.data<-as.data.frame(eval(d7, envir=as.data.frame(x)))
+colnames(d7b.data)<-"y1"
+d7b.data$logtime<-func$logtime
+ggplot(aes(x=logtime, y=y1), data=d7b.data)+geom_point()
+
+
+#Segunda derivada: cruce con y=0 son los punto de cambio, puntos de inflexion donde la pendiente cambia hacia arriva o hacia abajo
+d7b.data<-as.data.frame(eval(d7b, envir=as.data.frame(x)))
+colnames(d7b.data)<-"y1"
+d7b.data$logtime<-func$logtime
+ggplot(aes(x=logtime, y=y1), data=d7b.data)+geom_point()+scale_x_continuous(breaks=c(0,10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120))
+
+# Finding the values at which the second derivative=0
+f=function(x) eval(d7b)
+uniroot(f, c(0,125))
+
+inflection<-polyroot(c((a2 *2), (a3 *3 * 2 ),(a4* 4 * 3 ), (a5 *5 * 4) , (a6 * 6 * 5 ), (a7 * 7 * 6 )))
+inflec<-as.data.frame(inflection)
+
+
+```
+
+# Trying which function to use on a different individual
+```{r}
+
+# Filtering for a single individuals to just see the fit
+func<-ox3%>%
+  filter(ind=="87")# %>%
+  #group_by(logtime) %>%
+  #filter(duplicated(logtime|n()==2))
+
+#Trying different curves
+fit2<-lm(oxymgl~poly(logtime, 2, raw=TRUE), data=func)
+fit3<-lm(oxymgl~poly(logtime, 3, raw=TRUE), data=func)
+fit4<-lm(oxymgl~poly(logtime, 4, raw=TRUE), data=func)
+fit5<-lm(oxymgl~poly(logtime, 5, raw=TRUE), data=func)
+fit6<-lm(oxymgl~poly(logtime, 6, raw=TRUE), data=func)
+fit7<-lm(oxymgl~poly(logtime, 7, raw=TRUE), data=func)
+fit8<-lm(oxymgl~poly(logtime, 8, raw=TRUE), data=func)
+fit9<-lm(oxymgl~poly(logtime, 9, raw=TRUE), data=func)
+fit10<-lm(oxymgl~poly(logtime, 10, raw=TRUE), data=func)
+
+# CReating a dataframe to build the prediction
+logtime <- seq(1, 125, length=125)  
+
+# Plotting each predicted function line to the real data
+plot(func$logtime, func$oxymgl, pch=19, xlab='Logtime', ylab='Oxygen(mg/l)')
+lines(logtime, predict(fit7, data.frame(x=logtime)), col='grey')
+lines(logtime, predict(fit2, data.frame(x=logtime)), col='red')
+lines(logtime, predict(fit3, data.frame(x=logtime)), col='purple')
+lines(logtime, predict(fit4, data.frame(x=logtime)), col='blue')
+lines(logtime, predict(fit5, data.frame(x=logtime)), col='orange')
+lines(logtime, predict(fit6, data.frame(x=logtime)), col='green')
+lines(logtime, predict(fit7, data.frame(x=logtime)), col='grey')
+lines(logtime, predict(fit8, data.frame(x=logtime)), col='yellow')
+lines(logtime, predict(fit9, data.frame(x=logtime)), col='red')
+lines(logtime, predict(fit10, data.frame(x=logtime)), col='grey')
+
+#calculated adjusted R-squared of each model
+
+# The adjusted r squared is the percent of the variance of Y intact after subtracting the error of the model. The more the R Squared value the better the model is for that data frame.
+summary(fit2)$adj.r.squared
+summary(fit3)$adj.r.squared
+summary(fit4)$adj.r.squared
+summary(fit5)$adj.r.squared
+summary(fit6)$adj.r.squared
+summary(fit7)$adj.r.squared
+summary(fit8)$adj.r.squared
+summary(fit9)$adj.r.squared
+summary(fit10)$adj.r.squared
+
+coef7<-as.data.frame(fit7$coefficients)
+a0<-coef7[1,1]
+a1<-coef7[2,1]
+a2<-coef7[3,1]
+a3<-coef7[4,1]
+a4<-coef7[5,1]
+a5<-coef7[6,1]
+a6<-coef7[7,1]
+a7<-coef7[8,1] #cambiar a A
+x<-func$logtime
+form7<-expression((a7*x^7)+(a6*x^6)+(a5*x^5)+(a4*x^4)+(a3*x^3)+(a2*x^2)+(a1*x^1)+(a0*x^0))
+d7<-D(form7, "x") 
+d7b<-D(d7, "x")
+
+ggplot(aes(x=logtime, y=oxymgl), data=func)+geom_point()
+plot(x, func$oxymgl, pch=19, xlab='Logtime', ylab='Oxygen(mg/l)')
+lines(logtime, predict(fit7, data.frame(x=logtime)), col='red')
+
+#Primera derivada: tasa con la que consume oxigeno
+d7b.data<-as.data.frame(eval(d7, envir=as.data.frame(x)))
+colnames(d7b.data)<-"y1"
+d7b.data$logtime<-func$logtime
+ggplot(aes(x=logtime, y=y1), data=d7b.data)+geom_point()
+
+
+#Segunda derivada: cruce con y=0 son los punto de cambio, puntos de inflexion donde la pendiente cambia hacia arriba o hacia abajo
+d7b.data<-as.data.frame(eval(d7b, envir=as.data.frame(x)))
+colnames(d7b.data)<-"y1"
+d7b.data$logtime<-func$logtime
+ggplot(aes(x=logtime, y=y1), data=d7b.data)+geom_point()+scale_x_continuous(breaks=c(0,10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120))
+
+# Finding the values at which the second derivative=0
+#f=function(x) eval(d7b)
+#uniroot(f, c(0,125))
+
+inflection<-polyroot(c((a2 *2), (a3 *3 * 2 ),(a4* 4 * 3 ), (a5 *5 * 4) , (a6 * 6 * 5 ), (a7 * 7 * 6 )))
+inflection
+inflec<-as.data.frame(inflection)
+#inflec$inflection<-as.numeric*inflec$inflection
+
+```
+
+
+# Calling the csv file to avoid running the whole code
+```{r}
+#Calling csv file to avoid running the whole code
+oxall<-read.csv("../Outputs/oxygenall.csv")
+oxall<-read.csv("./Outputs/oxygenall_aftercodedeletion.csv")
+```
+
+# Cutting out traces with weird patterns
+
+## Individual 22
+```{r}
+ind22<-oxall %>%
+filter(ind=="22")
+ggplot(aes(x=logtime, y=oxymgl), data=ind22)+geom_point() +theme_classic() + theme(text=element_text(size=15))+scale_x_continuous(breaks = seq(0, 120, by = 5))
+ind22<-ind22 %>%
+filter(!between(logtime, 75, 85))
+ggplot(aes(x=logtime, y=oxymgl), data=ind22)+geom_point() +theme_classic() + theme(text=element_text(size=15))+scale_x_continuous(breaks = seq(0, 120, by = 5))
+```
+
+## Individual 83
+```{r}
+ind83<-oxall %>%
+filter(ind=="83")
+ggplot(aes(x=logtime, y=oxymgl), data=ind83)+geom_point() +theme_classic() + theme(text=element_text(size=15))+scale_x_continuous(breaks = seq(0, 120, by = 5))
+ind83<-ind83 %>%
+filter(!between(logtime, 70, 80))
+ggplot(aes(x=logtime, y=oxymgl), data=ind83)+geom_point() +theme_classic() + theme(text=element_text(size=15))+scale_x_continuous(breaks = seq(0, 120, by = 5))
+```
+
+## Individual 131
+```{r}
+ind131<-oxall %>%
+filter(ind=="131")
+ggplot(aes(x=logtime, y=oxymgl), data=ind131)+geom_point() +theme_classic() + theme(text=element_text(size=15))+scale_x_continuous(breaks = seq(0, 120, by = 5))
+ind131<-ind131 %>%
+filter(!between(logtime, 72, 82))
+ggplot(aes(x=logtime, y=oxymgl), data=ind131)+geom_point() +theme_classic() + theme(text=element_text(size=15))+scale_x_continuous(breaks = seq(0, 120, by = 5))
+```
+
+## Individual 136
+```{r}
+ind136<-oxall %>%
+filter(ind=="136")
+ggplot(aes(x=logtime, y=oxymgl), data=ind136)+geom_point() +theme_classic() + theme(text=element_text(size=15))+scale_x_continuous(breaks = seq(0, 120, by = 5))
+ind136<-ind136 %>%
+filter(!between(logtime, 72, 82))
+ggplot(aes(x=logtime, y=oxymgl), data=ind136)+geom_point() +theme_classic() + theme(text=element_text(size=15))+scale_x_continuous(breaks = seq(0, 120, by = 5))
+```
+
+## Individual 159
+```{r}
+ind159<-oxall %>%
+filter(ind=="159")
+ggplot(aes(x=logtime, y=oxymgl), data=ind159)+geom_point() +theme_classic() + theme(text=element_text(size=15))+scale_x_continuous(breaks = seq(0, 120, by = 5))
+ind159<-ind159 %>%
+filter(!between(logtime, 65, 75))
+ggplot(aes(x=logtime, y=oxymgl), data=ind159)+geom_point() +theme_classic() + theme(text=element_text(size=15))+scale_x_continuous(breaks = seq(0, 120, by = 5))
+```
+
+## Individual 168
+```{r}
+ind168<-oxall %>%
+filter(ind=="168")
+ggplot(aes(x=logtime, y=oxymgl), data=ind168)+geom_point() +theme_classic() + theme(text=element_text(size=15))+scale_x_continuous(breaks = seq(0, 120, by = 5))
+ind168<-ind168 %>%
+filter(!between(logtime, 75 ,90))
+ggplot(aes(x=logtime, y=oxymgl), data=ind168)+geom_point() +theme_classic() + theme(text=element_text(size=15))+scale_x_continuous(breaks = seq(0, 120, by = 5))
+```
+
+## Individual 267
+```{r}
+ind267<-oxall %>%
+filter(ind=="267")
+ggplot(aes(x=logtime, y=oxymgl), data=ind267)+geom_point() +theme_classic() + theme(text=element_text(size=15))+scale_x_continuous(breaks = seq(0, 120, by = 5))
+ind267<-ind267 %>%
+filter(!between(logtime, 80, 90))
+ggplot(aes(x=logtime, y=oxymgl), data=ind267)+geom_point() +theme_classic() + theme(text=element_text(size=15))+scale_x_continuous(breaks = seq(0, 120, by = 5))
+```
+
+## Individual 270
+```{r}
+ind270<-oxall %>%
+filter(ind=="270")
+ggplot(aes(x=logtime, y=oxymgl), data=ind270)+geom_point() +theme_classic() + theme(text=element_text(size=15))+scale_x_continuous(breaks = seq(0, 120, by = 5))
+ind270<-ind270 %>%
+filter(!between(logtime, 70, 80))
+ggplot(aes(x=logtime, y=oxymgl), data=ind270)+geom_point() +theme_classic() + theme(text=element_text(size=15))+scale_x_continuous(breaks = seq(0, 120, by = 5))
+```
+
+## Creating new dataset with trimmed individuals
+```{r}
+oxall<-oxall%>%
+filter(!ind%in%c("22","83", "131", "136", "159", "168", "267", "270")) %>%
+bind_rows(ind22, ind83, ind131, ind136, ind159, ind168, ind267, ind270) %>% 
+  filter_all(all_vars(!is.infinite(.)))
+levels(as.factor(oxall$ind))
+
+```
+
+
+
+
+
+# Creating a loop to get data for all individuals 
+
+Steps needed:
+  1. Fit the polynomial function to each individual
+  2. See the r.adjusted for each individual
+  3. Extract the coefficient of the function for each individual
+  4. Get the first and second derivatives
+  5. Get the inflection points
+  6. Clean the inflection points 
+  7. Check the inflection points with the data
+  8. Merge the inflection points with the data set (get at least ID, stage)
+  9. Do statistical comparison
+  
+
+## 1. Adjusting a polynomial function to each individual
+
+```{r}
+# Creating separate lists, one for each individual
+dat_list<-split(oxall, oxall$ind)
+
+
+# Creating function for fitting model
+# Creating function for fitting model
+r2 = function(data) {
+fit = lm(oxymgl~poly(logtime, 10, raw=TRUE), data = data)
+output<-broom::glance(fit) #Getting adjusted r
+suma<-broom::tidy(summary(fit)) #Getting parameters for model
+merge(output, suma, all=TRUE)
+}
+a<-map_dfr(dat_list, r2, .id = "id") #Provides dataframe with adjusted R
+write.csv(a,"./Outputs/modelfitting.csv")
+
+```
+
+## 2. Plotting the function to the data of each individual
+
+```{r}
+# Creating plots to see the fit
+r3 = function(data) {
+     fit = lm(oxymgl~poly(logtime, 10, raw=TRUE), data = data)
+     id<-data[1,10]
+     
+     mypath <- file.path("Outputs/Function fit/",paste("Individual_", id, ".jpg", sep = ""))
+
+
+      jpeg(file = mypath, width=20, height=12, units="cm", res=300)
+
+        plot(data$logtime, data$oxymgl, pch=19, xlab='Logtime', ylab='Oxygen(mg/l)', main=paste("Function fit: Ind", id), cex.lab=1.5, cex.axis=1.25)
+lines(data$logtime, predict(fit, data.frame(logtime=data$logtime)), col='red',lwd=2)
+dev.off()
+     }
+
+map_dfr(dat_list, r3, .id = "id")
+```
+
+
+## 3. Getting the first and second derivative for each individual
+
+```{r}
+# Getting the derivatives for each individual
+#a2<-split(a, a$id)
+r4=function(data){
+fit = lm(oxymgl~poly(logtime, 10, raw=TRUE), data = data)
+coef7<-as.data.frame(fit$coefficients)
+a0<-coef7[1,1]
+a1<-coef7[2,1]
+a2<-coef7[3,1]
+a3<-coef7[4,1]
+a4<-coef7[5,1]
+a5<-coef7[6,1]
+a6<-coef7[7,1]
+a7<-coef7[8,1]
+a8<-coef7[9,1]
+a9<-coef7[10,1]
+a10<-coef7[11,1]
+#x<-ox3$logtime #Values from raw data
+x <- seq(0, 125, by=0.20)
+form7<-expression((a10*x^10)+(a9*x^9)+(a8*x^8)+(a7*x^7)+(a6*x^6)+(a5*x^5)+(a4*x^4)+(a3*x^3)+(a2*x^2)+(a1*x^1)+(a0*x^0))
+d7<-D(form7, "x")
+d7f.data<-as.data.frame(eval(d7, envir=as.data.frame(x)))
+colnames(d7f.data)<-"y1"
+d7f.data$logtime<-x
+d7b<-D(d7, "x")
+d7s.data<-as.data.frame(eval(d7b, envir=as.data.frame(x)))
+colnames(d7s.data)<-"y1"
+d7s.data$logtime<-x
+deriv<-list("first"=d7f.data, "second"=d7s.data)
+}
+a3<-map_dfr(dat_list, r4, .id = "id") #Creates the list with the values of the derivatives
+
+## Saving the second derivatives into a single dataframe
+write.csv(a3, "./Outputs/derivatives.csv")
+
+```
+
+## 4.  Plotting the first derivative
+```{r}
+# Plotting the first derivative
+r4first=function(data){
+  fit = lm(oxymgl~poly(logtime, 10, raw=TRUE), data = data)
+coef7<-as.data.frame(fit$coefficients)
+a0<-coef7[1,1]
+a1<-coef7[2,1]
+a2<-coef7[3,1]
+a3<-coef7[4,1]
+a4<-coef7[5,1]
+a5<-coef7[6,1]
+a6<-coef7[7,1]
+a7<-coef7[8,1]
+a8<-coef7[9,1]
+a9<-coef7[10,1]
+a10<-coef7[11,1]
+id<-data[1,10]
+  #x<-ox3$logtime #Values from raw data
+x <- seq(0, 125, by=0.20) 
+ form7<-expression((a10*x^10)+(a9*x^9)+(a8*x^8)+(a7*x^7)+(a6*x^6)+(a5*x^5)+(a4*x^4)+(a3*x^3)+(a2*x^2)+(a1*x^1)+(a0*x^0))
+d7<-D(form7, "x") 
+d7f.data<-as.data.frame(eval(d7, envir=as.data.frame(x)))
+colnames(d7f.data)<-"y1"
+d7f.data$logtime<-x
+
+mypath <- file.path("Outputs/First derivative plots/",paste("Individual_", id, ".jpg", sep = ""))
+
+
+ jpeg(file = mypath, width=20, height=12, units="cm", res=300)
+
+
+
+plot(d7f.data$logtime, d7f.data$y1*-1, pch=19, xlab='Logtime', ylab='Oxygen(mg/l)', main=paste("First derivative: Ind ", id), cex.lab=1.5, cex.axis=1.25, ylim=c(-0.04,0.04))
+dev.off()
+}
+
+map(dat_list, r4first)
+```
+
+## 5. Plotting the second derivative
+
+```{r}
+# Plotting the second derivative
+r4second=function(data){
+   fit = lm(oxymgl~poly(logtime, 10, raw=TRUE), data = data)
+coef7<-as.data.frame(fit$coefficients)
+a0<-coef7[1,1]
+a1<-coef7[2,1]
+a2<-coef7[3,1]
+a3<-coef7[4,1]
+a4<-coef7[5,1]
+a5<-coef7[6,1]
+a6<-coef7[7,1]
+a7<-coef7[8,1]
+a8<-coef7[9,1]
+a9<-coef7[10,1]
+a10<-coef7[11,1]
+id<-data[1,10]
+  #x<-ox3$logtime #Values from raw data
+  x <- seq(0, 125, by=0.20) 
+   form7<-expression((a10*x^10)+(a9*x^9)+(a8*x^8)+(a7*x^7)+(a6*x^6)+(a5*x^5)+(a4*x^4)+(a3*x^3)+(a2*x^2)+(a1*x^1)+(a0*x^0))
+d7<-D(form7, "x") 
+d7b<-D(d7, "x")
+d7s.data<-as.data.frame(eval(d7b, envir=as.data.frame(x)))
+colnames(d7s.data)<-"y1"
+d7s.data$logtime<-x
+
+mypath <- file.path("Outputs/Second derivative plots/",paste("Individual_", id, ".jpg", sep = ""))
+
+
+ jpeg(file = mypath, width=20, height=12, units="cm", res=300)
+plot(d7s.data$logtime, d7s.data$y1, pch=19, xlab='Logtime', ylab='Oxygen(mg/l)', main=paste("Second derivative: Ind", id), cex.lab=1.5, cex.axis=1.25, ylim=c(-0.004,0.004))
+abline(h=0,col="orange", lty=2, lwd=2)
+dev.off()
+}
+
+map(dat_list, r4second)
+```
+
+## 6. Getting the inflection points
+
+```{r}
+# Getting the inflection points: the points where there was a change in the "slope"
+r5=function(data){
+  fit = lm(oxymgl~poly(logtime, 10, raw=TRUE), data = data)
+coef7<-as.data.frame(fit$coefficients)
+a0<-coef7[1,1]
+a1<-coef7[2,1]
+a2<-coef7[3,1]
+a3<-coef7[4,1]
+a4<-coef7[5,1]
+a5<-coef7[6,1]
+a6<-coef7[7,1]
+a7<-coef7[8,1]
+a8<-coef7[9,1]
+a9<-coef7[10,1]
+a10<-coef7[11,1]
+id<-data[1,11]
+#x<-ox3$logtime #Values from raw data
+x <- seq(0, 125, by=0.20)
+form7<-expression((a10*x^10)+(a9*x^9)+(a8*x^8)+(a7*x^7)+(a6*x^6)+(a5*x^5)+(a4*x^4)+(a3*x^3)+(a2*x^2)+(a1*x^1)+(a0*x^0))
+d7<-D(form7, "x")
+d7b<-D(d7, "x")
+inflection<-polyroot(c((a2 *2), (a3 *3 * 2 ),(a4* 4 * 3 ), (a5 *5 * 4) , (a6 * 6 * 5 ), (a7 * 7 * 6 ),(a8 *8*7), (a9*9*8), (a10*10*9)))
+inflec<-as.data.frame(inflection)
+inflec$id<-data[1,1]
+as.data.frame(inflec)
+}
+a4<-map_dfr(dat_list, r5, .id = "id") # List of dataframes containing the inflection points
+
+
+## Merging points into a single dataframe
+options(scipen=999) #Removing scientific notation
+inflections<-a4%>%
+bind_rows() %>%
+mutate(real=Re(inflection), #Extracting the real number from the complex expression
+values=format(real, scientific=FALSE, big.mark=","), #Coverting the real number to printed decimal expression
+rounded=round(real, digits=2), #rounding the real number
+imagine=round(Im(inflection), digits=2)) %>% #Extracting te imaginary number
+filter(between(real, 10, 115))
+write.csv(inflections, "./Outputs/inflections.csv")
+  
+
+```
+
+
+## 7.  Making combined figures for the function fit, first and second derivatives
+
+```{r}
+# AS a function
+make_grid <- function(id){
+  #Establishing paths
+  f1<-paste0("Outputs/Function fit/Individual_",id,".jpg")
+  f2<-paste0("Outputs/First derivative plots/","Individual_",id,".jpg")
+  f3<-paste0("Outputs/Second derivative plots/","Individual_",id,".jpg")
+  #Reading images
+ j1<-readJPEG(f1)
+ j2<-readJPEG(f2)
+ j3<-readJPEG(f3)
+  #Establishing path
+ mypath <- file.path("C:/Users/laus1/OneDrive - University of Nebraska-Lincoln/UNL/PhD Tesis/Methods/Thermolimit/Thermolimit data analyses/Outputs/Figure montages/", paste("Individual_", id, ".jpg", sep = ""))
+# Creating figures
+jpeg(file = mypath, width=20, height=36, units="cm", res=300)
+par(mar=c(1,1,1,1))
+layout(matrix(1:3, ncol=1,byrow=TRUE))
+ plot(NA,xlim=0:1,ylim=0:1,xaxt="n",yaxt="n")
+ rasterImage(j1,0,0,1,1)
+ plot(NA,xlim=0:1,ylim=0:1,xaxt="n",yaxt="n")
+ rasterImage(j2, 0,0,1,1)
+ plot(NA,xlim=0:1,ylim=0:1,xaxt="n",yaxt="n")
+rasterImage(j3, 0,0,1,1)
+dev.off()
+ 
+  }
+
+groups<-levels(as.factor(a$id))
+
+map(groups, make_grid)
+
+
+```
+
+## 8. Obtaining the maximum rate of oxygen consumption (Ropt)
+```{r}
+derivs<-read.csv("Outputs/derivatives.csv")
+
+
+derivs<-derivs %>%
+  mutate(first2=first.y1*-1)%>% #Converting the slopes to positive
+  filter(between(first.logtime, 30, 105)) #Triming the timeframe to the actual slope time
+  
+# Plotting to see if the conversion looks right
+derivs%>%
+  filter(id==10) %>%
+  ggplot(aes(x=first.logtime, y=first2))+geom_line()
+
+derivs%>%
+  filter(id==3) %>%
+  ggplot(aes(x=first.logtime, y=first2))+geom_line()
+
+# Getting the row with the maximum value for each individual
+ropt<-derivs %>%
+     group_by(id) %>%
+     slice(which.max(first2))%>%
+  mutate(logtime=first.logtime,
+         ind=id)
+
+
+```
+
+## 9. Getting the temperatures associated with the Ropt (Topt)
+```{r}
+
+#Merging the temperatures
+topt<-difference_left_join(ropt,oxall, by=c("ind","logtime"), max_dist=0.13) %>%
+  group_by(ind.x, logtime.x, first.y1, first2) %>%
+  summarize(tempcorr2=mean(tempcorr)) %>% #averaging the tempcorr for when multiple cells are called
+  ungroup()
+
+
+
+#getting the other demographic data
+toptfinal<-oxall %>%
+  select(c("date", "trial", "channel", "ind", "stage", "weight", "ramp")) %>%
+  group_by(ind)%>%
+  filter(row_number()==1) %>%
+  right_join(topt, by=c("ind"="ind.x")) %>%
+  rename(logtime=logtime.x,
+         tempcorr=tempcorr2,
+         ropt1=first.y1, 
+         ropt2=first2) %>%
+  ungroup()%>%
+  mutate(stage=fct_relevel(stage, levels=c("Protonymph", "Deutonymph", "Tritonymph", "Female", "Male" )))
+
+levels(toptfinal$stage)
+#Visualizing the topt and Ropt
+
+## Temperature optima
+ggplot(toptfinal, aes(x=stage, y=tempcorr))+geom_boxplot() +theme_classic() + 
+  theme(text = element_text(size = 15))+
+  xlab("Stage")+
+  ylab("Ctmax (Celsius)")
+
+ggplot(toptfinal, aes(x=stage, y=ropt2))+geom_boxplot() +theme_classic() + 
+  theme(text = element_text(size = 15))+
+  xlab("Stage")+
+  ylab("Maximum rate of oxygen consumption")
+
+
+write.csv(toptfinal, "Outputs/ToptandRopts.csv")
+```
+
+## 10. Getting the activation energy
+
+Convert temperature to Kelvin
+Cut all races t
+
+
+plot1<-ggplot(data1,aes(x=logtime, y=oxymgl)+geom_point( pch=19)+ xlab('Logtime')+ ylab('Oxygen(mg/l)')+main(paste("Individual ", id)) +theme_classic()+theme(size=18)
+lines(data$logtime, predict(fit, data.frame(logtime=data$logtime)), col='red',lwd=1.2)
+
+
+
+revisaar si el numero imaginario no tiene un valor despreciable y no esta replicado, ahi si es de cuidado
