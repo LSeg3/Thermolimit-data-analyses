@@ -2178,7 +2178,7 @@ map(groups, make_grid)
 
 ## 8. Obtaining the maximum rate of oxygen consumption (Ropt)
 ```{r}
-derivs<-read.csv("Outputs/derivatives.csv")
+derivs<-read.csv("../Outputs/derivatives.csv")
 
 
 derivs<-derivs %>%
@@ -2263,6 +2263,7 @@ For this I need to do the following to each individual:
 
 ```{r}
 # Creating dataframe of manually cropped trends first
+## Run Code chunk 36 first
 
 ## 1. Trim the first derivative from the closests left-sided minimum to the maximum value
 derivstrim<-derivs%>%
@@ -2320,29 +2321,247 @@ indiv<-derivs%>%
 derivstrim<- bind_rows(derivstrim, indiv)
 
 indiv<-derivs%>%
+  filter(id=="29") %>% #filtering to each individual
+  filter(between(first.logtime, 40, 70)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
+derivstrim<- bind_rows(derivstrim, indiv)
+
+indiv<-derivs%>%
   filter(id=="30") %>% #filtering to each individual
   filter(between(first.logtime, 40, 80)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
 derivstrim<- bind_rows(derivstrim, indiv)
 
 indiv<-derivs%>%
-  filter(id=="29") %>% #filtering to each individual
+  filter(id=="32") %>% #filtering to each individual
+  filter(between(first.logtime, 20, 70)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
+derivstrim<- bind_rows(derivstrim, indiv)
+
+indiv<-derivs%>%
+  filter(id=="35") %>% #filtering to each individual
+  filter(between(first.logtime, 50, 80)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
+derivstrim<- bind_rows(derivstrim, indiv)
+
+indiv<-derivs%>%
+  filter(id=="36") %>% #filtering to each individual
+  filter(between(first.logtime, 30, 80)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
+derivstrim<- bind_rows(derivstrim, indiv)
+
+indiv<-derivs%>%
+  filter(id=="37") %>% #filtering to each individual
+  filter(between(first.logtime, 40, 80)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
+derivstrim<- bind_rows(derivstrim, indiv)
+
+indiv<-derivs%>%
+  filter(id=="43") %>% #filtering to each individual
+  filter(between(first.logtime, 60, 100)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
+derivstrim<- bind_rows(derivstrim, indiv)
+
+indiv<-derivs%>%
+  filter(id=="48") %>% #filtering to each individual
+  filter(between(first.logtime, 50, 80)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
+derivstrim<- bind_rows(derivstrim, indiv)
+
+indiv<-derivs%>%
+  filter(id=="50") %>% #filtering to each individual
+  filter(between(first.logtime, 40, 80)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
+derivstrim<- bind_rows(derivstrim, indiv)
+
+#indiv<-derivs%>%
+#  filter(id=="51") %>% #filtering to each individual
+#  filter(between(first.logtime, 40, 80)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
+#derivstrim<- bind_rows(derivstrim, indiv)
+
+indiv<-derivs%>%
+  filter(id=="54") %>% #filtering to each individual
   filter(between(first.logtime, 40, 70)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
 derivstrim<- bind_rows(derivstrim, indiv)
 
+indiv<-derivs%>%
+  filter(id=="57") %>% #filtering to each individual
+  filter(between(first.logtime, 40, 70)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
+derivstrim<- bind_rows(derivstrim, indiv)
+
+indiv<-derivs%>%
+  filter(id=="66") %>% #filtering to each individual
+  filter(between(first.logtime, 50, 90)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
+derivstrim<- bind_rows(derivstrim, indiv)
+
+indiv<-derivs%>%
+  filter(id=="73") %>% #filtering to each individual
+  filter(between(first.logtime, 40, 80)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
+derivstrim<- bind_rows(derivstrim, indiv)
+
+indiv<-derivs%>%
+  filter(id=="79") %>% #filtering to each individual
+  filter(between(first.logtime, 40, 80)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
+derivstrim<- bind_rows(derivstrim, indiv)
+
+indiv<-derivs%>%
+  filter(id=="80") %>% #filtering to each individual
+  filter(between(first.logtime, 40, 80)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
+derivstrim<- bind_rows(derivstrim, indiv)
+
+indiv<-derivs%>%
+  filter(id=="83") %>% #filtering to each individual
+  filter(between(first.logtime, 30, 70)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
+derivstrim<- bind_rows(derivstrim, indiv)
+
+indiv<-derivs%>%
+  filter(id=="85") %>% #filtering to each individual
+  filter(between(first.logtime, 30, 75)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
+derivstrim<- bind_rows(derivstrim, indiv)
+
+indiv<-derivs%>%
+  filter(id=="87") %>% #filtering to each individual
+  filter(between(first.logtime, 40, 80)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
+derivstrim<- bind_rows(derivstrim, indiv)
+
+indiv<-derivs%>%
+  filter(id=="107") %>% #filtering to each individual
+  filter(between(first.logtime, 40, 70)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
+derivstrim<- bind_rows(derivstrim, indiv)
+
+indiv<-derivs%>%
+  filter(id=="109") %>% #filtering to each individual
+  filter(between(first.logtime, 30, 70)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
+derivstrim<- bind_rows(derivstrim, indiv)
+
+indiv<-derivs%>%
+  filter(id=="112") %>% #filtering to each individual
+  filter(between(first.logtime, 30, 70)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
+derivstrim<- bind_rows(derivstrim, indiv)
+
+indiv<-derivs%>%
+  filter(id=="113") %>% #filtering to each individual
+  filter(between(first.logtime, 45, 80)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
+derivstrim<- bind_rows(derivstrim, indiv)
+
+indiv<-derivs%>%
+  filter(id=="131") %>% #filtering to each individual
+  filter(between(first.logtime, 30, 65)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
+derivstrim<- bind_rows(derivstrim, indiv)
+
+indiv<-derivs%>%
+  filter(id=="136") %>% #filtering to each individual
+  filter(between(first.logtime, 45, 75)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
+derivstrim<- bind_rows(derivstrim, indiv)
+
+indiv<-derivs%>%
+  filter(id=="138") %>% #filtering to each individual
+  filter(between(first.logtime, 40, 70)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
+derivstrim<- bind_rows(derivstrim, indiv)
+
+#indiv<-derivs%>%
+#  filter(id=="141") %>% #filtering to each individual
+#  filter(between(first.logtime, 40, 80)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
+#derivstrim<- bind_rows(derivstrim, indiv)
+
+indiv<-derivs%>%
+  filter(id=="143") %>% #filtering to each individual
+  filter(between(first.logtime, 40, 80)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
+derivstrim<- bind_rows(derivstrim, indiv)
+
+indiv<-derivs%>%
+  filter(id=="145") %>% #filtering to each individual
+  filter(between(first.logtime, 40, 80)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
+derivstrim<- bind_rows(derivstrim, indiv)
+
+indiv<-derivs%>%
+  filter(id=="146") %>% #filtering to each individual
+  filter(between(first.logtime, 50, 80)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
+derivstrim<- bind_rows(derivstrim, indiv)
+
+indiv<-derivs%>%
+  filter(id=="153") %>% #filtering to each individual
+  filter(between(first.logtime, 50, 80)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
+derivstrim<- bind_rows(derivstrim, indiv)
+
+indiv<-derivs%>%
+  filter(id=="154") %>% #filtering to each individual
+  filter(between(first.logtime, 70, 100)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
+derivstrim<- bind_rows(derivstrim, indiv)
+
+indiv<-derivs%>%
+  filter(id=="156") %>% #filtering to each individual
+  filter(between(first.logtime, 40, 80)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
+derivstrim<- bind_rows(derivstrim, indiv)
+
+indiv<-derivs%>%
+  filter(id=="158") %>% #filtering to each individual
+  filter(between(first.logtime, 40, 70)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
+derivstrim<- bind_rows(derivstrim, indiv)
+
+indiv<-derivs%>%
+  filter(id=="159") %>% #filtering to each individual
+  filter(between(first.logtime, 40, 70)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
+derivstrim<- bind_rows(derivstrim, indiv)
+
+indiv<-derivs%>%
+  filter(id=="165") %>% #filtering to each individual
+  filter(between(first.logtime, 40, 90)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
+derivstrim<- bind_rows(derivstrim, indiv)
+
+indiv<-derivs%>%
+  filter(id=="166") %>% #filtering to each individual
+  filter(between(first.logtime, 35, 80)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
+derivstrim<- bind_rows(derivstrim, indiv)
+
+indiv<-derivs%>%
+  filter(id=="168") %>% #filtering to each individual
+  filter(between(first.logtime, 40, 80)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
+derivstrim<- bind_rows(derivstrim, indiv)
+
+indiv<-derivs%>%
+  filter(id=="171") %>% #filtering to each individual
+  filter(between(first.logtime, 40, 70)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
+derivstrim<- bind_rows(derivstrim, indiv)
+
+indiv<-derivs%>%
+  filter(id=="175") %>% #filtering to each individual
+  filter(between(first.logtime, 40, 70)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
+derivstrim<- bind_rows(derivstrim, indiv)
+
+indiv<-derivs%>%
+  filter(id=="179") %>% #filtering to each individual
+  filter(between(first.logtime, 40, 70)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
+derivstrim<- bind_rows(derivstrim, indiv)
+
+indiv<-derivs%>%
+  filter(id=="194") %>% #filtering to each individual
+  filter(between(first.logtime, 50, 70)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
+derivstrim<- bind_rows(derivstrim, indiv)
+
+indiv<-derivs%>%
+  filter(id=="201") %>% #filtering to each individual
+  filter(between(first.logtime, 40, 70)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
+derivstrim<- bind_rows(derivstrim, indiv)
+
+indiv<-derivs%>%
+  filter(id=="211") %>% #filtering to each individual
+  filter(between(first.logtime, 35, 75)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
+derivstrim<- bind_rows(derivstrim, indiv)
+
+indiv<-derivs%>%
+  filter(id=="212") %>% #filtering to each individual
+  filter(between(first.logtime, 30, 70)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
+derivstrim<- bind_rows(derivstrim, indiv)
+
 ```
+
+Check first deriv plot for 87
+Check first deriv ind 141,173
 
 ### Creating the functions to get the activation energy for each individual
 
 
 ```{r}
 # Creating separate lists, one for each individual
-
+oxall<-read.csv("../Outputs/oxall_trimmed.csv")
 
 dat_list<-split(derivstrim, derivstrim$id)
 
 #Creating plots for al individuals
-energy2<-data.frame(matrix(ncol = 2, nrow = 0))
-colnames(energy2)<-c("ind", "slope")
+energy<-data.frame(matrix(ncol = 4, nrow = 0))
+colnames(energy)<-c("ind", "slope", "min", "max")
 
 e2 = function(data) {
      min<-data %>% slice(which.min(first2)) %>% select(first.logtime) #Getting the time where the minimum value is at
@@ -2407,7 +2626,7 @@ slope<-model$coefficients[2]
 intercept<-model$coefficients[1]
 ## 6,7. Creating dataframe for the slope
 ind<-data[2,2]
-dataframe<-data.frame(ind, slope)
+dataframe<-data.frame(ind, slope, min[1,1], max[1,1])
 #energy2<- bind_rows(energy2, dataframe)
      }
 
@@ -2448,7 +2667,7 @@ slope<-model$coefficients[2]
 intercept<-model$coefficients[1]
 ## 6,7. Creating dataframe for the slope
 ind<-2
-energy<-data.frame(ind, slope)
+energy<-data.frame(ind, slope,min,max)
 label<-paste("Individual ", ind, sep = "")
 indiv %>%  ggplot(aes(x=invlntempk, y=lnderiv))+geom_point()+geom_abline(intercept = intercept, slope = slope, color="red", 
                linetype="solid", size=1.5) + ylim(-5,-3)+ theme_classic()+ theme(text = element_text(size = 15),plot.title = element_text(hjust=0.5))+ ggtitle(label)+
