@@ -1,0 +1,437 @@
+---
+title: "Thermolimit stattistical analyses"
+author: "Laura Segura Hernández"
+date: "9/27/2022"
+output:
+  html_document:
+    df_print: paged
+    theme: cerulean
+    toc: true
+    toc_depth: 4
+    number_sections: true
+    toc_float: false
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_knit$set(root.dir = "C:/Users/laus1/OneDrive - University of Nebraska-Lincoln/UNL/PhD Tesis/Methods/Thermolimit/Thermolimit data analyses")
+getwd()
+```
+
+#Libraries
+```{r}
+library(lme4)
+library(dplyr)
+library(forcats)
+library(NRES803)
+library(olsrr)
+library(broom)
+library(ggplot2)
+library(lmerTest)
+```
+
+# Calling data
+
+```{r}
+dat<-read.csv("Outputs/ToptandRopts.csv")
+dat<-dat%>%
+  mutate(stage=fct_relevel(stage, levels=c("Protonymph", "Deutonymph", "Tritonymph", "Female", "Male" ))) %>%
+  arrange(stage)
+```
+
+# Comparing Topt
+
+## Looking at stage
+
+### Global model
+```{r}
+t1<-lm(tempcorr~stage+date+weight+ramp+stage:ramp, data=dat)
+summary(t1)
+check_assumptions(t1) #it doesnt look too bad
+hist(t1$residuals, main = "Residual Histogram") #it doesnt look too bad
+ols_test_normality(t1) #Kolmogorov (more than n=50): data is normal
+```
+
+
+### Backwards selection of global model
+```{r}
+## For now, I will use the model with the normal distribution and do backwards selection, later I will try a different distribution to see if the fit improves
+# Doing backwards selection
+drop1(t1, test="Chisq")
+
+t2 <- update(t1, .~. -date)
+drop1(t2, test="Chisq")
+
+t3 <- update(t2, .~. -weight)
+drop1(t3, test="Chisq")
+```
+
+It seems like the model with just ramp:stage is the best model. Now I will look to see if it meets the assumptions
+
+### Checking assumptions
+```{r}
+check_assumptions(t3)
+hist(t3$residuals, main = "Residual Histogram") #it doesnt look too bad
+ols_test_normality(t3) #data is  normal
+# Still  normal
+```
+
+### Summary and result plots
+
+```{r}
+summary(t3)
+# Making the plot
+nd = expand.grid(ramp=seq(0.2,0.25,0.005), stage=c("Protonymph", "Deutonymph", "Tritonymph", "Female", "Male"))
+predicted.t3 <- augment(t3, newdata = nd)
+
+# reuse ggplot object from above. fix color to black or geom_line looks for fBeach. x aesthetic inherited from Richness_NAP
+t3plot <- ggplot(dat, aes(x = ramp, y = tempcorr)) + 
+  geom_line(aes(y = .fitted, group = stage, linetype = stage, color=stage),size=1.5, data = predicted.t3) + theme_classic()+ theme(text = element_text(size = 15))+ 
+  xlab("Heat ramping rate (Celsius/minute)")+
+  ylab("Thermal optima (Celsius)")
+t3plot
+
+ggsave(plot=last_plot(),filename="Topt_stage.jpg",  path="Outputs/Statistics/")
+```
+
+
+### Trying out using a random effect
+```{r}
+# Since I know the ramp is having an interaction with the stage, I will try to control for it as a random factor, since I am not really interested in testing for that?
+
+# Trying out with a random effects
+t4<-lmer(tempcorr~stage+date+weight+(stage|ramp), data=dat, REML=FALSE)
+summary(t4)
+
+#Checking assumptions
+rr <- broom.mixed::augment(t4)
+ggplot(rr, aes(x = .fitted, y = .resid)) + geom_point() + geom_smooth() +
+    geom_hline(yintercept = 0, linetype = 2)
+
+# get int and slope for qqline
+probs <- c(0.25, 0.75)
+y <- quantile(rr$.resid, probs, names = FALSE, na.rm = TRUE)
+x <- qnorm(probs)
+slope <- diff(y)/diff(x)
+int <- y[1L] - slope * x[1L]
+ggplot(rr, aes(sample = .resid)) + geom_qq(size = rel(4)) + geom_abline(intercept = int,
+    slope = slope, linetype = 2, size = 2)
+
+ggplot(rr, aes(x = .fitted, y = sqrt(abs(.resid)))) + geom_point() +
+    geom_smooth() + geom_hline(yintercept = 0.822)
+
+#Geeting the coefficients for each group taking into account the random effects
+#t4summ<-knitr::kable(cbind(ranef(t4)$stage, coef(t4)$stage))
+
+t4<-lmer(tempcorr~stage+date+weight+(stage|ramp), data=dat)
+coefTable <- summary(t4, ddf = "Kenward-Roger")$coefficients
+coefTable
+
+#Backwards selection
+step(t4, ddf = "Satterthwaite")
+
+t5<-lmer(tempcorr~stage+(stage|ramp), data=dat)
+summary(t5)
+coefTable <- summary(t5, ddf = "Kenward-Roger")$coefficients
+coefTable
+
+#Checking assumptions
+rr <- broom.mixed::augment(t5)
+ggplot(rr, aes(x = .fitted, y = .resid)) + geom_point() + geom_smooth() +
+    geom_hline(yintercept = 0, linetype = 2)
+
+# get int and slope for qqline
+probs <- c(0.25, 0.75)
+y <- quantile(rr$.resid, probs, names = FALSE, na.rm = TRUE)
+x <- qnorm(probs)
+slope <- diff(y)/diff(x)
+int <- y[1L] - slope * x[1L]
+ggplot(rr, aes(sample = .resid)) + geom_qq(size = rel(4)) + geom_abline(intercept = int,
+    slope = slope, linetype = 2, size = 2)
+
+ggplot(rr, aes(x = .fitted, y = sqrt(abs(.resid)))) + geom_point() +
+    geom_smooth() + geom_hline(yintercept = 0.822)
+
+```
+
+I am not convinced the random effect helped. However, since stage and weight might be correlated (e.g. deutonymphs and protonymps are alwasys smaller than adults), and since weight becomes relevant in other models, I will test replacing stage for weight to keep all models consistent. 
+
+## Looking at weight
+
+### Global model
+```{r}
+t6<-lm(tempcorr~stage+date+weight+ramp+weight:ramp, data=dat)
+summary(t6)
+check_assumptions(t6) #it doesnt look too bad
+hist(t6$residuals, main = "Residual Histogram") #it doesnt look too bad
+ols_test_normality(t6) #Kolmogorov (more than n=50): data is normal
+```
+
+
+### Backwards selection for weight
+```{r}
+drop1(t6, test="Chisq")
+
+t7 <- update(t6, .~. -date)
+drop1(t7, test="Chisq")
+
+t8 <- update(t7, .~. -stage)
+drop1(t8, test="Chisq")
+
+```
+
+It seems like the model with just ramp:weight is the best model. Now I will look to see if it meets the assumptions
+
+### Checking assumptions
+```{r}
+check_assumptions(t8)
+hist(t8$residuals, main = "Residual Histogram") #it doesnt look too bad
+ols_test_normality(t8) #data is  normal
+```
+
+### Summary and result plots
+
+```{r}
+summary(t8)
+# Making the plot
+nd = expand.grid(ramp=seq(0.2,0.25,0.005), weight=c(0.1, 1.1, 2.3))
+predicted.t8 <- augment(t8, newdata = nd)
+
+# reuse ggplot object from above. fix color to black or geom_line looks for fBeach. x aesthetic inherited from Richness_NAP
+t8plot <- ggplot(dat, aes(x = ramp, y = tempcorr)) + 
+  geom_line(aes(y = .fitted, group = as.factor(weight), linetype = as.factor(weight), color=weight),size=1.5, data = predicted.t8)  + theme_classic()+ theme(text = element_text(size = 15))+ 
+  xlab("Heat ramping rate (Celsius/minute)")+
+  ylab("Thermal optima (Celsius)")
+t8plot
+ggsave(plot=last_plot(),filename="Topt_weight.jpg",  path="Outputs/Statistics/")
+
+```
+
+
+# Comparing Ropt
+
+## Looking at stage
+
+### Global model
+```{r}
+r1<-lm(ropt2~stage+date+weight+ramp+stage:ramp, data=dat)
+summary(r1)
+check_assumptions(r1)
+hist(r1$residuals, main = "Residual Histogram")
+ols_test_normality(r1) #Kolmogorov: data is normal
+```
+
+
+### Backwards selection
+
+```{r}
+# Doing backwards selection
+drop1(r1, test="Chisq")
+
+r2 <- update(r1, .~. -stage:ramp)
+drop1(r2, test="Chisq")
+
+r3 <- update(r2, .~. -weight)
+drop1(r3, test="Chisq")
+
+r4 <- update(r3, .~. -date)
+drop1(r4, test="Chisq")
+```
+
+### Checking assumptions
+
+```{r}
+check_assumptions(r4)
+hist(r4$residuals, main = "Residual Histogram")
+ols_test_normality(r4) #Kolmogorov: data is normal
+```
+
+### Summary and result plots
+```{r}
+summary(r4)
+
+# Making the plot
+nd = expand.grid(ramp=seq(0.2,0.25,0.005), stage=c("Protonymph", "Deutonymph", "Tritonymph", "Female", "Male"))
+predicted.r4 <- augment(r4, newdata = nd)
+
+# reuse ggplot object from above. fix color to black or geom_line looks for fBeach. x aesthetic inherited from Richness_NAP
+r4plot <- ggplot(dat, aes(x = ramp, y = ropt2)) + 
+  geom_line(aes(y = .fitted, group = stage, linetype = stage, color=stage),size=1.5, data = predicted.r4) + theme_classic()+ theme(text = element_text(size = 15))+ 
+  xlab("Heat ramping rate (Celsius/minute)")+
+  ylab("Rate optima (Oxygen (mg/L) / time (min))")
+r4plot
+ggsave(plot=last_plot(),filename="Ropt_stage.jpg",  path="Outputs/Statistics/")
+
+```
+## Looking at weight
+
+### Global model
+
+```{r}
+r5<-lm(ropt2~stage+date+weight+ramp+weight:ramp, data=dat)
+summary(r5)
+check_assumptions(r5)
+hist(r5$residuals, main = "Residual Histogram")
+ols_test_normality(r5) #Kolmogorov: data is normal
+```
+
+### Backwards selection
+```{r}
+drop1(r5, test="Chisq")
+
+r6 <- update(r5, .~. -weight:ramp)
+drop1(r6, test="Chisq")
+
+r7 <- update(r6, .~. -stage)
+drop1(r7, test="Chisq")
+
+r8 <- update(r7, .~. -date)
+drop1(r8, test="Chisq")
+```
+
+
+### Checking assumptions
+
+```{r}
+check_assumptions(r8)
+hist(r8$residuals, main = "Residual Histogram")
+ols_test_normality(r8) #Kolmogorov: data is normal
+```
+
+### Summary and result plots
+
+```{r}
+summary(r8)
+# Making the plot
+nd = expand.grid(ramp=seq(0.2,0.25,0.005), weight=c(0.1, 1.1, 2.3))
+predicted.r8 <- augment(r8, newdata = nd)
+
+# reuse ggplot object from above. fix color to black or geom_line looks for fBeach. x aesthetic inherited from Richness_NAP
+r8plot <- ggplot(dat, aes(x = ramp, y = ropt2)) + 
+  geom_line(aes(y = .fitted, group = as.factor(weight), linetype = as.factor(weight), color=weight),size=1.5, data = predicted.r8)+ theme_classic()+ theme(text = element_text(size = 15))+ 
+  xlab("Heat ramping rate (Celsius/minute)")+
+  ylab("Rate optima (Oxygen (mg/L) / time (min))")
+r8plot
+ggsave(plot=last_plot(),filename="Ropt_weight.jpg",  path="Outputs/Statistics/")
+
+
+
+```
+
+
+# Comparing Activation energy
+
+## Getting the data
+
+```{r}
+energy<-read.csv("Outputs/activation energy final.csv")
+energy<-energy%>%
+  mutate(stage=fct_relevel(stage, levels=c("Protonymph", "Deutonymph", "Tritonymph", "Female", "Male" ))) %>%
+  arrange(stage)
+```
+
+## Looking at stage
+
+### Global model
+```{r}
+e1<-lm(slope~stage+date+weight+ramp+stage:ramp, data=energy)
+summary(e1)
+check_assumptions(e1)
+hist(e1$residuals, main = "Residual Histogram")
+ols_test_normality(e1) #Kolmogorov: data is  normal
+```
+
+### Backwards selection
+```{r}
+# Doing backwards selection
+drop1(e1, test="Chisq")
+
+e2 <- update(e1, .~. -weight)
+drop1(e2, test="Chisq")
+```
+
+### Checking assumptions
+```{r}
+check_assumptions(e2)
+hist(e2$residuals, main = "Residual Histogram")
+ols_test_normality(e2) #Kolmogorov: data is  normal
+```
+
+
+### Summary and result plots
+
+```{r}
+summary(e2)
+# Making the plot for ramp*stage
+nd = expand.grid(ramp=seq(0.2,0.25,0.005), stage=c("Protonymph", "Deutonymph", "Tritonymph", "Female", "Male"), date="2022-06-21")
+predicted.e2 <- augment(e2, newdata = nd)
+
+# reuse ggplot object from above. fix color to black or geom_line looks for fBeach. x aesthetic inherited from Richness_NAP
+e2plot <- ggplot(energy, aes(x = ramp, y = slope)) + 
+  geom_line(aes(y = .fitted, group = stage, linetype = stage, color=stage),size=1.5, data = predicted.e2)+ theme_classic()+ theme(text = element_text(size = 15))+ 
+  xlab("Heat ramping rate (Celsius/minute)")+
+  ylab("Activation energy")
+e2plot
+ggsave(plot=last_plot(),filename="Energy_stage.jpg",  path="Outputs/Statistics/")
+
+
+#date=factor(levels(as.factor(energy$date)))
+
+
+# Making the plot for date
+nd = expand.grid(ramp=0.225, stage=c("Protonymph"), date=factor(levels(as.factor(energy$date))))
+predicted.e2 <- augment(e2, newdata = nd)
+
+# reuse ggplot object from above. fix color to black or geom_line looks for fBeach. x aesthetic inherited from Richness_NAP
+e2plot2 <- ggplot(energy, aes(x = date, y = slope)) + 
+  geom_point(aes(y = .fitted), data = predicted.e2)+ylab("Äctivation energy")
+e2plot2 
+
+
+```
+
+## Looking at weight
+
+### Global model
+```{r}
+e3<-lm(slope~stage+date+weight+ramp+weight:ramp, data=energy)
+summary(e3)
+check_assumptions(e3)
+hist(e3$residuals, main = "Residual Histogram")
+ols_test_normality(e3) #Kolmogorov: data is  NOT normal
+```
+
+### Backwards selection
+```{r}
+# Doing backwards selection
+drop1(e3, test="Chisq")
+
+e4 <- update(e3, .~. -stage)
+drop1(e4, test="Chisq")
+```
+
+### Checking assumptions
+```{r}
+check_assumptions(e4)
+hist(e4$residuals, main = "Residual Histogram")
+ols_test_normality(e4) #Kolmogorov: data is  normal
+```
+
+
+### Summary and result plots
+
+```{r}
+summary(e4)
+# Making the plot for ramp*stage
+nd = expand.grid(ramp=seq(0.2,0.25,0.005),  weight=c(0.1, 1.1, 2.3), date="2022-06-21")
+predicted.e4 <- augment(e4, newdata = nd)
+
+# reuse ggplot object from above. fix color to black or geom_line looks for fBeach. x aesthetic inherited from Richness_NAP
+e4plot <- ggplot(energy, aes(x = ramp, y = slope)) + 
+  geom_line(aes(y = .fitted, group = as.factor(weight), linetype = as.factor(weight), color=weight),size=1.5, data = predicted.e4)  + theme_classic()+ theme(text = element_text(size = 15))+ 
+  xlab("Heat ramping rate (Celsius/minute)")+
+  ylab("Activation energy")
+e4plot
+ggsave(plot=last_plot(),filename="Energy_weight.jpg",  path="Outputs/Statistics/")
+
+```
