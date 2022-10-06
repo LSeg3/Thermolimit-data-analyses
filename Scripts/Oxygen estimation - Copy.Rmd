@@ -2178,7 +2178,7 @@ map(groups, make_grid)
 
 ## 8. Obtaining the maximum rate of oxygen consumption (Ropt)
 ```{r}
-derivs<-read.csv("../Outputs/derivatives.csv")
+derivs<-read.csv("Outputs/derivatives.csv")
 
 
 derivs<-derivs %>%
@@ -2206,13 +2206,11 @@ ropt<-derivs %>%
 
 ## 9. Getting the temperatures associated with the Ropt (Topt)
 ```{r}
-
 #Merging the temperatures
 topt<-difference_left_join(ropt,oxall, by=c("ind","logtime"), max_dist=0.13) %>% #Merges dataframes based on the closest logtime value (within 0.13)
   group_by(ind.x, logtime.x, first.y1, first2) %>%
   summarize(tempcorr2=mean(tempcorr)) %>% #averaging the tempcorr for when multiple cells are called
   ungroup()
-
 
 
 #getting the other demographic data
@@ -2244,6 +2242,295 @@ ggplot(toptfinal, aes(x=stage, y=ropt2))+geom_boxplot() +theme_classic() +
 
 
 write.csv(toptfinal, "Outputs/ToptandRopts.csv")
+```
+### Checking the oxygen traces per life stage
+
+### Protonymphs
+```{r}
+protos <- oxall%>%
+  filter(stage=="Protonymph")
+  
+  
+ggplot(protos, aes(x=logtime, y=oxymgl,group=ind, color=as.factor(trial)))+ #MODIFY FOR EACH TRIAL
+  geom_line()+
+  theme_classic()+
+  theme(text = element_text(size = 15), plot.title = element_text(size = (12)))+
+  ylim(8,12) +
+  facet_wrap(~ind)+
+  xlab("Time logged (min)")+
+  ylab("Oxygen (mg/L")+
+  ggtitle("Protonymphs")+
+  labs(colour = "Trial")
+
+ggsave(plot=last_plot(),filename="OxygenTrace_Protonymphs.jpg",  path="../Outputs/Oxygen traces/")
+
+  
+```
+### Deutonymphs
+```{r}
+deutos <- oxall%>%
+  filter(stage=="Deutonymph")
+  
+  
+ggplot(deutos, aes(x=logtime, y=oxymgl,group=ind, color=as.factor(trial)))+ #MODIFY FOR EACH TRIAL
+  geom_line()+
+  theme_classic()+
+  theme(text = element_text(size = 15), plot.title = element_text(size = (12)))+
+  ylim(8,12) +
+  facet_wrap(~ind)+
+  xlab("Time logged (min)")+
+  ylab("Oxygen (mg/L")+
+  ggtitle("Protonymphs")+
+  labs(colour = "Trial")
+
+ggsave(plot=last_plot(),filename="OxygenTrace_Deutonymphs.jpg",  path="../Outputs/Oxygen traces/")
+
+  
+```
+### Tritonymphs
+```{r}
+Tritos <- oxall%>%
+  filter(stage=="Tritonymph")
+  
+  
+ggplot(Tritos, aes(x=logtime, y=oxymgl,group=ind, color=as.factor(trial)))+ #MODIFY FOR EACH TRIAL
+  geom_line()+
+  theme_classic()+
+  theme(text = element_text(size = 15), plot.title = element_text(size = (12)))+
+  ylim(8,12) +
+  facet_wrap(~ind)+
+  xlab("Time logged (min)")+
+  ylab("Oxygen (mg/L")+
+  ggtitle("Tritonymphs")+
+  labs(colour = "Trial")
+
+ggsave(plot=last_plot(),filename="OxygenTrace_Tritonymphs.jpg",  path="../Outputs/Oxygen traces/")
+
+  
+```
+### Males
+```{r}
+males <- oxall%>%
+  filter(stage=="Male")
+  
+  
+ggplot(males, aes(x=logtime, y=oxymgl,group=ind, color=as.factor(trial)))+ #MODIFY FOR EACH TRIAL
+  geom_line()+
+  theme_classic()+
+  theme(text = element_text(size = 15), plot.title = element_text(size = (12)))+
+  ylim(8,12) +
+  facet_wrap(~ind)+
+  xlab("Time logged (min)")+
+  ylab("Oxygen (mg/L")+
+  ggtitle("Males")+
+  labs(colour = "Trial")
+
+ggsave(plot=last_plot(),filename="OxygenTrace_Males.jpg",  path="../Outputs/Oxygen traces/")
+
+  
+```
+
+### Females
+```{r}
+females <- oxall%>%
+  filter(stage=="Female")
+  
+  
+ggplot(females, aes(x=logtime, y=oxymgl,group=ind, color=as.factor(trial)))+ #MODIFY FOR EACH TRIAL
+  geom_line()+
+  theme_classic()+
+  theme(text = element_text(size = 15), plot.title = element_text(size = (12)))+
+  ylim(8,12) +
+  facet_wrap(~ind)+
+  xlab("Time logged (min)")+
+  ylab("Oxygen (mg/L")+
+  ggtitle("Females")+
+  labs(colour = "Trial")
+
+ggsave(plot=last_plot(),filename="OxygenTrace_Females.jpg",  path="../Outputs/Oxygen traces/")
+
+  
+```
+### Checking the slope trends per life stage
+
+
+```{r}
+
+derivs<-derivs %>%
+  mutate(first2=first.y1*-1)%>% #Converting the slopes to positive
+  filter(between(first.logtime, 30, 105)) #Triming the timeframe to the actual slope time
+
+
+oxall<-read.csv("Outputs/oxall_trimmed.csv")
+
+#Protonymphs
+oxallp<-oxall %>%
+  select(c("date", "trial", "channel", "ind", "stage", "weight", "ramp", "logtime")) %>%
+  mutate(id=ind,
+         first.logtime=logtime)%>% 
+  filter(between(logtime, 30, 105)) %>%
+  filter(stage=="Protonymph")
+
+#Merging the temperatures
+derivsp<-difference_right_join(derivs,oxallp, by=c("id","first.logtime"), max_dist=0.13) #Merges dataframes based on the closest logtime value (within 0.13)
+  
+
+#Deutonymphs  
+oxalld<-oxall %>%
+  select(c("date", "trial", "channel", "ind", "stage", "weight", "ramp", "logtime")) %>%
+  mutate(id=ind,
+         first.logtime=logtime)%>% 
+  filter(between(logtime, 30, 105)) %>%
+  filter(stage=="Deutonymph")
+
+#Merging the temperatures
+derivsd<-difference_right_join(derivs,oxalld, by=c("id","first.logtime"), max_dist=0.13) #Merges dataframes based on the closest logtime value (within 0.13)
+  
+
+#Tritonymphs  
+oxallt<-oxall %>%
+  select(c("date", "trial", "channel", "ind", "stage", "weight", "ramp", "logtime")) %>%
+  mutate(id=ind,
+         first.logtime=logtime)%>% 
+  filter(between(logtime, 30, 105)) %>%
+  filter(stage=="Tritonymph")
+
+#Merging the temperatures
+derivst<-difference_right_join(derivs,oxallt, by=c("id","first.logtime"), max_dist=0.13) #Merges dataframes based on the closest logtime value (within 0.13)
+
+
+#Males 
+oxallm<-oxall %>%
+  select(c("date", "trial", "channel", "ind", "stage", "weight", "ramp", "logtime")) %>%
+  mutate(id=ind,
+         first.logtime=logtime)%>% 
+  filter(between(logtime, 30, 105)) %>%
+  filter(stage=="Male")
+
+#Merging the temperatures
+derivsm<-difference_right_join(derivs,oxallm, by=c("id","first.logtime"), max_dist=0.13) #Merges dataframes based on the closest logtime value (within 0.13)
+
+#Females 
+oxallf<-oxall %>%
+  select(c("date", "trial", "channel", "ind", "stage", "weight", "ramp", "logtime")) %>%
+  mutate(id=ind,
+         first.logtime=logtime)%>% 
+  filter(between(logtime, 30, 105)) %>%
+  filter(stage=="Female")
+
+#Merging the temperatures
+derivsf<-difference_right_join(derivs,oxallf, by=c("id","first.logtime"), max_dist=0.13) #Merges dataframes based on the closest logtime value (within 0.13)
+
+
+  
+derivsdemography<- bind_rows(derivsp, derivsd, derivst, derivsm, derivsf)  
+write.csv(derivsdemography, "Outputs/derivsdemography.csv")
+
+derivs2<-read.csv("Outputs/derivsdemography.csv")
+```
+
+
+### Protonymphs
+```{r}
+protos <- derivs2%>%
+  filter(stage=="Protonymph")
+  
+  
+ggplot(protos, aes(x=logtime, y=first2,color=as.factor(trial)))+ #MODIFY FOR EACH TRIAL
+  geom_line()+
+  facet_wrap(~ind)+
+  theme_classic()+
+  theme(text = element_text(size = 15), plot.title = element_text(size = (12)))+
+  xlab("Time logged (min)")+
+  ylab("Oxygen (mg/L)/time (min)")+
+  ggtitle("Protonymphs")+
+  labs(colour = "Trial")
+
+ggsave(plot=last_plot(),filename="DerivsTrace_Protonymphs.jpg",  path="Outputs/Derivative traces per stage/")
+
+  
+```
+### Deutonymphs
+```{r}
+deutos <- derivs2%>%
+  filter(stage=="Deutonymph")
+  
+  
+ggplot(deutos, aes(x=logtime, y=first2,color=as.factor(trial)))+ #MODIFY FOR EACH TRIAL
+  geom_line()+
+  facet_wrap(~ind)+
+  theme_classic()+
+  theme(text = element_text(size = 15), plot.title = element_text(size = (12)))+
+  xlab("Time logged (min)")+
+  ylab("Oxygen (mg/L)/time (min)")+
+  ggtitle("Deutonymphs")+
+  labs(colour = "Trial")
+
+ggsave(plot=last_plot(),filename="DerivsnTrace_Deutonymphs.jpg",  path="Outputs/Derivative traces per stage/")
+
+  
+```
+### Tritonymphs
+```{r}
+Tritos <- derivs2%>%
+  filter(stage=="Tritonymph")
+  
+  
+ggplot(Tritos, aes(x=logtime, y=first2,color=as.factor(trial)))+ #MODIFY FOR EACH TRIAL
+  geom_line()+
+  facet_wrap(~ind)+
+  theme_classic()+
+  theme(text = element_text(size = 15), plot.title = element_text(size = (12)))+
+  xlab("Time logged (min)")+
+  ylab("Oxygen (mg/L)/time (min)")+
+  ggtitle("Tritonymphs")+
+  labs(colour = "Trial")
+
+ggsave(plot=last_plot(),filename="DerivsTrace_Tritonymphs.jpg",  path="Outputs/Derivative traces per stage/", width=7, height=7, units="in")
+
+  
+```
+
+### Males
+```{r}
+males <- derivs2%>%
+  filter(stage=="Male")
+  
+  
+ggplot(males, aes(x=logtime, y=first2,color=as.factor(trial)))+ #MODIFY FOR EACH TRIAL
+  geom_line()+
+  facet_wrap(~ind)+
+  theme_classic()+
+  theme(text = element_text(size = 15), plot.title = element_text(size = (12)))+
+  xlab("Time logged (min)")+
+  ylab("Oxygen (mg/L)/time (min)")+
+  ggtitle("Males")+
+  labs(colour = "Trial")
+
+ggsave(plot=last_plot(),filename="DerivsTrace_Males.jpg",  path="Outputs/Derivative traces per stage/")
+
+  
+```
+
+### Females
+```{r}
+females <- derivs2%>%
+  filter(stage=="Female")
+  
+  
+ggplot(females, aes(x=logtime, y=first2,color=as.factor(trial)))+ #MODIFY FOR EACH TRIAL
+  geom_line()+
+  facet_wrap(~ind)+
+  theme_classic()+
+  theme(text = element_text(size = 15), plot.title = element_text(size = (12)))+
+  xlab("Time logged (min)")+
+  ylab("Oxygen (mg/L)/time (min)")+
+  ggtitle("Females")+
+  labs(colour = "Trial")
+
+ggsave(plot=last_plot(),filename="DerivsTrace_Females.jpg",  path="Outputs/Derivative traces per stage/")
+
+  
 ```
 
 ## 10. Getting the activation energy
@@ -2350,9 +2637,10 @@ indiv<-derivs%>%
   filter(between(first.logtime, 40, 80)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
 derivstrim<- bind_rows(derivstrim, indiv)
 
+#Changed
 indiv<-derivs%>%
   filter(id=="43") %>% #filtering to each individual
-  filter(between(first.logtime, 60, 100)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
+  filter(between(first.logtime, 30, 55)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
 derivstrim<- bind_rows(derivstrim, indiv)
 
 indiv<-derivs%>%
@@ -2364,11 +2652,6 @@ indiv<-derivs%>%
   filter(id=="50") %>% #filtering to each individual
   filter(between(first.logtime, 40, 80)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
 derivstrim<- bind_rows(derivstrim, indiv)
-
-#indiv<-derivs%>%
-#  filter(id=="51") %>% #filtering to each individual
-#  filter(between(first.logtime, 40, 80)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
-#derivstrim<- bind_rows(derivstrim, indiv)
 
 indiv<-derivs%>%
   filter(id=="54") %>% #filtering to each individual
@@ -2450,11 +2733,6 @@ indiv<-derivs%>%
   filter(between(first.logtime, 40, 70)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
 derivstrim<- bind_rows(derivstrim, indiv)
 
-#indiv<-derivs%>%
-#  filter(id=="141") %>% #filtering to each individual
-#  filter(between(first.logtime, 40, 80)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
-#derivstrim<- bind_rows(derivstrim, indiv)
-
 indiv<-derivs%>%
   filter(id=="143") %>% #filtering to each individual
   filter(between(first.logtime, 40, 80)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
@@ -2475,9 +2753,10 @@ indiv<-derivs%>%
   filter(between(first.logtime, 50, 80)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
 derivstrim<- bind_rows(derivstrim, indiv)
 
+#Changed
 indiv<-derivs%>%
   filter(id=="154") %>% #filtering to each individual
-  filter(between(first.logtime, 70, 100)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
+  filter(between(first.logtime, 30,60)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
 derivstrim<- bind_rows(derivstrim, indiv)
 
 indiv<-derivs%>%
@@ -2545,17 +2824,312 @@ indiv<-derivs%>%
   filter(between(first.logtime, 30, 70)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
 derivstrim<- bind_rows(derivstrim, indiv)
 
+indiv<-derivs%>%
+  filter(id=="214") %>% #filtering to each individual
+  filter(between(first.logtime, 50, 80)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
+derivstrim<- bind_rows(derivstrim, indiv)
+
+indiv<-derivs%>%
+  filter(id=="216") %>% #filtering to each individual
+  filter(between(first.logtime, 30, 60)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
+derivstrim<- bind_rows(derivstrim, indiv)
+
+indiv<-derivs%>%
+  filter(id=="218") %>% #filtering to each individual
+  filter(between(first.logtime, 20, 80)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
+derivstrim<- bind_rows(derivstrim, indiv)
+
+indiv<-derivs%>%
+  filter(id=="224") %>% #filtering to each individual
+  filter(between(first.logtime, 40, 80)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
+derivstrim<- bind_rows(derivstrim, indiv)
+
+indiv<-derivs%>%
+  filter(id=="228") %>% #filtering to each individual
+  filter(between(first.logtime, 60, 80)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
+derivstrim<- bind_rows(derivstrim, indiv)
+
+indiv<-derivs%>%
+  filter(id=="232") %>% #filtering to each individual
+  filter(between(first.logtime, 40, 70)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
+derivstrim<- bind_rows(derivstrim, indiv)
+
+indiv<-derivs%>%
+  filter(id=="233") %>% #filtering to each individual
+  filter(between(first.logtime, 40, 70)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
+derivstrim<- bind_rows(derivstrim, indiv)
+
+indiv<-derivs%>%
+  filter(id=="237") %>% #filtering to each individual
+  filter(between(first.logtime, 30, 70)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
+derivstrim<- bind_rows(derivstrim, indiv)
+
+indiv<-derivs%>%
+  filter(id=="238") %>% #filtering to each individual
+  filter(between(first.logtime, 20, 80)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
+derivstrim<- bind_rows(derivstrim, indiv)
+
+indiv<-derivs%>%
+  filter(id=="239") %>% #filtering to each individual
+  filter(between(first.logtime, 40, 60)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
+derivstrim<- bind_rows(derivstrim, indiv)
+
+indiv<-derivs%>%
+  filter(id=="242") %>% #filtering to each individual
+  filter(between(first.logtime, 40, 80)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
+derivstrim<- bind_rows(derivstrim, indiv)
+
+indiv<-derivs%>%
+  filter(id=="244") %>% #filtering to each individual
+  filter(between(first.logtime, 40, 80)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
+derivstrim<- bind_rows(derivstrim, indiv)
+
+indiv<-derivs%>%
+  filter(id=="245") %>% #filtering to each individual
+  filter(between(first.logtime, 20, 70)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
+derivstrim<- bind_rows(derivstrim, indiv)
+
+indiv<-derivs%>%
+  filter(id=="246") %>% #filtering to each individual
+  filter(between(first.logtime, 40, 75)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
+derivstrim<- bind_rows(derivstrim, indiv)
+
+indiv<-derivs%>%
+  filter(id=="247") %>% #filtering to each individual
+  filter(between(first.logtime, 40, 80)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
+derivstrim<- bind_rows(derivstrim, indiv)
+
+indiv<-derivs%>%
+  filter(id=="248") %>% #filtering to each individual
+  filter(between(first.logtime, 40, 75)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
+derivstrim<- bind_rows(derivstrim, indiv)
+
+indiv<-derivs%>%
+  filter(id=="250") %>% #filtering to each individual
+  filter(between(first.logtime, 40, 75)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
+derivstrim<- bind_rows(derivstrim, indiv)
+
+indiv<-derivs%>%
+  filter(id=="251") %>% #filtering to each individual
+  filter(between(first.logtime, 40, 60)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
+derivstrim<- bind_rows(derivstrim, indiv)
+
+indiv<-derivs%>%
+  filter(id=="253") %>% #filtering to each individual
+  filter(between(first.logtime, 40, 75)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
+derivstrim<- bind_rows(derivstrim, indiv)
+
+indiv<-derivs%>%
+  filter(id=="256") %>% #filtering to each individual
+  filter(between(first.logtime, 30, 70)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
+derivstrim<- bind_rows(derivstrim, indiv)
+
+indiv<-derivs%>%
+  filter(id=="257") %>% #filtering to each individual
+  filter(between(first.logtime, 40, 80)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
+derivstrim<- bind_rows(derivstrim, indiv)
+
+indiv<-derivs%>%
+  filter(id=="258") %>% #filtering to each individual
+  filter(between(first.logtime, 40, 75)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
+derivstrim<- bind_rows(derivstrim, indiv)
+
+indiv<-derivs%>%
+  filter(id=="263") %>% #filtering to each individual
+  filter(between(first.logtime, 40, 70)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
+derivstrim<- bind_rows(derivstrim, indiv)
+
+indiv<-derivs%>%
+  filter(id=="264") %>% #filtering to each individual
+  filter(between(first.logtime, 40, 75)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
+derivstrim<- bind_rows(derivstrim, indiv)
+
+indiv<-derivs%>%
+  filter(id=="267") %>% #filtering to each individual
+  filter(between(first.logtime, 40, 70)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
+derivstrim<- bind_rows(derivstrim, indiv)
+
+indiv<-derivs%>%
+  filter(id=="269") %>% #filtering to each individual
+  filter(between(first.logtime, 50, 75)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
+derivstrim<- bind_rows(derivstrim, indiv)
+
+indiv<-derivs%>%
+  filter(id=="270") %>% #filtering to each individual
+  filter(between(first.logtime, 60, 100)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
+derivstrim<- bind_rows(derivstrim, indiv)
+
+indiv<-derivs%>%
+  filter(id=="271") %>% #filtering to each individual
+  filter(between(first.logtime, 40, 70)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
+derivstrim<- bind_rows(derivstrim, indiv)
+
+indiv<-derivs%>%
+  filter(id=="272") %>% #filtering to each individual
+  filter(between(first.logtime, 50, 80)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
+derivstrim<- bind_rows(derivstrim, indiv)
+
+indiv<-derivs%>%
+  filter(id=="274") %>% #filtering to each individual
+  filter(between(first.logtime, 40, 75)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
+derivstrim<- bind_rows(derivstrim, indiv)
+
+indiv<-derivs%>%
+  filter(id=="287") %>% #filtering to each individual
+  filter(between(first.logtime, 40, 80)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
+derivstrim<- bind_rows(derivstrim, indiv)
+
+indiv<-derivs%>%
+  filter(id=="288") %>% #filtering to each individual
+  filter(between(first.logtime, 40, 75)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
+derivstrim<- bind_rows(derivstrim, indiv)
+
+indiv<-derivs%>%
+  filter(id=="290") %>% #filtering to each individual
+  filter(between(first.logtime, 35, 65)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
+derivstrim<- bind_rows(derivstrim, indiv)
+
+indiv<-derivs%>%
+  filter(id=="294") %>% #filtering to each individual
+  filter(between(first.logtime, 50, 75)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
+derivstrim<- bind_rows(derivstrim, indiv)
+
+indiv<-derivs%>%
+  filter(id=="296") %>% #filtering to each individual
+  filter(between(first.logtime, 40, 70)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
+derivstrim<- bind_rows(derivstrim, indiv)
+
+indiv<-derivs%>%
+  filter(id=="298") %>% #filtering to each individual
+  filter(between(first.logtime, 40, 70)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
+derivstrim<- bind_rows(derivstrim, indiv)
+
+indiv<-derivs%>%
+  filter(id=="300") %>% #filtering to each individual
+  filter(between(first.logtime, 40, 70)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
+derivstrim<- bind_rows(derivstrim, indiv)
+
+
+indiv<-derivs%>%
+  filter(id=="305") %>% #filtering to each individual
+  filter(between(first.logtime, 60, 80)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
+derivstrim<- bind_rows(derivstrim, indiv)
+
+#***
+indiv<-derivs%>%
+  filter(id=="311") %>% #filtering to each individual
+  filter(between(first.logtime, 40, 80)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
+derivstrim<- bind_rows(derivstrim, indiv)
+
+indiv<-derivs%>%
+  filter(id=="314") %>% #filtering to each individual
+  filter(between(first.logtime, 40, 75)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
+derivstrim<- bind_rows(derivstrim, indiv)
+
+indiv<-derivs%>%
+  filter(id=="317") %>% #filtering to each individual
+  filter(between(first.logtime, 40, 80)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
+derivstrim<- bind_rows(derivstrim, indiv)
+
+indiv<-derivs%>%
+  filter(id=="322") %>% #filtering to each individual
+  filter(between(first.logtime, 40, 75)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
+derivstrim<- bind_rows(derivstrim, indiv)
+
+indiv<-derivs%>%
+  filter(id=="324") %>% #filtering to each individual
+  filter(between(first.logtime, 30, 65)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
+derivstrim<- bind_rows(derivstrim, indiv)
+
+indiv<-derivs%>%
+  filter(id=="326") %>% #filtering to each individual
+  filter(between(first.logtime, 40, 75)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
+derivstrim<- bind_rows(derivstrim, indiv)
+
+indiv<-derivs%>%
+  filter(id=="329") %>% #filtering to each individual
+  filter(between(first.logtime, 50, 80)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
+derivstrim<- bind_rows(derivstrim, indiv)
+
+indiv<-derivs%>%
+  filter(id=="334") %>% #filtering to each individual
+  filter(between(first.logtime, 60, 80)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
+derivstrim<- bind_rows(derivstrim, indiv)
+
+indiv<-derivs%>%
+  filter(id=="335") %>% #filtering to each individual
+  filter(between(first.logtime, 40, 75)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
+derivstrim<- bind_rows(derivstrim, indiv)
+
+indiv<-derivs%>%
+  filter(id=="337") %>% #filtering to each individual
+  filter(between(first.logtime, 40, 75)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
+derivstrim<- bind_rows(derivstrim, indiv)
+
+indiv<-derivs%>%
+  filter(id=="339") %>% #filtering to each individual
+  filter(between(first.logtime, 40, 70)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
+derivstrim<- bind_rows(derivstrim, indiv)
+
+indiv<-derivs%>%
+  filter(id=="341") %>% #filtering to each individual
+  filter(between(first.logtime, 30, 70)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
+derivstrim<- bind_rows(derivstrim, indiv)
+
+indiv<-derivs%>%
+  filter(id=="345") %>% #filtering to each individual
+  filter(between(first.logtime, 50, 80)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
+derivstrim<- bind_rows(derivstrim, indiv)
+
+###
+
+indiv<-derivs%>%
+  filter(id=="51") %>% #filtering to each individual
+  filter(between(first.logtime, 40, 80)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
+derivstrim<- bind_rows(derivstrim, indiv)
+
+indiv<-derivs%>%
+  filter(id=="141") %>% #filtering to each individual
+  filter(between(first.logtime, 40, 80)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
+derivstrim<- bind_rows(derivstrim, indiv)
+
+indiv<-derivs%>%
+  filter(id=="173") %>% #filtering to each individual
+  filter(between(first.logtime, 20, 60)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
+derivstrim<- bind_rows(derivstrim, indiv)
+
+indiv<-derivs%>%
+  filter(id=="213") %>% #filtering to each individual
+  filter(between(first.logtime, 30, 70)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
+derivstrim<- bind_rows(derivstrim, indiv)  
+
+indiv<-derivs%>%
+  filter(id=="301") %>% #filtering to each individual
+  filter(between(first.logtime, 50, 80)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
+derivstrim<- bind_rows(derivstrim, indiv)
+
+
+write.csv(derivstrim, "Outputs/derivsmanualtrim.csv")
 ```
 
 Check first deriv plot for 87
-Check first deriv ind 141,173
+Check first deriv ind 141,173, 213,301
+
+51 deuto
+141  female
+213 deuto
+301 proto
+87 proto
+173 trito
+213 deuto
+
 
 ### Creating the functions to get the activation energy for each individual
 
 
 ```{r}
 # Creating separate lists, one for each individual
-oxall<-read.csv("../Outputs/oxall_trimmed.csv")
+oxall<-read.csv("Outputs/oxall_trimmed.csv")
 
 dat_list<-split(derivstrim, derivstrim$id)
 
@@ -2576,7 +3150,7 @@ name<-paste("Individual_", ind, ".jpg", sep = "")
 mypath <- file.path("Outputs/First deriv trim/")
 ggsave(plot=last_plot(),filename=name,  path=mypath)
 
-## 2, 3, 4: Join data, kelvinf and log transformations
+## 2, 3, 4: Join data, kelvin and log transformations
 data3<-difference_left_join(data2,oxall, by=c("ind","logtime"), max_dist=0.13) %>% #Merges dataframes based on the closest logtime value (within 0.13)
   group_by(ind.x, logtime.x, first.y1, first2) %>%
   summarize(tempcorr2=mean(tempcorr)) %>% #averaging the tempcorr for when multiple cells are called
@@ -2631,12 +3205,156 @@ dataframe<-data.frame(ind, slope, min[1,1], max[1,1])
      }
 
 energy<-map_dfr(dat_list, e3, .id = "id")
-write.csv(energy,"./Outputs/activation energy.csv")
+colnames(energy)<-c("id", "ind", "slope", "min", "max")
+
+
+
+write.csv(energy,"../Outputs/activation energy.csv")
 
 
 
 
 ```
+
+## Adding the demographic data
+```{r}
+# At the end: adding demographic data (pending modification)
+#getting the other demographic data
+
+energyfinal<-oxall %>%
+  select(c("date", "trial", "channel", "ind", "stage", "weight", "ramp")) %>%
+  group_by(ind)%>%
+  filter(row_number()==1) %>%
+  right_join(energy, by=c("ind"="ind")) %>%
+   ungroup()%>%
+  mutate(stage=fct_relevel(stage, levels=c("Protonymph", "Deutonymph", "Tritonymph", "Female", "Male" ))) %>%
+  arrange(stage)
+levels(energyfinal$stage)
+
+write.csv(energyfinal, "./Outputs/activation energy final.csv")
+#date, time, datetime, channel, stage, weight, ramp
+  
+```
+
+# Assessing the activation energy data
+```{r}
+## Temperature optima
+ggplot(energyfinal, aes(x=stage, y=slope))+geom_boxplot() +theme_classic() + 
+  theme(text = element_text(size = 15))+
+  xlab("Stage")+
+  ylab("Activation energy") # Check what units this would be
+
+
+```
+
+# Estimating Topt and Ropt from the manual trim trend for those nymphs with very high topts
+
+```{r}
+# Calling the file that was created in code chunk 49 (manually trimming before the activation curves)
+
+derivstrim<-read.csv("Outputs/derivsmanualtrim.csv")
+
+#Individuals to redo
+ids<-c(165,301,36,337,324,154,43,288,274,171,314,300,213,22,270,345,239,168)
+
+
+derivst<-derivstrim %>%
+  filter(id %in% ids) %>%
+  mutate(first2=first.y1*-1)
+
+
+```
+
+## Getting Ropt for the selected individuals
+```{r}
+
+# Plotting to see if the conversion looks right
+derivst%>%
+  filter(id==165) %>%
+  ggplot(aes(x=first.logtime, y=first2))+geom_line()
+
+derivst%>%
+  filter(id==301) %>%
+  ggplot(aes(x=first.logtime, y=first2))+geom_line()
+
+derivst%>%
+  ggplot(aes(x=first.logtime, y=first2))+geom_line()+facet_wrap(~id)
+
+
+# Getting the row with the maximum value for each individual
+ropt<-derivst %>%
+     group_by(id) %>%
+     slice(which.max(first2))%>%
+  mutate(logtime=first.logtime,
+         ind=id)
+
+
+```
+
+## Getting the temperatures associated with the Ropt (Topt)
+```{r}
+oxall<-read.csv("./Outputs/oxygenall_aftercodedeletion.csv") #Use this one
+
+#Merging the temperatures
+topt<-difference_left_join(ropt,oxall, by=c("ind","logtime"), max_dist=0.13) %>% #Merges dataframes based on the closest logtime value (within 0.13)
+  group_by(ind.x, logtime.x, first.y1, first2) %>%
+  summarize(tempcorr2=mean(tempcorr)) %>% #averaging the tempcorr for when multiple cells are called
+  ungroup()
+
+
+#getting the other demographic data
+toptfinal_selected<-oxall %>%
+  select(c("date", "trial", "channel", "ind", "stage", "weight", "ramp"))%>%
+  filter(ind %in% ids) %>%
+  group_by(ind)%>%
+  filter(row_number()==1) %>%
+  right_join(topt, by=c("ind"="ind.x")) %>%
+  rename(logtime=logtime.x,
+         tempcorr=tempcorr2,
+         ropt1=first.y1, 
+         ropt2=first2) %>%
+  ungroup()%>%
+  mutate(stage=fct_relevel(stage, levels=c("Protonymph", "Deutonymph", "Tritonymph", "Female", "Male" )))
+
+levels(toptfinal_selected$stage)
+#Visualizing the topt and Ropt
+
+## Temperature optima
+ggplot(toptfinal_selected, aes(x=stage, y=tempcorr))+geom_boxplot() +theme_classic() + 
+  theme(text = element_text(size = 15))+
+  xlab("Stage")+
+  ylab("Ctmax (Celsius)")
+
+ggplot(toptfinal, aes(x=stage, y=ropt2))+geom_boxplot() +theme_classic() + 
+  theme(text = element_text(size = 15))+
+  xlab("Stage")+
+  ylab("Maximum rate of oxygen consumption")
+
+
+write.csv(toptfinal, "Outputs/ToptandRopts.csv")
+```
+
+
+
+## Replacing old values for selected individuals
+```{r}
+dat<-read.csv("Outputs/ToptandRopts.csv")
+
+topt2<-dat%>%
+filter(!ind%in%ids) %>% #removing individuals that got redone
+bind_rows(toptfinal_selected) %>% 
+  filter_all(all_vars(!is.infinite(.)))
+levels(as.factor(oxall$ind))
+
+
+write.csv(topt2, "Outputs/ToptandRopts_manualtrimforsome.csv")
+```
+
+
+
+
+
+#############################################################################################
 
 # Activation energy First try: one by one, ignore this one
 ```{r, eval=FALSE}
@@ -3139,25 +3857,6 @@ ggsave(plot=last_plot(),filename=name,  path=mypath)
 
 
 
-```{r}
-# At the end: adding demographic data (pending modification)
-#getting the other demographic data
-toptfinal<-oxall %>%
-  select(c("date", "trial", "channel", "ind", "stage", "weight", "ramp")) %>%
-  group_by(ind)%>%
-  filter(row_number()==1) %>%
-  right_join(topt, by=c("ind"="ind.x")) %>%
-  rename(logtime=logtime.x,
-         tempcorr=tempcorr2,
-         ropt1=first.y1, 
-         ropt2=first2) %>%
-  ungroup()%>%
-  mutate(stage=fct_relevel(stage, levels=c("Protonymph", "Deutonymph", "Tritonymph", "Female", "Male" )))
-
-
-#date, time, datetime, channel, stage, weight, ramp
-  
-```
 
 
 Convert temperature to Kelvin
