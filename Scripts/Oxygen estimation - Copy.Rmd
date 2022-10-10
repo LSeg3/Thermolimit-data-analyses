@@ -12,6 +12,28 @@ output:
     toc_float: false
 ---
 
+What to do next (10oct22):  
+
+* **For Topt and Ropt:**
+
+** Use the automatic trim for the ramping period
+** For those individuals with weird traces: decide if to drop them(consider potential leaking of gas or bad sealing: eg, 213, 141)
+** Merge datasets and create a single file for statistical analyses
+** clean code, add notes and leave only the final version of the working code on this file
+
+* **For Activation energy:**
+
+** Correct the calculation based on my discussion with John on Friday (Oct 7th)
+** Check if the max points match those of the Topt data
+** Clean code, add notes and leave only the final version of the working code on this file
+
+* **For microclimate data:**
+
+** Create a separate script
+** plot final curves of Topt  against microclimate
+** Clean code, add notes and leave only the final version of the working code on this file
+
+
 ```{r setup, include=FALSE} 
 knitr::opts_chunk$set(warning = FALSE, message = FALSE) 
 knitr::opts_knit$set(root.dir = "C:/Users/laus1/OneDrive - University of Nebraska-Lincoln/UNL/PhD Tesis/Methods/Thermolimit/Thermolimit data analyses")
@@ -3259,7 +3281,7 @@ ids<-c(165,301,36,337,324,154,43,288,274,171,314,300,213,22,270,345,239,168)
 
 
 derivst<-derivstrim %>%
-  filter(id %in% ids) %>%
+  #filter(id %in% ids) %>%
   mutate(first2=first.y1*-1)
 
 
@@ -3305,7 +3327,7 @@ topt<-difference_left_join(ropt,oxall, by=c("ind","logtime"), max_dist=0.13) %>%
 #getting the other demographic data
 toptfinal_selected<-oxall %>%
   select(c("date", "trial", "channel", "ind", "stage", "weight", "ramp"))%>%
-  filter(ind %in% ids) %>%
+  #filter(ind %in% ids) %>%
   group_by(ind)%>%
   filter(row_number()==1) %>%
   right_join(topt, by=c("ind"="ind.x")) %>%
@@ -3314,7 +3336,7 @@ toptfinal_selected<-oxall %>%
          ropt1=first.y1, 
          ropt2=first2) %>%
   ungroup()%>%
-  mutate(stage=fct_relevel(stage, levels=c("Protonymph", "Deutonymph", "Tritonymph", "Female", "Male" )))
+  mutate(stage=fct_relevel(stage, levels=c("Protonymph", "Deutonymph", "Tritonymph",  "Male", "Female" )))
 
 levels(toptfinal_selected$stage)
 #Visualizing the topt and Ropt
@@ -3325,7 +3347,7 @@ ggplot(toptfinal_selected, aes(x=stage, y=tempcorr))+geom_boxplot() +theme_class
   xlab("Stage")+
   ylab("Ctmax (Celsius)")
 
-ggplot(toptfinal, aes(x=stage, y=ropt2))+geom_boxplot() +theme_classic() + 
+ggplot(toptfinal_selected, aes(x=stage, y=ropt2))+geom_boxplot() +theme_classic() + 
   theme(text = element_text(size = 15))+
   xlab("Stage")+
   ylab("Maximum rate of oxygen consumption")
