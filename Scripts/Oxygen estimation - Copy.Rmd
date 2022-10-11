@@ -18,6 +18,7 @@ What to do next (10oct22):
 
 ** Use the automatic trim for the ramping period
 ** For those individuals with weird traces: decide if to drop them(consider potential leaking of gas or bad sealing: eg, 213, 141)
+** Compare the logtime of the topt or ropt with the inflection points and see if they match
 ** Merge datasets and create a single file for statistical analyses
 ** clean code, add notes and leave only the final version of the working code on this file
 
@@ -70,6 +71,15 @@ library(grid)
 load("Outputs/Temperature analyses.RData")
 ```
 ## Calling and arranging data
+
+> This is what this code does, per trial:  
+
+1. Prepare the files associated with the trial and brings them into R  
+2. Merges them into a single file  
+3. Manually adds the information missing to each one. Eg: IDs, weights, stages, etc.  
+4. It then call the temperature data and adds it to the file as well  
+5. Finally, it add the oxygen data (based on the calculations of the spreadsheet that Jon DeLong provided me)  
+
 
 ### Trial 2
 ```{r}
@@ -1643,19 +1653,30 @@ Go back to each trial and annotate the best beginning and end of trial, and chan
 
 
 
-# Merging trials into a single dataframe FALTA
+# Merging trials into a single dataframe
+
+> Once all trials were done, this part of the code merges them into a single file. Here we also removed the individuals that drowned during the trial, therefore, their traces might not reflect the same information than the rest. 
 
 ```{r, eval=F}
 oxall<-bind_rows(ox2,ox3,ox4,ox5,ox6,ox7,ox8,ox9,ox10,ox11,ox12,ox13) %>%
-filter(!ind%in%c("25","65", "231","82","121", "235")) # Cambiar por individuos ahogados
+filter(!ind%in%c("25","65", "231","82","121", "235")) # Drowned individuals
   
 
 
-write.csv(oxall,"Outputs/oxygenall_aftercodedeletion.csv")
+write.csv(oxall,"Outputs/oxygenall_aftercodedeletion.csv") #after code deletion: there was an issue and some changes on the code were not saved. This is the name the file received after that event
 
 ```
 
-# Trying which function to use
+# Trying which function to use before doing the analyses
+
+> Here, I was exploring which polynomial function would fit the oxygen trace, in order to get the best fit to the curve and extract Topt, Ropt and activation energy later.  
+What these code chunks do is:  
+1. Filter for a single individual
+2. Then try diferent polynomial functions, with degrees from 2 to 10,and see how they fit the data by plotting and looking at the adjusted r-squared values  
+3. Estimate the 1st and second derivative for one of the polynomials that best fitted the oxygen trace
+4. Get the inflection points for the second derivatives (the point where the second derivative crosses zero, which would mark the places where the first derivative shanges the sign of the slope)
+
+## On individual 232
 ```{r}
 
 # Filtering for a single individuals to just see the fit
@@ -1745,7 +1766,7 @@ inflec<-as.data.frame(inflection)
 
 ```
 
-# Trying which function to use on a different individual
+## On individual 87
 ```{r}
 
 # Filtering for a single individuals to just see the fit
@@ -1837,15 +1858,18 @@ inflec<-as.data.frame(inflection)
 ```
 
 
-# Calling the csv file to avoid running the whole code
+
+
+# Trimming traces with weird patterns
+
+> Some traces have some weird drops/fluctuations of oxygen in the middle of the trace. In order to get a better idea of the general oxygen trace, John reccomended I cut those portions of the trace before fitting the polynomial function to the data.
+> After cutting the traces, I removed the individuals from the original dataset and then add the new, trimmed traces. This created the file "oxall_trimmed.csv" 
+
+## Calling the csv file of the oxygen calculations to avoid running the whole code above
 ```{r}
 #Calling csv file to avoid running the whole code
-#oxall<-read.csv("../Outputs/oxygenall.csv")
-oxall<-read.csv("./Outputs/oxygenall_aftercodedeletion.csv") #Use this one
+oxall<-read.csv("./Outputs/oxygenall_aftercodedeletion.csv") #Use this one for trimming the traces, but for everything else use the one named: "oxall_trimmed.csv", which is the one produced at the end of this section of the code
 ```
-
-# Cutting out traces with weird patterns
-
 ## Individual 22
 ```{r}
 ind22<-oxall %>%
@@ -1940,332 +1964,9 @@ write.csv(oxall, "Outputs/oxall_trimmed.csv")
 
 
 
-# Creating a loop to get data for all individuals 
+## Checking the oxygen traces per life stage 
 
-Steps needed:
-  1. Fit the polynomial function to each individual
-  2. See the r.adjusted for each individual
-  3. Extract the coefficient of the function for each individual
-  4. Get the first and second derivatives
-  5. Get the inflection points
-  6. Clean the inflection points 
-  7. Check the inflection points with the data
-  8. Merge the inflection points with the data set (get at least ID, stage)
-  9. Do statistical comparison
-  
-
-## 1. Adjusting a polynomial function to each individual
-
-```{r}
-# Creating separate lists, one for each individual
-dat_list<-split(oxall, oxall$ind)
-
-
-# Creating function for fitting model
-# Creating function for fitting model
-r2 = function(data) {
-fit = lm(oxymgl~poly(logtime, 10, raw=TRUE), data = data)
-output<-broom::glance(fit) #Getting adjusted r
-suma<-broom::tidy(summary(fit)) #Getting parameters for model
-merge(output, suma, all=TRUE)
-}
-a<-map_dfr(dat_list, r2, .id = "id") #Provides dataframe with adjusted R
-write.csv(a,"./Outputs/modelfitting.csv")
-
-```
-
-## 2. Plotting the function to the data of each individual
-
-```{r}
-# Creating plots to see the fit
-r3 = function(data) {
-     fit = lm(oxymgl~poly(logtime, 10, raw=TRUE), data = data)
-     id<-data[1,11]
-     
-     mypath <- file.path("Outputs/Function fit/",paste("Individual_", id, ".jpg", sep = ""))
-
-
-      jpeg(file = mypath, width=20, height=12, units="cm", res=300)
-
-        plot(data$logtime, data$oxymgl, pch=19, xlab='Logtime', ylab='Oxygen(mg/l)', main=paste("Function fit: Ind", id), cex.lab=1.5, cex.axis=1.25)
-lines(data$logtime, predict(fit, data.frame(logtime=data$logtime)), col='red',lwd=2)
-dev.off()
-     }
-
-map_dfr(dat_list, r3, .id = "id")
-```
-
-
-## 3. Getting the first and second derivative for each individual
-
-```{r}
-# Getting the derivatives for each individual
-#a2<-split(a, a$id)
-r4=function(data){
-fit = lm(oxymgl~poly(logtime, 10, raw=TRUE), data = data)
-coef7<-as.data.frame(fit$coefficients)
-a0<-coef7[1,1]
-a1<-coef7[2,1]
-a2<-coef7[3,1]
-a3<-coef7[4,1]
-a4<-coef7[5,1]
-a5<-coef7[6,1]
-a6<-coef7[7,1]
-a7<-coef7[8,1]
-a8<-coef7[9,1]
-a9<-coef7[10,1]
-a10<-coef7[11,1]
-#x<-ox3$logtime #Values from raw data
-x <- seq(0, 125, by=0.20)
-form7<-expression((a10*x^10)+(a9*x^9)+(a8*x^8)+(a7*x^7)+(a6*x^6)+(a5*x^5)+(a4*x^4)+(a3*x^3)+(a2*x^2)+(a1*x^1)+(a0*x^0))
-d7<-D(form7, "x")
-d7f.data<-as.data.frame(eval(d7, envir=as.data.frame(x)))
-colnames(d7f.data)<-"y1"
-d7f.data$logtime<-x
-d7b<-D(d7, "x")
-d7s.data<-as.data.frame(eval(d7b, envir=as.data.frame(x)))
-colnames(d7s.data)<-"y1"
-d7s.data$logtime<-x
-deriv<-list("first"=d7f.data, "second"=d7s.data)
-}
-a3<-map_dfr(dat_list, r4, .id = "id") #Creates the list with the values of the derivatives
-
-## Saving the second derivatives into a single dataframe
-write.csv(a3, "./Outputs/derivatives.csv")
-
-```
-
-## 4.  Plotting the first derivative
-```{r}
-# Plotting the first derivative
-r4first=function(data){
-  fit = lm(oxymgl~poly(logtime, 10, raw=TRUE), data = data)
-coef7<-as.data.frame(fit$coefficients)
-a0<-coef7[1,1]
-a1<-coef7[2,1]
-a2<-coef7[3,1]
-a3<-coef7[4,1]
-a4<-coef7[5,1]
-a5<-coef7[6,1]
-a6<-coef7[7,1]
-a7<-coef7[8,1]
-a8<-coef7[9,1]
-a9<-coef7[10,1]
-a10<-coef7[11,1]
-id<-data[1,11]
-  #x<-ox3$logtime #Values from raw data
-x <- seq(0, 125, by=0.20) 
- form7<-expression((a10*x^10)+(a9*x^9)+(a8*x^8)+(a7*x^7)+(a6*x^6)+(a5*x^5)+(a4*x^4)+(a3*x^3)+(a2*x^2)+(a1*x^1)+(a0*x^0))
-d7<-D(form7, "x") 
-d7f.data<-as.data.frame(eval(d7, envir=as.data.frame(x)))
-colnames(d7f.data)<-"y1"
-d7f.data$logtime<-x
-
-mypath <- file.path("Outputs/First derivative plots/",paste("Individual_", id, ".jpg", sep = ""))
-
-
- jpeg(file = mypath, width=20, height=12, units="cm", res=300)
-
-
-
-plot(d7f.data$logtime, d7f.data$y1*-1, pch=19, xlab='Logtime', ylab='Oxygen(mg/l)', main=paste("First derivative: Ind ", id), cex.lab=1.5, cex.axis=1.25, ylim=c(-0.04,0.04))
-dev.off()
-}
-
-map(dat_list, r4first)
-```
-
-## 5. Plotting the second derivative
-
-```{r}
-# Plotting the second derivative
-r4second=function(data){
-   fit = lm(oxymgl~poly(logtime, 10, raw=TRUE), data = data)
-coef7<-as.data.frame(fit$coefficients)
-a0<-coef7[1,1]
-a1<-coef7[2,1]
-a2<-coef7[3,1]
-a3<-coef7[4,1]
-a4<-coef7[5,1]
-a5<-coef7[6,1]
-a6<-coef7[7,1]
-a7<-coef7[8,1]
-a8<-coef7[9,1]
-a9<-coef7[10,1]
-a10<-coef7[11,1]
-id<-data[1,11]
-  #x<-ox3$logtime #Values from raw data
-  x <- seq(0, 125, by=0.20) 
-   form7<-expression((a10*x^10)+(a9*x^9)+(a8*x^8)+(a7*x^7)+(a6*x^6)+(a5*x^5)+(a4*x^4)+(a3*x^3)+(a2*x^2)+(a1*x^1)+(a0*x^0))
-d7<-D(form7, "x") 
-d7b<-D(d7, "x")
-d7s.data<-as.data.frame(eval(d7b, envir=as.data.frame(x)))
-colnames(d7s.data)<-"y1"
-d7s.data$logtime<-x
-
-mypath <- file.path("Outputs/Second derivative plots/",paste("Individual_", id, ".jpg", sep = ""))
-
-
- jpeg(file = mypath, width=20, height=12, units="cm", res=300)
-plot(d7s.data$logtime, d7s.data$y1, pch=19, xlab='Logtime', ylab='Oxygen(mg/l)', main=paste("Second derivative: Ind", id), cex.lab=1.5, cex.axis=1.25, ylim=c(-0.004,0.004))
-abline(h=0,col="orange", lty=2, lwd=2)
-dev.off()
-}
-
-map(dat_list, r4second)
-```
-
-## 6. Getting the inflection points
-
-```{r}
-# Getting the inflection points: the points where there was a change in the "slope"
-r5=function(data){
-  fit = lm(oxymgl~poly(logtime, 10, raw=TRUE), data = data)
-coef7<-as.data.frame(fit$coefficients)
-a0<-coef7[1,1]
-a1<-coef7[2,1]
-a2<-coef7[3,1]
-a3<-coef7[4,1]
-a4<-coef7[5,1]
-a5<-coef7[6,1]
-a6<-coef7[7,1]
-a7<-coef7[8,1]
-a8<-coef7[9,1]
-a9<-coef7[10,1]
-a10<-coef7[11,1]
-id<-data[1,11]
-#x<-ox3$logtime #Values from raw data
-x <- seq(0, 125, by=0.20)
-form7<-expression((a10*x^10)+(a9*x^9)+(a8*x^8)+(a7*x^7)+(a6*x^6)+(a5*x^5)+(a4*x^4)+(a3*x^3)+(a2*x^2)+(a1*x^1)+(a0*x^0))
-d7<-D(form7, "x")
-d7b<-D(d7, "x")
-inflection<-polyroot(c((a2 *2), (a3 *3 * 2 ),(a4* 4 * 3 ), (a5 *5 * 4) , (a6 * 6 * 5 ), (a7 * 7 * 6 ),(a8 *8*7), (a9*9*8), (a10*10*9)))
-inflec<-as.data.frame(inflection)
-inflec$id<-data[1,1]
-as.data.frame(inflec)
-}
-a4<-map_dfr(dat_list, r5, .id = "id") # List of dataframes containing the inflection points
-
-
-## Merging points into a single dataframe
-options(scipen=999) #Removing scientific notation
-inflections<-a4%>%
-bind_rows() %>%
-mutate(real=Re(inflection), #Extracting the real number from the complex expression
-values=format(real, scientific=FALSE, big.mark=","), #Coverting the real number to printed decimal expression
-rounded=round(real, digits=2), #rounding the real number
-imagine=round(Im(inflection), digits=2)) %>% #Extracting te imaginary number
-filter(between(real, 10, 115))
-write.csv(inflections, "./Outputs/inflections.csv")
-  
-
-```
-
-
-## 7.  Making combined figures for the function fit, first and second derivatives
-
-```{r}
-# AS a function
-make_grid <- function(id){
-  #Establishing paths
-  f1<-paste0("Outputs/Function fit/Individual_",id,".jpg")
-  f2<-paste0("Outputs/First derivative plots/","Individual_",id,".jpg")
-  f3<-paste0("Outputs/Second derivative plots/","Individual_",id,".jpg")
-  #Reading images
- j1<-readJPEG(f1)
- j2<-readJPEG(f2)
- j3<-readJPEG(f3)
-  #Establishing path
- mypath <- file.path("C:/Users/laus1/OneDrive - University of Nebraska-Lincoln/UNL/PhD Tesis/Methods/Thermolimit/Thermolimit data analyses/Outputs/Figure montages/", paste("Individual_", id, ".jpg", sep = ""))
-# Creating figures
-jpeg(file = mypath, width=20, height=36, units="cm", res=300)
-par(mar=c(1,1,1,1))
-layout(matrix(1:3, ncol=1,byrow=TRUE))
- plot(NA,xlim=0:1,ylim=0:1,xaxt="n",yaxt="n")
- rasterImage(j1,0,0,1,1)
- plot(NA,xlim=0:1,ylim=0:1,xaxt="n",yaxt="n")
- rasterImage(j2, 0,0,1,1)
- plot(NA,xlim=0:1,ylim=0:1,xaxt="n",yaxt="n")
-rasterImage(j3, 0,0,1,1)
-dev.off()
- 
-  }
-
-groups<-levels(as.factor(a$id))
-
-map(groups, make_grid)
-
-
-```
-
-## 8. Obtaining the maximum rate of oxygen consumption (Ropt)
-```{r}
-derivs<-read.csv("Outputs/derivatives.csv")
-
-
-derivs<-derivs %>%
-  mutate(first2=first.y1*-1)%>% #Converting the slopes to positive
-  filter(between(first.logtime, 30, 105)) #Triming the timeframe to the actual slope time
-  
-# Plotting to see if the conversion looks right
-derivs%>%
-  filter(id==10) %>%
-  ggplot(aes(x=first.logtime, y=first2))+geom_line()
-
-derivs%>%
-  filter(id==3) %>%
-  ggplot(aes(x=first.logtime, y=first2))+geom_line()
-
-# Getting the row with the maximum value for each individual
-ropt<-derivs %>%
-     group_by(id) %>%
-     slice(which.max(first2))%>%
-  mutate(logtime=first.logtime,
-         ind=id)
-
-
-```
-
-## 9. Getting the temperatures associated with the Ropt (Topt)
-```{r}
-#Merging the temperatures
-topt<-difference_left_join(ropt,oxall, by=c("ind","logtime"), max_dist=0.13) %>% #Merges dataframes based on the closest logtime value (within 0.13)
-  group_by(ind.x, logtime.x, first.y1, first2) %>%
-  summarize(tempcorr2=mean(tempcorr)) %>% #averaging the tempcorr for when multiple cells are called
-  ungroup()
-
-
-#getting the other demographic data
-toptfinal<-oxall %>%
-  select(c("date", "trial", "channel", "ind", "stage", "weight", "ramp")) %>%
-  group_by(ind)%>%
-  filter(row_number()==1) %>%
-  right_join(topt, by=c("ind"="ind.x")) %>%
-  rename(logtime=logtime.x,
-         tempcorr=tempcorr2,
-         ropt1=first.y1, 
-         ropt2=first2) %>%
-  ungroup()%>%
-  mutate(stage=fct_relevel(stage, levels=c("Protonymph", "Deutonymph", "Tritonymph", "Female", "Male" )))
-
-levels(toptfinal$stage)
-#Visualizing the topt and Ropt
-
-## Temperature optima
-ggplot(toptfinal, aes(x=stage, y=tempcorr))+geom_boxplot() +theme_classic() + 
-  theme(text = element_text(size = 15))+
-  xlab("Stage")+
-  ylab("Ctmax (Celsius)")
-
-ggplot(toptfinal, aes(x=stage, y=ropt2))+geom_boxplot() +theme_classic() + 
-  theme(text = element_text(size = 15))+
-  xlab("Stage")+
-  ylab("Maximum rate of oxygen consumption")
-
-
-write.csv(toptfinal, "Outputs/ToptandRopts.csv")
-```
-### Checking the oxygen traces per life stage
+> Plotting all the traces separated by life stage and colored by trial
 
 ### Protonymphs
 ```{r}
@@ -2373,17 +2074,391 @@ ggsave(plot=last_plot(),filename="OxygenTrace_Females.jpg",  path="../Outputs/Ox
 
   
 ```
-### Checking the slope trends per life stage
+
+# Creating a loops to fit polynomial functions for all individuals 
+
+> The following code will do the following steps for each single individual: 
+  1. Fit the polynomial function of 10 degrees to each individual and obtain the adjusted r-square to evaulate model fitting for each individual (file: modelfitting.csv)  
+  2. Plot the oxygen trace and the polynomial function together (Plots in folder named "Function fit")  
+  3. Get the first and second derivatives for all the traces (file: derivatives.csv)  
+  4. Plot the first and second derivatives (in folders "First derivative plots"  and " Second derivative plots" respectively)  
+  5. Obtaining the inflection points from the second derivative (file: inflections.csv)  
+  6. Making combined figures by merging the traces with the function fitted, the first and second derivatives plots (in folder named "Figure montages")  
+
+## Getting data for the loops
+```{r}
+oxall<-read.csv("Outputs/oxall_trimmed.csv") #Using the oxygen traces that were trimmed for some individuals that had weird patterns
+
+# Creating separate lists, one for each individual
+dat_list<-split(oxall, oxall$ind)
+```
+
+  
+
+## 1. Adjusting a polynomial function to each individual
+
+```{r}
+# Creating function for fitting model
+r2 = function(data) {
+fit = lm(oxymgl~poly(logtime, 10, raw=TRUE), data = data) #fitting the model
+output<-broom::glance(fit) #Getting adjusted r
+suma<-broom::tidy(summary(fit)) #Getting parameters for model
+merge(output, suma, all=TRUE) #merging both datasets into a single table
+}
+a<-map_dfr(dat_list, r2, .id = "id") #Provides dataframe with adjusted R
+write.csv(a,"./Outputs/modelfitting.csv")
+
+```
+
+## 2. Plotting the function to the data of each individual
+
+```{r}
+# Creating plots to see the fit
+r3 = function(data) {
+     fit = lm(oxymgl~poly(logtime, 10, raw=TRUE), data = data) #fitting the model
+     id<-data[1,11] #Getting ID for each individual
+     
+     mypath <- file.path("Outputs/Function fit/",paste("Individual_", id, ".jpg", sep = "")) #defining path and name for each individual
+
+
+      jpeg(file = mypath, width=20, height=12, units="cm", res=300) 
+
+        plot(data$logtime, data$oxymgl, pch=19, xlab='Logtime', ylab='Oxygen(mg/l)', main=paste("Function fit: Ind", id), cex.lab=1.5, cex.axis=1.25)
+lines(data$logtime, predict(fit, data.frame(logtime=data$logtime)), col='red',lwd=2)
+dev.off()
+     }
+
+map_dfr(dat_list, r3, .id = "id") #This applies the function for each table in the list. this works best for creating plots
+```
+
+
+
+## 3. Getting the first and second derivative for each individual
+
+```{r}
+# Getting the derivatives for each individual
+#a2<-split(a, a$id)
+r4=function(data){
+fit = lm(oxymgl~poly(logtime, 10, raw=TRUE), data = data) #fitting the model
+coef7<-as.data.frame(fit$coefficients) #Getting summary data into dataframe to extract each coefficient
+a0<-coef7[1,1] #extracting each coefficient from the summary
+a1<-coef7[2,1]
+a2<-coef7[3,1]
+a3<-coef7[4,1]
+a4<-coef7[5,1]
+a5<-coef7[6,1]
+a6<-coef7[7,1]
+a7<-coef7[8,1]
+a8<-coef7[9,1]
+a9<-coef7[10,1]
+a10<-coef7[11,1]
+#x<-ox3$logtime #Values from raw data
+x <- seq(0, 125, by=0.20) #Defining the sequence of logtime to use
+form7<-expression((a10*x^10)+(a9*x^9)+(a8*x^8)+(a7*x^7)+(a6*x^6)+(a5*x^5)+(a4*x^4)+(a3*x^3)+(a2*x^2)+(a1*x^1)+(a0*x^0)) #Creating the formula of the polynomial function
+d7<-D(form7, "x") #getting the first derivative
+d7f.data<-as.data.frame(eval(d7, envir=as.data.frame(x))) #Saving output of the first derivative as a data frame
+colnames(d7f.data)<-"y1" #defining column name for the first derivative dataframe
+d7f.data$logtime<-x #Creating logtime column for first derivative dataframe
+d7b<-D(d7, "x") #Getting the second derivative
+d7s.data<-as.data.frame(eval(d7b, envir=as.data.frame(x))) #Saving output of the second derivative as a data frame
+colnames(d7s.data)<-"y1" #defining column name for the second derivative dataframe
+d7s.data$logtime<-x #Creating logtime column for second derivative dataframe
+deriv<-list("first"=d7f.data, "second"=d7s.data) #Merging two dataframes together
+}
+a3<-map_dfr(dat_list, r4, .id = "id") #Creates the list with the values of the two derivatives
+
+## Saving the second derivatives into a single dataframe
+write.csv(a3, "./Outputs/derivatives.csv")
+
+```
+
+## 4. Plotting the first derivative
+```{r}
+# Plotting the first derivative
+
+## See #3 above for the rest of the annotations. I will only annotate here what is different from above
+r4first=function(data){
+  fit = lm(oxymgl~poly(logtime, 10, raw=TRUE), data = data)
+coef7<-as.data.frame(fit$coefficients)
+a0<-coef7[1,1]
+a1<-coef7[2,1]
+a2<-coef7[3,1]
+a3<-coef7[4,1]
+a4<-coef7[5,1]
+a5<-coef7[6,1]
+a6<-coef7[7,1]
+a7<-coef7[8,1]
+a8<-coef7[9,1]
+a9<-coef7[10,1]
+a10<-coef7[11,1]
+id<-data[1,11]
+  #x<-ox3$logtime #Values from raw data
+x <- seq(0, 125, by=0.20) 
+ form7<-expression((a10*x^10)+(a9*x^9)+(a8*x^8)+(a7*x^7)+(a6*x^6)+(a5*x^5)+(a4*x^4)+(a3*x^3)+(a2*x^2)+(a1*x^1)+(a0*x^0))
+d7<-D(form7, "x") 
+d7f.data<-as.data.frame(eval(d7, envir=as.data.frame(x)))
+colnames(d7f.data)<-"y1"
+d7f.data$logtime<-x
+
+mypath <- file.path("Outputs/First derivative plots/",paste("Individual_", id, ".jpg", sep = "")) #creating name and path for the plot
+
+
+ jpeg(file = mypath, width=20, height=12, units="cm", res=300) #opens file plot
+
+
+
+plot(d7f.data$logtime, d7f.data$y1*-1, pch=19, xlab='Logtime', ylab='Oxygen(mg/l)', main=paste("First derivative: Ind ", id), cex.lab=1.5, cex.axis=1.25, ylim=c(-0.04,0.04)) #plotting the first derivative
+dev.off()
+}
+
+map(dat_list, r4first) #created plot for each individual
+```
+
+## 5. Plotting the second derivative
+
+```{r}
+# Plotting the second derivative
+
+#Annotations as the same as #3 and #4, the only difference is that this plot the data for the second derivative but the code is pretty much the same
+
+r4second=function(data){
+   fit = lm(oxymgl~poly(logtime, 10, raw=TRUE), data = data)
+coef7<-as.data.frame(fit$coefficients)
+a0<-coef7[1,1]
+a1<-coef7[2,1]
+a2<-coef7[3,1]
+a3<-coef7[4,1]
+a4<-coef7[5,1]
+a5<-coef7[6,1]
+a6<-coef7[7,1]
+a7<-coef7[8,1]
+a8<-coef7[9,1]
+a9<-coef7[10,1]
+a10<-coef7[11,1]
+id<-data[1,11]
+  #x<-ox3$logtime #Values from raw data
+  x <- seq(0, 125, by=0.20) 
+   form7<-expression((a10*x^10)+(a9*x^9)+(a8*x^8)+(a7*x^7)+(a6*x^6)+(a5*x^5)+(a4*x^4)+(a3*x^3)+(a2*x^2)+(a1*x^1)+(a0*x^0))
+d7<-D(form7, "x") 
+d7b<-D(d7, "x")
+d7s.data<-as.data.frame(eval(d7b, envir=as.data.frame(x)))
+colnames(d7s.data)<-"y1"
+d7s.data$logtime<-x
+
+mypath <- file.path("Outputs/Second derivative plots/",paste("Individual_", id, ".jpg", sep = ""))
+
+
+ jpeg(file = mypath, width=20, height=12, units="cm", res=300)
+plot(d7s.data$logtime, d7s.data$y1, pch=19, xlab='Logtime', ylab='Oxygen(mg/l)', main=paste("Second derivative: Ind", id), cex.lab=1.5, cex.axis=1.25, ylim=c(-0.004,0.004)) #plots the second derivative
+abline(h=0,col="orange", lty=2, lwd=2) #line to visualize the intersection with zero (relevant for the inflection points)
+dev.off()
+}
+
+map(dat_list, r4second) #Plots the second derivative plots for each individual
+```
+
+## 6. Getting the inflection points
+
+```{r}
+# Getting the inflection points: the points where there was a change in the "slope"
+## Procedure is pretty much the same as above, I will only comment what is different
+r5=function(data){
+  fit = lm(oxymgl~poly(logtime, 10, raw=TRUE), data = data)
+coef7<-as.data.frame(fit$coefficients)
+a0<-coef7[1,1]
+a1<-coef7[2,1]
+a2<-coef7[3,1]
+a3<-coef7[4,1]
+a4<-coef7[5,1]
+a5<-coef7[6,1]
+a6<-coef7[7,1]
+a7<-coef7[8,1]
+a8<-coef7[9,1]
+a9<-coef7[10,1]
+a10<-coef7[11,1]
+id<-data[1,11]
+#x<-ox3$logtime #Values from raw data
+x <- seq(0, 125, by=0.20)
+form7<-expression((a10*x^10)+(a9*x^9)+(a8*x^8)+(a7*x^7)+(a6*x^6)+(a5*x^5)+(a4*x^4)+(a3*x^3)+(a2*x^2)+(a1*x^1)+(a0*x^0))
+d7<-D(form7, "x")
+d7b<-D(d7, "x")
+inflection<-polyroot(c((a2 *2), (a3 *3 * 2 ),(a4* 4 * 3 ), (a5 *5 * 4) , (a6 * 6 * 5 ), (a7 * 7 * 6 ),(a8 *8*7), (a9*9*8), (a10*10*9))) #Estimates the inflection points from the coefficients above as well as the formula as established for a polynomial of 10 degrees
+inflec<-as.data.frame(inflection) #Creates a dataframe of the inflection points
+inflec$id<-data[1,1] #adds the id for each individual's inflection points
+as.data.frame(inflec) #creates a dataframe with all the inflection points per individual
+}
+a4<-map_dfr(dat_list, r5, .id = "id") # List of dataframes containing the inflection points
+
+
+## Merging points into a single dataframe
+options(scipen=999) #Removing scientific notation
+inflections<-a4%>%
+bind_rows() %>%
+mutate(real=Re(inflection), #Extracting the real number from the complex expression
+values=format(real, scientific=FALSE, big.mark=","), #Coverting the real number to printed decimal expression
+rounded=round(real, digits=2), #rounding the real number
+imagine=round(Im(inflection), digits=2)) %>% #Extracting the imaginary number
+filter(between(real, 10, 105)) #Filters out the inflections that occurred before 10 minutes and after 105 minutes, reducing it to the time where the ramping was programmed to occur
+write.csv(inflections, "./Outputs/inflections.csv") #saves the file as a csv file
+  
+
+```
+
+
+## 7. Making combined figures for the function fit, first and second derivatives
+
+```{r}
+# AS a function
+make_grid <- function(id){
+  #Establishing paths
+  f1<-paste0("Outputs/Function fit/Individual_",id,".jpg") #oxygen trace with function
+  f2<-paste0("Outputs/First derivative plots/","Individual_",id,".jpg") #first derivative
+  f3<-paste0("Outputs/Second derivative plots/","Individual_",id,".jpg") #second derivative
+  #Reading images
+ j1<-readJPEG(f1) #oxygen trace with function
+ j2<-readJPEG(f2) #first derivative
+ j3<-readJPEG(f3) #second derivative
+  #Establishing path
+ mypath <- file.path("C:/Users/laus1/OneDrive - University of Nebraska-Lincoln/UNL/PhD Tesis/Methods/Thermolimit/Thermolimit data analyses/Outputs/Figure montages/", paste("Individual_", id, ".jpg", sep = ""))
+# Creating figures
+jpeg(file = mypath, width=20, height=36, units="cm", res=300) #created file for the image, with the measurements and resolution
+par(mar=c(1,1,1,1)) #defining margin size
+layout(matrix(1:3, ncol=1,byrow=TRUE)) #defining that the images will be arranged in 1 column with 3 rows, and will be filled by row
+ plot(NA,xlim=0:1,ylim=0:1,xaxt="n",yaxt="n") #creates empty space for putting the following image
+ rasterImage(j1,0,0,1,1) #adding the image of the oxygen trace
+ plot(NA,xlim=0:1,ylim=0:1,xaxt="n",yaxt="n") #creates empty space for putting the following image
+ rasterImage(j2, 0,0,1,1) #adding the image of the first derivative
+ plot(NA,xlim=0:1,ylim=0:1,xaxt="n",yaxt="n") #creates empty spacefor putting the following image
+rasterImage(j3, 0,0,1,1)#adding the image of the second derivative
+dev.off() #Closes the figure
+ 
+  }
+
+groups<-levels(as.factor(a$id)) #created the list of ids based on the dataframe that was created in #1 above when fitting the function to the traces 
+
+map(groups, make_grid) # creates all the figures for each individual 
+
+```
+
+
+# Estimating Ropt and Topt
+
+## For all individuals
+### Getting the maximum rate of oxygen consumption (Rate optima, Ropt)
+> Once we have the derivatives and their respective plots, we can estimate the point in time where the rate of oxygen consumed was maximized (which represents the Rate optima, Ropt). As the first derivative represent the change in oxygen consumption over time, we can use the first derivative to get this. The maximum point in the trace of the first derivative is the Ropt. 
+
+> The following code will call the file contining the values of the derivatives, will then conver the first derivative to positive values and cur the trace to focus on the time period where the ramping was actually occurring (between minutes 30 and 105). Then it will extract row where the maximum point is recorded for each individual. That file will then be used to also estimate the Thermal optima (next part)
+
+> This first part of the code for Ropt and Topt will do the same procedure for all individuals, but as some have traces with patterns that differ a bit, some adjustments will be done afterwards.
+
 
 
 ```{r}
+derivs<-read.csv("Outputs/derivatives.csv") #getting the derivative data
+
 
 derivs<-derivs %>%
   mutate(first2=first.y1*-1)%>% #Converting the slopes to positive
   filter(between(first.logtime, 30, 105)) #Triming the timeframe to the actual slope time
+  
+# Plotting to see if the conversion looks right
+derivs%>%
+  filter(id==10) %>%
+  ggplot(aes(x=first.logtime, y=first2))+geom_line()
 
+derivs%>%
+  filter(id==3) %>%
+  ggplot(aes(x=first.logtime, y=first2))+geom_line()
+
+# Getting the row with the maximum value for each individual
+ropt<-derivs %>%
+     group_by(id) %>%
+     slice(which.max(first2))%>% #selects the row where the amximum point is recorded for each individual
+  mutate(logtime=first.logtime, #changes the names of logtime and individual to facilitate merging in the next steps
+         ind=id)
+
+
+```
+
+### Getting the Temperature optima (Topt)
+
+> Once we know the point in time where the rate was maximize (Ropt), we can look for the temperature associated to that point in time during each trial, for each individual. We can do this by merging the ropt dataframe with the dataframe containing the temperature at each point in time (oxall).
+
+> Here we create the file "ToptandRopts.csv" with the Ropt and Top for all individuals estimated the same way. However, we still need to see if the data makes sense.
+
+```{r}
+#Merging the temperatures
+topt<-difference_left_join(ropt,oxall, by=c("ind","logtime"), max_dist=0.13) %>% #Merges dataframes based on the closest logtime value (within 0.13). Since the ropt value coms from the derivatives, and the derivatives were estimated based on a sequence of values created for them rather than the real logtime values, the logtime in both dataframes is not exactly the same and we have to use an approximation instead
+  group_by(ind.x, logtime.x, first.y1, first2) %>% 
+  summarize(tempcorr2=mean(tempcorr)) %>% #averaging the tempcorr for when multiple cells are called
+  ungroup()
+
+
+#getting the other demographic data
+toptfinal<-oxall %>%
+  select(c("date", "trial", "channel", "ind", "stage", "weight", "ramp")) %>% #selecting the more relevant variables
+  group_by(ind)%>% #Grouping by individual
+  filter(row_number()==1) %>% #getting just the first row for each individual
+  right_join(topt, by=c("ind"="ind.x")) %>% #mergint the dataframes
+  rename(logtime=logtime.x, #renaming some variables for simplification
+         tempcorr=tempcorr2,
+         ropt1=first.y1, 
+         ropt2=first2) %>%
+  ungroup()%>%
+  mutate(stage=fct_relevel(stage, levels=c("Protonymph", "Deutonymph", "Tritonymph",  "Male", "Female"))) #changing the order of the levels within the factor "stage" 
+
+levels(toptfinal$stage)
+
+#Visualizing the topt and Ropt
+
+## Temperature optima
+ggplot(toptfinal, aes(x=stage, y=tempcorr))+geom_boxplot() +theme_classic() + 
+  theme(text = element_text(size = 15))+
+  xlab("Stage")+
+  ylab("Ctmax (Celsius)")
+
+#Rate optima
+ggplot(toptfinal, aes(x=stage, y=ropt2))+geom_boxplot() +theme_classic() + 
+  theme(text = element_text(size = 15))+
+  xlab("Stage")+
+  ylab("Maximum rate of oxygen consumption")
+
+#Saving the file
+write.csv(toptfinal, "Outputs/ToptandRopts.csv")
+```
+### Evaluating extreme points for topt and ropt
+
+> This would help me see if there are any weird trends with the data. I dropped trial 2 because the ramping rate on it was lower than that of the other trials and was biasing the results 
+
+```{r}
+# Plot with prediction trends, standard error and data
+dat<-read.csv("Outputs/ToptandRopts.csv")
+dat<-dat%>%
+  mutate(stage=fct_relevel(stage, levels=c("Protonymph", "Deutonymph", "Tritonymph",  "Male","Female" ))) %>%
+  arrange(stage)
+dat2<-dat%>%filter(trial!=2)
+
+plot<-ggplot(dat2, aes(x = stage))+ 
+  geom_point(aes(y = tempcorr, color=stage), size = 3, shape=1, stroke=1.2) + 
+  theme_classic()+ theme(text = element_text(size = 15))+ 
+  xlab("Stage")+
+  ylab("Thermal optima (Celsius)")
+plot
+
+```
+
+> Protonymphs and deutonymphs seems to have some extreme values (over 50 C or so). Looking at the trends of those individuals might help explain what is happening (e.g. if the ropt that was picked up was from the "dying' peak (the one that might be occuring after death) rather than the real Ropt peak)
+
+### Checking the first derivative trend per life stage during ramping only
+
+> To see if the Ropt and topt above where extracted from curves that looked ok, here we plot all the curves for just the period where the ramping happened. If any trace seem off, we can adjust the trimming for a better capture of the real ropt and topt. 
+
+#### Merging the demographic data to the derivative data
+```{r}
 
 oxall<-read.csv("Outputs/oxall_trimmed.csv")
+derivs<-read.csv("Outputs/derivatives.csv") #getting the derivative data
+
 
 #Protonymphs
 oxallp<-oxall %>%
@@ -2393,9 +2468,22 @@ oxallp<-oxall %>%
   filter(between(logtime, 30, 105)) %>%
   filter(stage=="Protonymph")
 
+
+ids<-levels(as.factor(oxallp$ind))
+ids
+
+derivsp2<-derivs %>%
+  mutate(first2=first.y1*-1, 
+         ind=as.factor(id))%>% #Converting the slopes to positive
+  filter(between(first.logtime, 30, 105)) %>% #Triming the timeframe to the actual slope time
+  filter(ind %in% ids)
+
 #Merging the temperatures
-derivsp<-difference_right_join(derivs,oxallp, by=c("id","first.logtime"), max_dist=0.13) #Merges dataframes based on the closest logtime value (within 0.13)
+derivsp<-difference_left_join(derivsp2,oxallp, by=c("id","first.logtime"), max_dist=0.13) #Merges dataframes based on the closest logtime value (within 0.13)
   
+
+
+
 
 #Deutonymphs  
 oxalld<-oxall %>%
@@ -2405,8 +2493,17 @@ oxalld<-oxall %>%
   filter(between(logtime, 30, 105)) %>%
   filter(stage=="Deutonymph")
 
+ids<-levels(as.factor(oxalld$ind))
+ids
+
+derivsd2<-derivs %>%
+  mutate(first2=first.y1*-1, 
+         ind=as.factor(id))%>% #Converting the slopes to positive
+  filter(between(first.logtime, 30, 105)) %>% #Triming the timeframe to the actual slope time
+  filter(ind %in% ids)
+
 #Merging the temperatures
-derivsd<-difference_right_join(derivs,oxalld, by=c("id","first.logtime"), max_dist=0.13) #Merges dataframes based on the closest logtime value (within 0.13)
+derivsd<-difference_left_join(derivsd2,oxalld, by=c("id","first.logtime"), max_dist=0.13) #Merges dataframes based on the closest logtime value (within 0.13)
   
 
 #Tritonymphs  
@@ -2417,8 +2514,17 @@ oxallt<-oxall %>%
   filter(between(logtime, 30, 105)) %>%
   filter(stage=="Tritonymph")
 
+ids<-levels(as.factor(oxallt$ind))
+ids
+
+derivst2<-derivs %>%
+  mutate(first2=first.y1*-1, 
+         ind=as.factor(id))%>% #Converting the slopes to positive
+  filter(between(first.logtime, 30, 105)) %>% #Triming the timeframe to the actual slope time
+  filter(ind %in% ids)
+
 #Merging the temperatures
-derivst<-difference_right_join(derivs,oxallt, by=c("id","first.logtime"), max_dist=0.13) #Merges dataframes based on the closest logtime value (within 0.13)
+derivst<-difference_left_join(derivst2,oxallt, by=c("id","first.logtime"), max_dist=0.13) #Merges dataframes based on the closest logtime value (within 0.13)
 
 
 #Males 
@@ -2429,8 +2535,17 @@ oxallm<-oxall %>%
   filter(between(logtime, 30, 105)) %>%
   filter(stage=="Male")
 
+ids<-levels(as.factor(oxallm$ind))
+ids
+
+derivsm2<-derivs %>%
+  mutate(first2=first.y1*-1, 
+         ind=as.factor(id))%>% #Converting the slopes to positive
+  filter(between(first.logtime, 30, 105)) %>% #Triming the timeframe to the actual slope time
+  filter(ind %in% ids)
+
 #Merging the temperatures
-derivsm<-difference_right_join(derivs,oxallm, by=c("id","first.logtime"), max_dist=0.13) #Merges dataframes based on the closest logtime value (within 0.13)
+derivsm<-difference_left_join(derivsm2,oxallm, by=c("id","first.logtime"), max_dist=0.13) #Merges dataframes based on the closest logtime value (within 0.13)
 
 #Females 
 oxallf<-oxall %>%
@@ -2440,8 +2555,17 @@ oxallf<-oxall %>%
   filter(between(logtime, 30, 105)) %>%
   filter(stage=="Female")
 
+ids<-levels(as.factor(oxallf$ind))
+ids
+
+derivsf2<-derivs %>%
+  mutate(first2=first.y1*-1, 
+         ind=as.factor(id))%>% #Converting the slopes to positive
+  filter(between(first.logtime, 30, 105)) %>% #Triming the timeframe to the actual slope time
+  filter(ind %in% ids)
+
 #Merging the temperatures
-derivsf<-difference_right_join(derivs,oxallf, by=c("id","first.logtime"), max_dist=0.13) #Merges dataframes based on the closest logtime value (within 0.13)
+derivsf<-difference_left_join(derivsf2,oxallf, by=c("id","first.logtime"), max_dist=0.13) #Merges dataframes based on the closest logtime value (within 0.13)
 
 
   
@@ -2451,8 +2575,8 @@ write.csv(derivsdemography, "Outputs/derivsdemography.csv")
 derivs2<-read.csv("Outputs/derivsdemography.csv")
 ```
 
-
-### Protonymphs
+#### Plotting each derivative trace for each life stage
+##### Protonymphs
 ```{r}
 protos <- derivs2%>%
   filter(stage=="Protonymph")
@@ -2460,7 +2584,7 @@ protos <- derivs2%>%
   
 ggplot(protos, aes(x=logtime, y=first2,color=as.factor(trial)))+ #MODIFY FOR EACH TRIAL
   geom_line()+
-  facet_wrap(~ind)+
+  facet_wrap(~ind.x)+
   theme_classic()+
   theme(text = element_text(size = 15), plot.title = element_text(size = (12)))+
   xlab("Time logged (min)")+
@@ -2468,11 +2592,11 @@ ggplot(protos, aes(x=logtime, y=first2,color=as.factor(trial)))+ #MODIFY FOR EAC
   ggtitle("Protonymphs")+
   labs(colour = "Trial")
 
-ggsave(plot=last_plot(),filename="DerivsTrace_Protonymphs.jpg",  path="Outputs/Derivative traces per stage/")
+ggsave(plot=last_plot(),filename="DerivsTrace_Protonymphs.jpg",  path="Outputs/Derivative traces per stage/",width=7, height=7, units="in")
 
   
 ```
-### Deutonymphs
+##### Deutonymphs
 ```{r}
 deutos <- derivs2%>%
   filter(stage=="Deutonymph")
@@ -2480,7 +2604,7 @@ deutos <- derivs2%>%
   
 ggplot(deutos, aes(x=logtime, y=first2,color=as.factor(trial)))+ #MODIFY FOR EACH TRIAL
   geom_line()+
-  facet_wrap(~ind)+
+  facet_wrap(~ind.x)+
   theme_classic()+
   theme(text = element_text(size = 15), plot.title = element_text(size = (12)))+
   xlab("Time logged (min)")+
@@ -2488,11 +2612,11 @@ ggplot(deutos, aes(x=logtime, y=first2,color=as.factor(trial)))+ #MODIFY FOR EAC
   ggtitle("Deutonymphs")+
   labs(colour = "Trial")
 
-ggsave(plot=last_plot(),filename="DerivsnTrace_Deutonymphs.jpg",  path="Outputs/Derivative traces per stage/")
+ggsave(plot=last_plot(),filename="DerivsnTrace_Deutonymphs.jpg",  path="Outputs/Derivative traces per stage/",width=7, height=7, units="in")
 
   
 ```
-### Tritonymphs
+##### Tritonymphs
 ```{r}
 Tritos <- derivs2%>%
   filter(stage=="Tritonymph")
@@ -2500,7 +2624,7 @@ Tritos <- derivs2%>%
   
 ggplot(Tritos, aes(x=logtime, y=first2,color=as.factor(trial)))+ #MODIFY FOR EACH TRIAL
   geom_line()+
-  facet_wrap(~ind)+
+  facet_wrap(~ind.x)+
   theme_classic()+
   theme(text = element_text(size = 15), plot.title = element_text(size = (12)))+
   xlab("Time logged (min)")+
@@ -2513,7 +2637,7 @@ ggsave(plot=last_plot(),filename="DerivsTrace_Tritonymphs.jpg",  path="Outputs/D
   
 ```
 
-### Males
+##### Males
 ```{r}
 males <- derivs2%>%
   filter(stage=="Male")
@@ -2521,7 +2645,7 @@ males <- derivs2%>%
   
 ggplot(males, aes(x=logtime, y=first2,color=as.factor(trial)))+ #MODIFY FOR EACH TRIAL
   geom_line()+
-  facet_wrap(~ind)+
+  facet_wrap(~ind.x)+
   theme_classic()+
   theme(text = element_text(size = 15), plot.title = element_text(size = (12)))+
   xlab("Time logged (min)")+
@@ -2529,12 +2653,12 @@ ggplot(males, aes(x=logtime, y=first2,color=as.factor(trial)))+ #MODIFY FOR EACH
   ggtitle("Males")+
   labs(colour = "Trial")
 
-ggsave(plot=last_plot(),filename="DerivsTrace_Males.jpg",  path="Outputs/Derivative traces per stage/")
+ggsave(plot=last_plot(),filename="DerivsTrace_Males.jpg",  path="Outputs/Derivative traces per stage/",width=7, height=7, units="in")
 
   
 ```
 
-### Females
+##### Females
 ```{r}
 females <- derivs2%>%
   filter(stage=="Female")
@@ -2542,7 +2666,7 @@ females <- derivs2%>%
   
 ggplot(females, aes(x=logtime, y=first2,color=as.factor(trial)))+ #MODIFY FOR EACH TRIAL
   geom_line()+
-  facet_wrap(~ind)+
+  facet_wrap(~ind.x)+
   theme_classic()+
   theme(text = element_text(size = 15), plot.title = element_text(size = (12)))+
   xlab("Time logged (min)")+
@@ -2550,10 +2674,143 @@ ggplot(females, aes(x=logtime, y=first2,color=as.factor(trial)))+ #MODIFY FOR EA
   ggtitle("Females")+
   labs(colour = "Trial")
 
-ggsave(plot=last_plot(),filename="DerivsTrace_Females.jpg",  path="Outputs/Derivative traces per stage/")
+ggsave(plot=last_plot(),filename="DerivsTrace_Females.jpg",  path="Outputs/Derivative traces per stage/",width=7, height=7, units="in")
 
   
 ```
+
+
+
+
+> I made a power point presentation to compare the peaks of the individuals with the high values to those who had a more "normal" pattern.  I decided to manually select the curves for those individuals whose Ropt might be reflecting the "dying" peak instead of the "real" ropt peak.
+
+
+## Manually trimming the first derivative for those individuals whose ropt values are on the "dying" peak
+```{r}
+derivs<-read.csv("Outputs/derivatives.csv") #getting the derivative data
+
+derivs<-derivs %>%
+  mutate(first2=first.y1*-1)%>% #Converting the slopes to positive
+  filter(between(first.logtime, 30, 105))
+
+#Cutting the trace for the individuals with an ropt of the dying peak
+## Protonymphs
+derivstrim<-derivs%>%
+  filter(id=="36") %>% #filtering to each individual
+  filter(between(first.logtime, 50, 85)) 
+
+indiv<-derivs%>%
+  filter(id=="43") %>% #filtering to each individual
+  filter(between(first.logtime, 30, 70)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
+derivstrim<- bind_rows(derivstrim, indiv)
+
+indiv<-derivs%>%
+  filter(id=="154") %>% #filtering to each individual
+  filter(between(first.logtime, 30, 70)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
+derivstrim<- bind_rows(derivstrim, indiv)
+
+indiv<-derivs%>%
+  filter(id=="165") %>% #filtering to each individual
+  filter(between(first.logtime, 30, 90)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
+derivstrim<- bind_rows(derivstrim, indiv)
+
+indiv<-derivs%>%
+  filter(id=="294") %>% #filtering to each individual
+  filter(between(first.logtime, 50, 90)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
+derivstrim<- bind_rows(derivstrim, indiv)
+
+indiv<-derivs%>%
+  filter(id=="301") %>% #filtering to each individual
+  filter(between(first.logtime, 60, 90)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
+derivstrim<- bind_rows(derivstrim, indiv)
+
+indiv<-derivs%>%
+  filter(id=="324") %>% #filtering to each individual
+  filter(between(first.logtime, 30, 80)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
+derivstrim<- bind_rows(derivstrim, indiv)
+
+indiv<-derivs%>%
+  filter(id=="337") %>% #filtering to each individual
+  filter(between(first.logtime, 30, 80)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
+derivstrim<- bind_rows(derivstrim, indiv)
+
+
+##Deutonymphs
+indiv<-derivs%>%
+  filter(id=="22") %>% #filtering to each individual
+  filter(between(first.logtime, 30, 50)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
+derivstrim<- bind_rows(derivstrim, indiv)
+
+indiv<-derivs%>%
+  filter(id=="171") %>% #filtering to each individual
+  filter(between(first.logtime, 40, 90)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
+derivstrim<- bind_rows(derivstrim, indiv)
+
+indiv<-derivs%>%
+  filter(id=="213") %>% #filtering to each individual
+  filter(between(first.logtime, 30, 80)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
+derivstrim<- bind_rows(derivstrim, indiv)
+
+indiv<-derivs%>%
+  filter(id=="270") %>% #filtering to each individual
+  filter(between(first.logtime, 30, 100)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
+derivstrim<- bind_rows(derivstrim, indiv)
+
+indiv<-derivs%>%
+  filter(id=="274") %>% #filtering to each individual
+  filter(between(first.logtime, 30, 90)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
+derivstrim<- bind_rows(derivstrim, indiv)
+
+indiv<-derivs%>%
+  filter(id=="") %>% #filtering to each individual
+  filter(between(first.logtime, 30, 90)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
+derivstrim<- bind_rows(derivstrim, indiv)
+
+indiv<-derivs%>%
+  filter(id=="") %>% #filtering to each individual
+  filter(between(first.logtime, 30, 80)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
+derivstrim<- bind_rows(derivstrim, indiv)
+
+indiv<-derivs%>%
+  filter(id=="") %>% #filtering to each individual
+  filter(between(first.logtime, 30, 80)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
+derivstrim<- bind_rows(derivstrim, indiv)
+
+#Tritonymphs
+indiv<-derivs%>%
+  filter(id=="") %>% #filtering to each individual
+  filter(between(first.logtime, 30, 80)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
+derivstrim<- bind_rows(derivstrim, indiv)
+
+indiv<-derivs%>%
+  filter(id=="") %>% #filtering to each individual
+  filter(between(first.logtime, 30, 80)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
+derivstrim<- bind_rows(derivstrim, indiv)
+
+#Males
+indiv<-derivs%>%
+  filter(id=="") %>% #filtering to each individual
+  filter(between(first.logtime, 30, 80)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
+derivstrim<- bind_rows(derivstrim, indiv)
+
+```
+
+
+
+## Replacing old values for selected individuals MODIFY
+```{r}
+dat<-read.csv("Outputs/ToptandRopts.csv")
+
+topt2<-dat%>%
+filter(!ind%in%ids) %>% #removing individuals that got redone
+bind_rows(toptfinal_selected) %>% 
+  filter_all(all_vars(!is.infinite(.)))
+levels(as.factor(oxall$ind))
+
+
+write.csv(topt2, "Outputs/ToptandRopts_manualtrimforsome.csv")
+```
+
 
 ## 10. Getting the activation energy
 
@@ -2572,7 +2829,12 @@ For this I need to do the following to each individual:
 
 ```{r}
 # Creating dataframe of manually cropped trends first
-## Run Code chunk 36 first
+derivs<-read.csv("Outputs/derivatives.csv") #getting the derivative data
+
+
+derivs<-derivs %>%
+  mutate(first2=first.y1*-1)%>% #Converting the slopes to positive
+  filter(between(first.logtime, 30, 105))
 
 ## 1. Trim the first derivative from the closests left-sided minimum to the maximum value
 derivstrim<-derivs%>%
