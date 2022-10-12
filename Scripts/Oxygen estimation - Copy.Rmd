@@ -12,6 +12,15 @@ output:
     toc_float: false
 ---
 
+```{r setup, include=FALSE} 
+knitr::opts_chunk$set(warning = FALSE, message = FALSE) 
+knitr::opts_knit$set(root.dir = "C:/Users/laus1/OneDrive - University of Nebraska-Lincoln/UNL/PhD Tesis/Methods/Thermolimit/Thermolimit data analyses")
+getwd()
+```
+
+This is the final code to use. The other script for oxygen estimation for some reason lost part of the code. I made this copy after that, with hopefully the whole code again. Use this file for the oxygen estimation, not the other (incomplete) one.
+
+
 What to do next (10oct22):  
 
 * **For Activation energy:**
@@ -26,13 +35,6 @@ What to do next (10oct22):
 ** Clean code, add notes and leave only the final version of the working code on this file
 
 
-```{r setup, include=FALSE} 
-knitr::opts_chunk$set(warning = FALSE, message = FALSE) 
-knitr::opts_knit$set(root.dir = "C:/Users/laus1/OneDrive - University of Nebraska-Lincoln/UNL/PhD Tesis/Methods/Thermolimit/Thermolimit data analyses")
-getwd()
-```
-
-This is the final code to use. The other script for oxygen estimation for some reason lost part of the code. I made this copy after that, with hopefully the whole code again. Use this file for the oxygen estimation, not the other (incomplete) one.
 
 # Libraries
 ```{r}
@@ -2692,6 +2694,13 @@ derivstrim<-derivs%>%
   filter(id=="36") %>% #filtering to each individual
   filter(between(first.logtime, 50, 85)) 
 
+# Not in "dying peak, but maybe in the "adjusting" peak? (the first peak where temperatures are adjusting af the begining of the ramp)
+indiv<-derivs%>%
+  filter(id=="35") %>% #filtering to each individual
+  filter(between(first.logtime, 60, 95)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
+derivstrim<- bind_rows(derivstrim, indiv)
+
+
 indiv<-derivs%>%
   filter(id=="43") %>% #filtering to each individual
   filter(between(first.logtime, 30, 70)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
@@ -2733,6 +2742,12 @@ indiv<-derivs%>%
   filter(id=="22") %>% #filtering to each individual
   filter(between(first.logtime, 30, 90)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
 derivstrim<- bind_rows(derivstrim, indiv)
+
+indiv<-derivs%>%
+  filter(id=="136") %>% #filtering to each individual
+  filter(between(first.logtime, 50, 90)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
+derivstrim<- bind_rows(derivstrim, indiv)
+
 
 indiv<-derivs%>%
   filter(id=="171") %>% #filtering to each individual
@@ -3168,8 +3183,12 @@ ggplot(dat2, aes(x=stage, y=tempcorr))+geom_boxplot() +theme_classic() +
 
 
 #Taking out possible outliers (based on boxplot)
+#dat3<-dat2 %>%
+#  filter(!ind %in% c(35,32,173,141,270))
+
 dat3<-dat2 %>%
-  filter(!ind %in% c(35,32,173,141,270))
+  filter(!ind %in% c(270, 239, 173,141,35))
+
 
 # Plotting with averages
 averages<-dat3%>%
@@ -3185,8 +3204,7 @@ averages$upr3 <- with(averages, mean + sem)
 plot<-ggplot(dat3, aes(x = stage))+ 
   geom_point(aes(y = tempcorr, color=stage), size = 3, shape=1, stroke=1.2)  + 
   geom_point(aes(y = mean, color=stage),color = "black", size = 3, data = averages, position=position_nudge(x=0.1)) + 
-  geom_errorbar(aes(x=stage, ymin = lwr3, ymax = upr3, group=stage), color = "black", data = averages, inherit.aes = FALSE, position=position_nudge(x=0.1), width=0.2) + 
-  theme_classic()+ theme(text = element_text(size = 15))+ 
+  geom_errorbar(aes(x=stage, ymin = lwr3, ymax = upr3, group=stage), color = "black", data = averages, inherit.aes = FALSE, position=position_nudge(x=0.1), width=0.2) +   theme_classic()+ theme(text = element_text(size = 15))+ 
   xlab("Stage")+
   ylab("Thermal optima (Celsius)")
 plot
@@ -3256,7 +3274,7 @@ derivstrim<-derivs%>%
 
 indiv<-derivs%>%
   filter(id=="3") %>% #filtering to each individual
-  filter(between(first.logtime, 35, 65)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
+  filter(between(first.logtime, 35, 66)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
 derivstrim<- bind_rows(derivstrim, indiv)
 
 indiv<-derivs%>%
@@ -3321,7 +3339,7 @@ derivstrim<- bind_rows(derivstrim, indiv)
 
 indiv<-derivs%>%
   filter(id=="35") %>% #filtering to each individual
-  filter(between(first.logtime, 50, 80)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
+  filter(between(first.logtime, 60, 82)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
 derivstrim<- bind_rows(derivstrim, indiv)
 
 indiv<-derivs%>%
@@ -3422,7 +3440,7 @@ derivstrim<- bind_rows(derivstrim, indiv)
 
 indiv<-derivs%>%
   filter(id=="136") %>% #filtering to each individual
-  filter(between(first.logtime, 45, 75)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
+  filter(between(first.logtime, 50, 74)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
 derivstrim<- bind_rows(derivstrim, indiv)
 
 indiv<-derivs%>%
@@ -3533,7 +3551,7 @@ derivstrim<- bind_rows(derivstrim, indiv)
 
 indiv<-derivs%>%
   filter(id=="218") %>% #filtering to each individual
-  filter(between(first.logtime, 20, 80)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
+  filter(between(first.logtime, 20, 81)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
 derivstrim<- bind_rows(derivstrim, indiv)
 
 indiv<-derivs%>%
@@ -3543,7 +3561,7 @@ derivstrim<- bind_rows(derivstrim, indiv)
 
 indiv<-derivs%>%
   filter(id=="228") %>% #filtering to each individual
-  filter(between(first.logtime, 60, 80)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
+  filter(between(first.logtime, 60, 81)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
 derivstrim<- bind_rows(derivstrim, indiv)
 
 indiv<-derivs%>%
@@ -3643,7 +3661,7 @@ derivstrim<- bind_rows(derivstrim, indiv)
 
 indiv<-derivs%>%
   filter(id=="267") %>% #filtering to each individual
-  filter(between(first.logtime, 40, 70)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
+  filter(between(first.logtime, 40, 72)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
 derivstrim<- bind_rows(derivstrim, indiv)
 
 indiv<-derivs%>%
@@ -3693,12 +3711,12 @@ derivstrim<- bind_rows(derivstrim, indiv)
 
 indiv<-derivs%>%
   filter(id=="296") %>% #filtering to each individual
-  filter(between(first.logtime, 40, 70)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
+  filter(between(first.logtime, 40, 72)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
 derivstrim<- bind_rows(derivstrim, indiv)
 
 indiv<-derivs%>%
   filter(id=="298") %>% #filtering to each individual
-  filter(between(first.logtime, 40, 70)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
+  filter(between(first.logtime, 40, 72)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
 derivstrim<- bind_rows(derivstrim, indiv)
 
 indiv<-derivs%>%
@@ -3765,7 +3783,7 @@ derivstrim<- bind_rows(derivstrim, indiv)
 
 indiv<-derivs%>%
   filter(id=="339") %>% #filtering to each individual
-  filter(between(first.logtime, 40, 70)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
+  filter(between(first.logtime, 40, 73)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
 derivstrim<- bind_rows(derivstrim, indiv)
 
 indiv<-derivs%>%
