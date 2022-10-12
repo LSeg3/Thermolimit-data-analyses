@@ -29,6 +29,13 @@ library(broom)
 library(ggplot2)
 library(lmerTest)
 ```
+TO DO:
+
+Organize code
+Check for outliers in Topt data (after removing trial 2). I can Use the test I used for the TPC where I also removed some outliers
+
+
+
 
 # Calling data
 
