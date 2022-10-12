@@ -41,7 +41,7 @@ Check for outliers in Topt data (after removing trial 2). I can Use the test I u
 
 ```{r}
 dat<-read.csv("Outputs/ToptandRopts.csv")
-dat<-read.csv("Outputs/ToptandRopts_manualtrimforsome.csv")
+dat<-read.csv("Outputs/ToptandRopts_trim.csv")
 
 dat<-dat%>%
   mutate(stage=fct_relevel(stage, levels=c("Protonymph", "Deutonymph", "Tritonymph",  "Male","Female" ))) %>%
