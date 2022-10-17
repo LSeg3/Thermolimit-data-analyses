@@ -271,7 +271,22 @@ plot
 
 The plot above has the data for each life stage, the mean and standard error (in black) and the median values of Topt per life stage. It seems that there might not be a difference in Topt across life stages, but it needs to be tested. 
 
-## Exploring different statistical models
+### Weight
+
+```{r}
+
+# Plot with prediction trends, standard error and data
+plot<-ggplot(dat2b, aes(x = weight))+ 
+  geom_point(aes(y = tempcorr, color=stage), size = 3, shape=1, stroke=1.2)  + 
+  geom_smooth(aes(y=tempcorr), method = "lm", se = FALSE)+
+  theme_classic()+ theme(text = element_text(size = 15))+ 
+  xlab("Weight (mg)")+
+  ylab("Thermal optima (Celsius)")
+plot
+
+```
+
+## Exploring different statistical models for stage
 
 ### Using mixed model: ramp and date as random factors
 
@@ -855,30 +870,159 @@ It seems like the points we removed were not outliers. Now, considering that: (1
 ## Final model
 ```{r}
 summary(t1b3)
+nd<-data.frame(stage=rep(c("Protonymph", "Deutonymph", "Tritonymph", "Male", "Female"), each=5), ramp=seq(0.24,0.26,0.005))
+predict.t1b3<-cbind(nd, estimates=predict(t1b3, newdata=nd,re.form = ~0))
+
+topmod.profCI <- as.data.frame(confint(t1b3, method = "profile", oldNames = FALSE))  # profile limits
+
+topmod.WaldCI <- as.data.frame(confint(t1b3, method = "Wald", oldNames = FALSE))
+# get rid of rownames
+rownames(topmod.profCI) <- NULL
+rownames(topmod.WaldCI) <- NULL
+# and change names to include type of CI
+names(topmod.profCI) <- c("Profile_CI2.5", "Profile_CI97.5")
+names(topmod.WaldCI) <- c("Wald_CI2.5", "Wald_CI97.5")
+
+topmod.CI <- tidy(t1b3) 
+
+# add the profile intervals -- confint() uses a different order from tidy()
+topmod.CI <- cbind(topmod.CI, topmod.profCI[c(4:7, 1, 3, 2), ], topmod.WaldCI[c(4:7, 
+    1, 3, 2), ])
+topmod.CI <- gather(topmod.CI, type_level, limit, contains(".5"))
+
 ```
 
+Linear mixed model fit by maximum likelihood . t-tests use Satterthwaite's method ['lmerModLmerTest']
+Formula: tempcorr ~ stage + (1 | ramp)
+   Data: dat2b
+
+     AIC      BIC   logLik deviance df.resid 
+   322.4    340.4   -154.2    308.4       89 
+
+Scaled residuals: 
+     Min       1Q   Median       3Q      Max 
+-2.79455 -0.63826 -0.00779  0.67674  1.94439 
+
+Random effects:
+ Groups   Name        Variance Std.Dev.
+ ramp     (Intercept) 0.3471   *0.5892*  
+ Residual             1.2653   *1.1249*  
+Number of obs: 96, groups:  ramp, 11
+
+Fixed effects:
+                *Estimate* Std. Error       df t value Pr(>|t|)    
+(Intercept)     44.35405    0.29522 34.40688 150.241   <2e-16 ***
+stageProtonymph -0.19896    0.43860 88.12468  -0.454    0.651    
+stageDeutonymph -0.08240    0.34218 85.22380  -0.241    0.810    
+stageTritonymph -0.02386    0.34134 84.73708  -0.070    0.944    
+stageMale        0.18115    0.34012 84.18057   0.533    0.596    
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Correlation of Fixed Effects:
+            (Intr) stgPrt stgDtn stgTrt
+stgPrtnymph -0.432                     
+stagDtnymph -0.553  0.366              
+stgTrtnymph -0.552  0.366  0.478       
+stageMale   -0.547  0.364  0.474  0.473
 
 
+## Exploring different statistical models for weight
+
+### Using mixed model: ramp and date as random factors
+
+#### Defining the model
+```{r}
+#Trying different structures for the random effects
+## Allowing date to vary the intercept and the ramp to affect the slope and intercept
+t1<-lmer(tempcorr~weight+(1|date)+(weight|ramp), data=dat2b, REML=FALSE)
+## Allowing date to vary the intercept and the ramp to affect  intercept
+t1b<-lmer(tempcorr~weight+(1|date)+(1|ramp), data=dat2b, REML=FALSE)
+## Allowing date to vary the intercept and the ramp to affect the slope
+t1c<-lmer(tempcorr~weight+(1|date)+(stage-1|ramp), data=dat2b, REML=FALSE)
+
+#Comparing AIC values to see which structure of the random factors worked better
+aic <- sapply(list(t1, t1b,t1c), AIC)
+aic <- data.frame(Model = c("t1", "t1b", "t1c"), AIC = format(aic, digits = 5)) %>%
+    arrange(AIC)
+aic
+
+#Seems like t1b has the best structure of the random effects
+
+```
+
+#### Doing backwards selection
+```{r}
+summary(t1)
+
+t1<-lmer(tempcorr~weight+(1|date)+(1|ramp), data=dat2b, REML=TRUE)
+
+step(t1)
+
+t1b3<-lmer(tempcorr~weight+(1|date), data=dat2b, REML=TRUE)
+
+step(t1b3)
+
+t1b3<-lm(tempcorr~weight, data=dat2b, REML=TRUE)
+
+drop1(t1b3, test="Chisq")
+
+```
+
+#### Checking assumptions
+
+```{r}
+check_assumptions(t1b3)
+hist(t1b3$residuals, main = "Residual Histogram")
+ols_test_normality(t1b3) #Kolmogorov: data is normal
+```
+
+#### Summary and result plots
+
+```{r, eval=FALSE, echo=FALSE}
+
+summary(t1b3)
+#sjPlot::tab_model(t1b3, show.se = T, show.ci = F, show.re.var = F, show.intercept = T, 
+#                  show.icc = FALSE, show.ngroups = F, show.r2 = T,
+#                  dv.labels = c("Rate optima per weight"), 
+#                  string.se = "SE", transform = NULL, file = "Outputs/Statistics/Topt_weight.doc")
+#
+
+# Making the plot
+nd = expand.grid(weight=seq(0.1,2.2,0.05))
+predicted.r10 <- augment(t1b3, newdata = nd, se_fit=TRUE)
+stats.r10<-glance(t1b3)
 
 
+# calculate the lower and upper 95% confidence limits on the mean
+tcrit <- qt(0.975, df = stats.r10$df.residual)
+predicted.r10$lwr <- with(predicted.r10, .fitted - tcrit * .se.fit)
+predicted.r10$upr <- with(predicted.r10, .fitted + tcrit * .se.fit)
 
 
+# Plot with prediction trends, confidence intervals and data
+r10plot<-ggplot(dat2b, aes(x = weight))+ 
+  geom_point(aes(y = tempcorr, color=weight), size = 3) + scale_color_gradient(low="#9ecae1", high="#08306b")  + 
+  geom_line(aes(y = .fitted), data = predicted.r10, size = 2) + 
+  geom_ribbon(aes(ymin = lwr, ymax = upr), data = predicted.r10, alpha = 0.5) + 
+  theme_classic()+ theme(text = element_text(size = 15))+ 
+  xlab("Weight (mg)")+
+  ylab("Rate optima (Oxygen (mg/L) / time (min))")
+r10plot
+ggsave(plot=last_plot(),filename="Ropt_weight_minustrial2and outliers.jpg",  path="Outputs/Statistics/")
+
+r10plot<-ggplot(dat2b, aes(x = weight))+ 
+  geom_point(aes(y = tempcorr, color=stage), size = 3) + #scale_color_gradient(low="#9ecae1", high="#08306b")  + 
+  geom_line(aes(y = .fitted), data = predicted.r10, size = 2) + 
+  geom_ribbon(aes(ymin = lwr, ymax = upr), data = predicted.r10, alpha = 0.5) + 
+  theme_classic()+ theme(text = element_text(size = 15))+ 
+  xlab("Weight (mg)")+
+  ylab("Rate optima (Oxygen (mg/L) / time (min))")
+r10plot
+ggsave(plot=last_plot(),filename="Ropt_weight_perstage_minustrial2andOutliers.jpg",  path="Outputs/Statistics/")
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+```
 
 
 
@@ -905,11 +1049,6 @@ ggplot(dat2, aes(x=stage, y=ropt2))+geom_boxplot() +theme_classic() +
 
 
 #Taking into account both graphs, I feel inclines to remove the hight point at 37(fem) and the high point at 40 (male)
-
-# Creating log-transformation of corrected slopes
-slopes4$logcorr<-log(slopes4$corrected*-1)
-ggplot(slopes4, aes(x=temp, y=(logcorr*-1), shape=sex, color=sex))+geom_point()+geom_smooth(method=loess, se=F)+theme_classic()+geom_hline(yintercept=0, linetype=3) +
-  scale_x_continuous(limits=c(10,45),breaks=c(10,15,20,25,30,35,37,39,40,41,45))
 
 
 #Looking at the data and checking if it is normal to be able to run some tests
@@ -944,15 +1083,221 @@ influential <- as.numeric(names(sort(cooksd, decreasing = TRUE)[1:top_x_outlier]
 
 dat2b<-dat2[-influential,]
 out<-dat2[influential,]
+out
 #slopes5<-slopes4[-105,] # the only point that is reported as highly influential by both the transformed and not transformed data
 #Comparing boxplots to see what was removed
-ggplot(dat2, aes(x=stage, y=ropt2)) + geom_boxplot(aes()) # 37, 40 and 41 have high extreme values, and 38 has low extreme values
-ggplot(dat2, aes( y=(ropt2))) + geom_boxplot(aes()) # Females: high at 37. Males: high at 36, high and low at 39, 40
+ggplot(dat2b, aes(x=stage, y=ropt2)) + geom_boxplot(aes()) # 37, 40 and 41 have high extreme values, and 38 has low extreme values
+ggplot(dat2b, aes( y=(ropt2))) + geom_boxplot(aes()) # Females: high at 37. Males: high at 36, high and low at 39, 40
 #The graph changed
 
 
 
 ```
+## Exploring the new dataset: how do the different variables look in regards to Ropt
+### Date
+```{r}
+averages<-dat2b%>%
+  group_by(date) %>%
+  summarize(mean=mean(ropt2), sd=sd(ropt2), n=n(), sem=sd/sqrt(n), median=median(ropt2))
+averages
+
+averages$lwr3 <- with(averages, mean -  sem) #Using just the standard error
+averages$upr3 <- with(averages, mean + sem)
+
+
+# Plot with prediction trends, standard error and data
+plot<-ggplot(dat2b, aes(x = date))+ 
+  geom_point(aes(y = ropt2, color=as.factor(trial)), size = 3, shape=1, stroke=1.2)  + 
+  geom_point(aes(y = mean),color = "black", size = 3, data = averages, position=position_nudge(x=0.1)) + 
+  geom_errorbar(aes(x=date, ymin = lwr3, ymax = upr3, group=date), color = "black", data = averages, inherit.aes = FALSE, position=position_nudge(x=0.1), width=0.2) + 
+  theme_classic()+ theme(text = element_text(size = 15))+ 
+  xlab("Stage")+
+  ylab("Rate optima (Oxygen (mg/L)/ time(min))")
+plot
+```
+
+### Ramp
+```{r}
+# Plot with prediction trends, standard error and data
+plot<-ggplot(dat2b, aes(x = ramp, y=ropt2))+ 
+  geom_point(aes(color=stage), size = 3, shape=1, stroke=1.2)  +
+  geom_smooth(aes(group = stage, color=stage), method = "lm", se = FALSE)+ 
+  theme_classic()+ theme(text = element_text(size = 15))+ 
+  xlab("Ramp")+
+  ylab("Rate optima (Oxygen (mg/L)/ time(min))")
+plot
+
+plot<-ggplot(dat2b, aes(x = ramp, y=ropt2))+ 
+  geom_point(aes(color=stage), size = 3, shape=1, stroke=1.2)  +
+  geom_smooth(aes(group = stage, color=stage), method = "lm", se = FALSE)+
+  facet_wrap(~stage)+ 
+  theme_classic()+ theme(text = element_text(size = 15))+ 
+  xlab("Ramp")+
+  ylab("Rate optima (Oxygen (mg/L)/ time(min))")
+plot
+```
+
+### Stage
+
+```{r}
+averages<-dat2b%>%
+  group_by(stage) %>%
+  summarize(mean=mean(ropt2), sd=sd(ropt2), n=n(), sem=sd/sqrt(n), median=median(ropt2))
+averages
+
+averages$lwr3 <- with(averages, mean -  sem) #Using just the standard error
+averages$upr3 <- with(averages, mean + sem)
+
+
+# Plot with prediction trends, standard error and data
+plot<-ggplot(dat2b, aes(x = stage))+ 
+  geom_point(aes(y = ropt2, color=stage), size = 3, shape=1, stroke=1.2)  + 
+  geom_point(aes(y = mean, color=stage),color = "black", size = 3, data = averages, position=position_nudge(x=0.1)) + 
+  geom_errorbar(aes(x=stage, ymin = lwr3, ymax = upr3, group=stage), color = "black", data = averages, inherit.aes = FALSE, position=position_nudge(x=0.1), width=0.2) +
+geom_point(aes(y = median),color = "red", size = 3, data = averages, position=position_nudge(x=0.2))+ #plotting the median
+  theme_classic()+ theme(text = element_text(size = 15))+ 
+  xlab("Stage")+
+  ylab("Rate optima (Oxygen (mg/L)/ time(min))")
+plot
+
+```
+
+
+## Exploring different statistical models for stage
+
+### Using mixed model: ramp and date as random factors
+
+#### Defining the model
+```{r}
+#Trying different structures for the random effects
+## Allowing date to vary the intercept and the ramp to affect the slope and intercept
+t1<-lmer(ropt2~stage+(1|date)+(stage|ramp), data=dat2b, REML=FALSE)
+## Allowing date to vary the intercept and the ramp to affect  intercept
+t1b<-lmer(ropt2~stage+(1|date)+(1|ramp), data=dat2b, REML=FALSE)
+## Allowing date to vary the intercept and the ramp to affect the slope
+t1c<-lmer(ropt2~stage+(1|date)+(stage-1|ramp), data=dat2b, REML=FALSE)
+
+#Comparing AIC values to see which structure of the random factors worked better
+aic <- sapply(list(t1, t1b,t1c), AIC)
+aic <- data.frame(Model = c("t1", "t1b", "t1c"), AIC = format(aic, digits = 5)) %>%
+    arrange(AIC)
+aic
+
+#Seems like t1 has the best structure of the random effects
+
+```
+Seems like t1b has the best structure of the random effects
+
+#### Doing backwards selection
+```{r}
+summary(t1)
+
+t1b2<-lmer(ropt2~stage+(1|date)+(stage|ramp), data=dat2b, REML=TRUE)
+
+step(t1b2)
+
+t1b3<-lmer(ropt2~stage+(stage|ramp), data=dat2b, REML=TRUE)
+
+step(t1b3)
+
+t1b4<-lmer(ropt2~stage+(1|ramp), data=dat2b, REML=TRUE)
+
+step(t1b4)
+
+t1b5<-lm(ropt2~stage, data=dat2b, REML=TRUE)
+
+drop1(t1b5, test="Chisq")
+
+```
+Seems like removing the all random factors is ok, as it is not contributing to explain the variance of the response. 
+
+#### Checking assumptions
+```{r}
+check_assumptions(t1b5) #it doesnt look too bad
+hist(t1b5$residuals, main = "Residual Histogram") #it doesnt look too bad
+ols_test_normality(t1b5) #Kolmogorov (more than n=50): data is normal
+
+```
+
+#### Looking at the results
+```{r}
+
+
+summary(t1b5)
+
+
+#Organizing stages for plots
+datf<-dat2b %>%
+  mutate(stage=fct_relevel(stage, levels=c( "Protonymph", "Deutonymph", "Tritonymph",  "Male", "Female"))) %>%
+  arrange(stage)
+
+
+# Making the plot
+nd = expand.grid(stage=c("Protonymph", "Deutonymph", "Tritonymph", "Female", "Male"))
+predicted.t1 <- augment(t1b5, newdata = nd, se_fit=TRUE)
+stats.t1<-glance(t1b5)
+
+# calculate the lower and upper 95% confidence limits on the mean
+tcrit <- qt(0.975, df = stats.t1$df.residual)
+predicted.t1$lwr <- with(predicted.t1, .fitted - tcrit * .se.fit) # 95% confidence interval as estimated when doing the continuous line
+predicted.t1$upr <- with(predicted.t1, .fitted + tcrit * .se.fit)
+predicted.t1$lwr2 <- with(predicted.t1, .fitted - 1.96 * .se.fit)# 95% confidence interval as estimated when doing the vcategorical variables in Drew's class
+predicted.t1$upr2 <- with(predicted.t1, .fitted + 1.96 * .se.fit)
+predicted.t1$lwr3 <- with(predicted.t1, .fitted -  .se.fit) #Using just the standard error
+predicted.t1$upr3 <- with(predicted.t1, .fitted + .se.fit)
+
+# Plot with prediction trends, confidence intervals and data
+t1plot<-ggplot(datf, aes(x = stage))+ 
+  geom_point(aes(y = ropt2, color=stage), size = 3, shape=1)  + 
+  geom_point(aes(y = .fitted, color=stage),color = "black", size = 2, data = predicted.t1, position=position_nudge(x=0.1), width=0.2) + 
+  geom_errorbar(aes(x=stage, ymin = lwr, ymax = upr, group=stage), color = "black", data = predicted.t1, inherit.aes = FALSE, position=position_nudge(x=0.1), width=0.2) + theme_classic()+ theme(text = element_text(size = 15))+ 
+  xlab("Stage")+
+  ylab("Rate optima (Oxygen (mg/L)/ time(min))")
+t1plot
+
+# Plot with prediction trends, confidence interval 2 and data
+t1plot<-ggplot(datf, aes(x = stage))+ 
+  geom_point(aes(y = ropt2, color=stage), size = 3, shape=1)  + 
+  geom_point(aes(y = .fitted, color=stage),color = "black", size = 2, data = predicted.t1, position=position_nudge(x=0.1), width=0.2) + 
+  geom_errorbar(aes(x=stage, ymin = lwr2, ymax = upr2, group=stage), color = "black", data = predicted.t1, inherit.aes = FALSE, position=position_nudge(x=0.1), width=0.2) + theme_classic()+ theme(text = element_text(size = 15))+ 
+  xlab("Stage")+
+  ylab("Rate optima (Oxygen (mg/L)/ time(min))")
+t1plot
+
+# Plot with prediction trends, standard error and data
+t1plot<-ggplot(datf, aes(x = stage))+ 
+  geom_point(aes(y = ropt2, color=stage), size = 3, shape=1)  + 
+  geom_point(aes(y = .fitted, color=stage),color = "black", size = 2, data = predicted.t1,position=position_nudge(x=0.1), width=0.2) + 
+  geom_errorbar(aes(x=stage, ymin = lwr3, ymax = upr3, group=stage), color = "black", data = predicted.t1, inherit.aes = FALSE, position=position_nudge(x=0.1), width=0.2) + theme_classic()+ theme(text = element_text(size = 15))+ 
+  xlab("Stage")+
+  ylab("Rate optima (Oxygen (mg/L)/ time(min))")
+t1plot
+
+
+# check Chads code
+ggplot(datf, aes(x=stage, y=ropt2, color=stage))+
+  geom_point(shape=1, size=3, stroke=1.2)+
+  scale_fill_brewer(palette="Set1")+
+  stat_summary(geom="point", fun=mean, size=3, color="black", position=position_nudge(x=0.2))+
+  stat_summary(geom="errorbar", fun.data=mean_se, width=0.1, position=position_nudge(x=0.2), color="black")+
+  theme_classic()+ theme(text = element_text(size = 15))+ 
+  xlab("Stage")+
+  ylab("Rate optima (Oxygen (mg/L)/ time(min))")
+
+
+ggsave(plot=last_plot(),filename="Ropt_stage.jpg",  path="Outputs/Statistics/")
+```
+
+
+
+
+
+
+
+
+
+
+
 
 
 
