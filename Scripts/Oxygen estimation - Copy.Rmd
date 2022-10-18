@@ -2838,7 +2838,7 @@ derivs<-read.csv("Outputs/derivs_manualtrimforsome.csv") #getting the derivative
 
 #Protonymphs
 oxallp<-oxall %>%
-  select(c("date", "trial", "channel", "ind", "stage", "weight", "ramp", "logtime")) %>%
+  select(c("date", "trial", "channel", "ind", "stage", "weight", "ramp", "logtime", "tempcorr")) %>%
   mutate(id=ind,
          first.logtime=logtime)%>% 
   filter(between(logtime, 30, 105)) %>%
@@ -2863,7 +2863,7 @@ derivsp<-difference_left_join(derivsp2,oxallp, by=c("id","first.logtime"), max_d
 
 #Deutonymphs  
 oxalld<-oxall %>%
-  select(c("date", "trial", "channel", "ind", "stage", "weight", "ramp", "logtime")) %>%
+  select(c("date", "trial", "channel", "ind", "stage", "weight", "ramp", "logtime", "tempcorr")) %>%
   mutate(id=ind,
          first.logtime=logtime)%>% 
   filter(between(logtime, 30, 105)) %>%
@@ -2884,7 +2884,7 @@ derivsd<-difference_left_join(derivsd2,oxalld, by=c("id","first.logtime"), max_d
 
 #Tritonymphs  
 oxallt<-oxall %>%
-  select(c("date", "trial", "channel", "ind", "stage", "weight", "ramp", "logtime")) %>%
+  select(c("date", "trial", "channel", "ind", "stage", "weight", "ramp", "logtime", "tempcorr")) %>%
   mutate(id=ind,
          first.logtime=logtime)%>% 
   filter(between(logtime, 30, 105)) %>%
@@ -2905,7 +2905,7 @@ derivst<-difference_left_join(derivst2,oxallt, by=c("id","first.logtime"), max_d
 
 #Males 
 oxallm<-oxall %>%
-  select(c("date", "trial", "channel", "ind", "stage", "weight", "ramp", "logtime")) %>%
+  select(c("date", "trial", "channel", "ind", "stage", "weight", "ramp", "logtime", "tempcorr")) %>%
   mutate(id=ind,
          first.logtime=logtime)%>% 
   filter(between(logtime, 30, 105)) %>%
@@ -2925,7 +2925,7 @@ derivsm<-difference_left_join(derivsm2,oxallm, by=c("id","first.logtime"), max_d
 
 #Females 
 oxallf<-oxall %>%
-  select(c("date", "trial", "channel", "ind", "stage", "weight", "ramp", "logtime")) %>%
+  select(c("date", "trial", "channel", "ind", "stage", "weight", "ramp", "logtime", "tempcorr")) %>%
   mutate(id=ind,
          first.logtime=logtime)%>% 
   filter(between(logtime, 30, 105)) %>%

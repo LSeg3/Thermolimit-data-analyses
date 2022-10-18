@@ -1,0 +1,467 @@
+---
+title: "Environment curves vs performance"
+author: "Laura Segura Hernández"
+date: "10/17/2022"
+output:
+  html_document:
+    df_print: paged
+    theme: cerulean
+    toc: true
+    toc_depth: 4
+    number_sections: true
+    toc_float: false
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_knit$set(root.dir = "C:/Users/laus1/OneDrive - University of Nebraska-Lincoln/UNL/PhD Tesis/Methods/Thermolimit/Thermolimit data analyses")
+getwd()
+```
+
+#Libraries
+```{r}
+library(lme4)
+library(dplyr)
+library(forcats)
+library(NRES803)
+library(olsrr)
+library(broom)
+library(ggplot2)
+library(lmerTest)
+```
+
+
+
+# Performance data
+## Calling the  data
+```{r}
+derivs2<-read.csv("Outputs/derivsdemography_manualtrim.csv")
+derivs2<-derivs2%>%
+  rename(ind=id.x)%>%
+  filter(trial!=2) %>%
+  filter(first2>=0)
+
+data<-read.csv("Data/Environment/Datos pseudos summer 2022 - Data.csv")
+data<-data%>%
+  select(1,2,4) %>%
+  rename(ind=ID)
+
+derivs2<-left_join(derivs2, data, by="ind")
+
+```
+
+
+
+
+
+# Environmental data
+The files used to get the environmental data were previously modified in the script named "Processing2 final data for models", located  in the folders Methods/HOBO dataloggers/Data CPBS summer 2020/Final data. 
+
+## Looking at the overall microhabitat means (plant+topsoil)
+
+```{r}
+micro<-read.csv("./Data/Environment/microhabtempsmerge3means.csv")
+
+colnames(micro)
+
+micro<-micro%>%
+  select(!contains("10cm"))%>%
+  rename("date2"="date2.x.x",
+         "time"="time.x.x",
+         "SOILdead_site1"="SOILdead_tempDeadtopCPBS_G1.csvB.csv",
+         "SOILdead_site2"="SOILdead_tempDeadtopCPBS_G2.csvB.csv",
+         "SOILdead_site3"="SOILdead_tempDeadtopCPBS_G3.csvB.csv",
+         "SOILdead_site4"="SOILdead_tempDeadtopCPBS_G4.csvB.csv",
+         "SOILdead_site5"="SOILdead_tempDeadtopCPBS_G5.csvB.csv",
+         "SOILdead_site6"="SOILdead_tempDeadtopCPBS_G6.csvB.csv",
+         "SOILdead_site7"="SOILdead_tempDeadtopCPBS_G7.csvB.csv",
+         "SOILdead_site8"="SOILdead_tempDeadtopCPBS_G8.csvB.csv",
+         "SOILdead_site9"="SOILdead_tempDeadtopCPBS_G9.csvB.csv",
+         "SOILlive_site1"="SOILlive_tempLivetopCPBS_G1.csvB.csv",
+         "SOILlive_site2"="SOILlive_tempLivetopCPBS_2.csvB.csv",
+         "SOILlive_site3"="SOILlive_tempLivetopCPBS_G3.csvB.csv",
+         "SOILlive_site4"="SOILlive_tempCPBS_G4.csvB.csv",
+         "SOILlive_site5"="SOILlive_tempCPBS_G5.csvB.csv",
+         "SOILlive_site6"="SOILlive_tempLivetopCPBS_G6.csvB.csv",
+         "SOILlive_site7"="SOILlive_tempLivetopCPBS_G7.csvB.csv",
+         "SOILlive_site8"="SOILlive_tempLivetopCPBS_G8.csvB.csv",
+         "SOILlive_site9"="SOILlive_tempLivetopCPBS_G9.csvB.csv",
+         "PLANTdeadcore_site2"="PLANTdead_core2",
+         "PLANTdeadleaves_site2"="PLANTdead_leaves2",
+         "PLANTdeadcore_site3"="PLANTdead_core3",
+         "PLANTdeadleaves_site3"="PLANTdead_leaves3",
+         "PLANTdeadleaves_site6"="PLANTdead_leaves6",
+         "PLANTdeadcore_site6"="PLANTdead_core6",
+         "PLANTdeadcore_site8"="PLANTdead_core8",
+         "PLANTdeadleaves_site8"="PLANTdead_leaves8",
+         "PLANTliveleaves_site2"="PLANTlive_top_leaves2",
+         "PLANTliveleaves_b_site2"="PLANTlive_bottom_leaves2",
+         "PLANTliveleaves_site6"="PLANTlive_top_leaves6",
+         "PLANTliveleaves_b_site6"="PLANTlive_bottom_leaves6",
+         "PLANTliveleaves_site9"="PLANTlive_top_leaves9") %>%
+  mutate(means2=apply(micro[,5:35],1, mean, na.rm=T), 
+         diff=means-means2,
+         tempcorr=means2,
+         date2=as.POSIXct(date2, format="%m/%d/%y"))
+
+colnames(micro)
+```
+
+
+### For the whole season
+#### For the whole area
+```{r}
+meanline<-mean(micro$means2)
+medianline<-median(micro$means2)
+ggplot(micro, aes(x=means2))+
+  geom_histogram()+
+  geom_vline(xintercept=meanline, color="red")+
+  geom_vline(xintercept=medianline, color="blue")+
+  theme_classic()+
+  theme(text = element_text(size = 15), plot.title = element_text(size = (12)))+
+  xlab("Microclimate temperature (Celsius)")+
+  ylab("Frequency")+
+  scale_x_continuous(limits=c(5,55))
+
+ggsave(plot=last_plot(),filename="Climate_allseason_allarea.jpg",  path="Outputs/Microclimate vs performance/",width=7, height=7, units="in")
+
+```
+
+
+#### Plotting for all life stages
+```{r}
+##### Protonymphs
+protos <- derivs2%>%
+  filter(stage=="Protonymph")
+  
+
+meanline<-mean(micro$means2)
+medianline<-median(micro$means2)
+
+
+coeff<-10000
+ggplot()+
+  geom_histogram(micro, mapping=aes(x=tempcorr))+
+  geom_vline(xintercept=meanline, color="red")+
+  geom_vline(xintercept=medianline, color="blue")+
+  theme_classic()+
+  theme(text = element_text(size = 15), plot.title = element_text(size = (12)))+
+  xlab("Temperature (Celsius)")+
+  scale_x_continuous(limits=c(5,55))+
+  geom_line(protos, mapping=aes(y=first2*coeff,x=tempcorr, color=as.factor(trial)), size=1.3)+
+  scale_y_continuous("Frequency", sec.axis = sec_axis(~ ./coeff, name = "Rate optima (Oxygen (mg/L)/ time(min))")) + 
+  facet_wrap(vars(ind))+
+  labs(colour = "Trial")
+
+
+
+ggsave(plot=last_plot(),filename="Proto_allseason_allarea.jpg",  path="Outputs/Microclimate vs performance/",width=7, height=7, units="in")
+
+  
+
+
+##### Deutonymphs
+deutos<- derivs2%>%
+  filter(stage=="Deutonymph")
+  
+
+meanline<-mean(micro$means2)
+medianline<-median(micro$means2)
+
+
+coeff<-10000
+ggplot()+
+  geom_histogram(micro, mapping=aes(x=tempcorr))+
+  geom_vline(xintercept=meanline, color="red")+
+  geom_vline(xintercept=medianline, color="blue")+
+  theme_classic()+
+  theme(text = element_text(size = 15), plot.title = element_text(size = (12)))+
+  xlab("Temperature (Celsius)")+
+  scale_x_continuous(limits=c(5,55))+
+  geom_line(deutos, mapping=aes(y=first2*coeff,x=tempcorr, color=as.factor(trial)), size=1.3)+
+  scale_y_continuous("Frequency", sec.axis = sec_axis(~ ./coeff, name = "Rate optima (Oxygen (mg/L)/ time(min))")) + 
+  facet_wrap(vars(ind))+
+  labs(colour = "Trial")
+
+
+
+ggsave(plot=last_plot(),filename="Deuto_allseason_allarea.jpg",  path="Outputs/Microclimate vs performance/",width=7, height=7, units="in")
+
+  
+
+##### Tritonymphs
+tritos<- derivs2%>%
+  filter(stage=="Tritonymph")
+  
+
+meanline<-mean(micro$means2)
+medianline<-median(micro$means2)
+
+
+coeff<-10000
+ggplot()+
+  geom_histogram(micro, mapping=aes(x=tempcorr))+
+  geom_vline(xintercept=meanline, color="red")+
+  geom_vline(xintercept=medianline, color="blue")+
+  theme_classic()+
+  theme(text = element_text(size = 15), plot.title = element_text(size = (12)))+
+  xlab("Temperature (Celsius)")+
+  scale_x_continuous(limits=c(5,55))+
+  geom_line(tritos, mapping=aes(y=first2*coeff,x=tempcorr, color=as.factor(trial)), size=1.3)+
+  scale_y_continuous("Frequency", sec.axis = sec_axis(~ ./coeff, name = "Rate optima (Oxygen (mg/L)/ time(min))")) + 
+  facet_wrap(vars(ind))+
+  labs(colour = "Trial")
+
+
+
+ggsave(plot=last_plot(),filename="Trito_allseason_allarea.jpg",  path="Outputs/Microclimate vs performance/",width=7, height=7, units="in")
+
+  
+
+##### Males
+males <- derivs2%>%
+  filter(stage=="Male")
+  
+
+meanline<-mean(micro$means2)
+medianline<-median(micro$means2)
+
+
+coeff<-10000
+ggplot()+
+  geom_histogram(micro, mapping=aes(x=tempcorr))+
+  geom_vline(xintercept=meanline, color="red")+
+  geom_vline(xintercept=medianline, color="blue")+
+  theme_classic()+
+  theme(text = element_text(size = 15), plot.title = element_text(size = (12)))+
+  xlab("Temperature (Celsius)")+
+  scale_x_continuous(limits=c(5,55))+
+  geom_line(males, mapping=aes(y=first2*coeff,x=tempcorr, color=as.factor(trial)), size=1.3)+
+  scale_y_continuous("Frequency", sec.axis = sec_axis(~ ./coeff, name = "Rate optima (Oxygen (mg/L)/ time(min))")) + 
+  facet_wrap(vars(ind))+
+  labs(colour = "Trial")
+
+
+
+ggsave(plot=last_plot(),filename="Male_allseason_allarea.jpg",  path="Outputs/Microclimate vs performance/",width=7, height=7, units="in")
+
+  
+
+
+##### Females
+females <- derivs2%>%
+  filter(stage=="Female")
+  
+
+meanline<-mean(micro$means2)
+medianline<-median(micro$means2)
+
+
+coeff<-10000
+ggplot()+
+  geom_histogram(micro, mapping=aes(x=tempcorr))+
+  geom_vline(xintercept=meanline, color="red")+
+  geom_vline(xintercept=medianline, color="blue")+
+  theme_classic()+
+  theme(text = element_text(size = 15), plot.title = element_text(size = (12)))+
+  xlab("Temperature (Celsius)")+
+  scale_x_continuous(limits=c(5,55))+
+  geom_line(females, mapping=aes(y=first2*coeff,x=tempcorr, color=as.factor(trial)), size=1.3)+
+  scale_y_continuous("Frequency", sec.axis = sec_axis(~ ./coeff, name = "Rate optima (Oxygen (mg/L)/ time(min))")) + 
+  facet_wrap(vars(ind))+
+  labs(colour = "Trial")
+
+
+
+ggsave(plot=last_plot(),filename="Female_allseason_allarea.jpg",  path="Outputs/Microclimate vs performance/",width=7, height=7, units="in")
+
+  
+```
+
+
+#### Separating by sites
+
+
+
+### For the warmest month (July)
+```{r}
+july<-subset(micro, date2 >"2020-06-30" & date2 < "2020-08-01")
+```
+#### For the whole area
+```{r}
+meanline<-mean(july$means2)
+medianline<-median(july$means2)
+ggplot(july, aes(x=means2))+
+  geom_histogram()+
+  geom_vline(xintercept=meanline, color="red")+
+  geom_vline(xintercept=medianline, color="blue")+
+  theme_classic()+
+  theme(text = element_text(size = 15), plot.title = element_text(size = (12)))+
+  xlab("Microlimate temperature (Celsius)")+
+  ylab("Frequency")+
+  scale_x_continuous(limits=c(5,55))
+ggsave(plot=last_plot(),filename="Climate_July_allarea.jpg",  path="Outputs/Microclimate vs performance/",width=7, height=7, units="in")
+
+```
+
+
+#### Plotting for all life stages
+```{r}
+##### Protonymphs
+protos <- derivs2%>%
+  filter(stage=="Protonymph")
+  
+
+meanline<-mean(july$means2)
+medianline<-median(july$means2)
+
+
+coeff<-10000
+ggplot()+
+  geom_histogram(july, mapping=aes(x=tempcorr))+
+  geom_vline(xintercept=meanline, color="red")+
+  geom_vline(xintercept=medianline, color="blue")+
+  theme_classic()+
+  theme(text = element_text(size = 15), plot.title = element_text(size = (12)))+
+  xlab("Temperature (Celsius)")+
+  scale_x_continuous(limits=c(5,55))+
+  geom_line(protos, mapping=aes(y=first2*coeff,x=tempcorr, color=as.factor(trial)), size=1.3)+
+  scale_y_continuous("Frequency", sec.axis = sec_axis(~ ./coeff, name = "Rate optima (Oxygen (mg/L)/ time(min))")) + 
+  facet_wrap(vars(ind))+
+  labs(colour = "Trial")
+
+
+
+ggsave(plot=last_plot(),filename="Proto_july_allarea.jpg",  path="Outputs/Microclimate vs performance/",width=7, height=7, units="in")
+
+  
+
+
+##### Deutonymphs
+deutos<- derivs2%>%
+  filter(stage=="Deutonymph")
+  
+
+meanline<-mean(july$means2)
+medianline<-median(july$means2)
+
+
+coeff<-10000
+ggplot()+
+  geom_histogram(july, mapping=aes(x=tempcorr))+
+  geom_vline(xintercept=meanline, color="red")+
+  geom_vline(xintercept=medianline, color="blue")+
+  theme_classic()+
+  theme(text = element_text(size = 15), plot.title = element_text(size = (12)))+
+  xlab("Temperature (Celsius)")+
+  scale_x_continuous(limits=c(5,55))+
+  geom_line(deutos, mapping=aes(y=first2*coeff,x=tempcorr, color=as.factor(trial)), size=1.3)+
+  scale_y_continuous("Frequency", sec.axis = sec_axis(~ ./coeff, name = "Rate optima (Oxygen (mg/L)/ time(min))")) + 
+  facet_wrap(vars(ind))+
+  labs(colour = "Trial")
+
+
+
+ggsave(plot=last_plot(),filename="Deuto_july_allarea.jpg",  path="Outputs/Microclimate vs performance/",width=7, height=7, units="in")
+
+  
+
+##### Tritonymphs
+tritos<- derivs2%>%
+  filter(stage=="Tritonymph")
+  
+
+meanline<-mean(july$means2)
+medianline<-median(july$means2)
+
+
+coeff<-10000
+ggplot()+
+  geom_histogram(july, mapping=aes(x=tempcorr))+
+  geom_vline(xintercept=meanline, color="red")+
+  geom_vline(xintercept=medianline, color="blue")+
+  theme_classic()+
+  theme(text = element_text(size = 15), plot.title = element_text(size = (12)))+
+  xlab("Temperature (Celsius)")+
+  scale_x_continuous(limits=c(5,55))+
+  geom_line(tritos, mapping=aes(y=first2*coeff,x=tempcorr, color=as.factor(trial)), size=1.3)+
+  scale_y_continuous("Frequency", sec.axis = sec_axis(~ ./coeff, name = "Rate optima (Oxygen (mg/L)/ time(min))")) + 
+  facet_wrap(vars(ind))+
+  labs(colour = "Trial")
+
+
+
+ggsave(plot=last_plot(),filename="Trito_july_allarea.jpg",  path="Outputs/Microclimate vs performance/",width=7, height=7, units="in")
+
+  
+
+##### Males
+males <- derivs2%>%
+  filter(stage=="Male")
+  
+
+meanline<-mean(july$means2)
+medianline<-median(july$means2)
+
+
+coeff<-10000
+ggplot()+
+  geom_histogram(july, mapping=aes(x=tempcorr))+
+  geom_vline(xintercept=meanline, color="red")+
+  geom_vline(xintercept=medianline, color="blue")+
+  theme_classic()+
+  theme(text = element_text(size = 15), plot.title = element_text(size = (12)))+
+  xlab("Temperature (Celsius)")+
+  scale_x_continuous(limits=c(5,55))+
+  geom_line(males, mapping=aes(y=first2*coeff,x=tempcorr, color=as.factor(trial)), size=1.3)+
+  scale_y_continuous("Frequency", sec.axis = sec_axis(~ ./coeff, name = "Rate optima (Oxygen (mg/L)/ time(min))")) + 
+  facet_wrap(vars(ind))+
+  labs(colour = "Trial")
+
+
+
+ggsave(plot=last_plot(),filename="Male_july_allarea.jpg",  path="Outputs/Microclimate vs performance/",width=7, height=7, units="in")
+
+  
+
+
+##### Females
+females <- derivs2%>%
+  filter(stage=="Female")
+  
+
+meanline<-mean(july$means2)
+medianline<-median(july$means2)
+
+
+coeff<-10000
+ggplot()+
+  geom_histogram(july, mapping=aes(x=tempcorr))+
+  geom_vline(xintercept=meanline, color="red")+
+  geom_vline(xintercept=medianline, color="blue")+
+  theme_classic()+
+  theme(text = element_text(size = 15), plot.title = element_text(size = (12)))+
+  xlab("Temperature (Celsius)")+
+  scale_x_continuous(limits=c(5,55))+
+  geom_line(females, mapping=aes(y=first2*coeff,x=tempcorr, color=as.factor(trial)), size=1.3)+
+  scale_y_continuous("Frequency", sec.axis = sec_axis(~ ./coeff, name = "Rate optima (Oxygen (mg/L)/ time(min))")) + 
+  facet_wrap(vars(ind))+
+  labs(colour = "Trial")
+
+
+
+ggsave(plot=last_plot(),filename="Female_july_allarea.jpg",  path="Outputs/Microclimate vs performance/",width=7, height=7, units="in")
+
+  
+```
+
+## Looking at the deeper soil temperatures
+
+```{r}
+soil<-read.csv("../Data/Environment/soil10cmtempsmerge2.csv")
+```
+
+
+### For the whole season
+
+### For the warmest month
