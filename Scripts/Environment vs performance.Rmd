@@ -43,7 +43,7 @@ derivs2<-derivs2%>%
   rename(ind=id.x)%>%
   filter(trial!=2) %>%
   filter(first2>=0) %>%
-  filter(!ind %in% c(87,54,244)) #Removing outliers for ropt (as selected in the "Thermolimit statistical analyses" script)
+  filter(!ind %in% c(87,54,244, 213)) #Removing outliers for ropt (as selected in the "Thermolimit statistical analyses" script) and 213 that had a very flat line
 
 data<-read.csv("Data/Environment/Datos pseudos summer 2022 - Data.csv")
 data<-data%>%
@@ -359,6 +359,17 @@ last<-as.numeric(ncol(microtemp))
 micro9<-microtemp%>%
   mutate(means=apply(microtemp[,1:last],1, mean, na.rm=T))%>%
   cbind(micro[,2:4])
+
+
+#For site 6
+site6max<-max(micro6$means)
+site6mean<-mean(micro6$means)
+site6median<-median(micro6$means)
+
+#For site 3
+site3max<-max(micro3$means)
+site3mean<-mean(micro3$means)
+site3median<-median(micro3$means)
 
 ```
 
@@ -1145,6 +1156,17 @@ last<-as.numeric(ncol(microtemp))
 micro9<-microtemp%>%
   mutate(means=apply(microtemp[,1:last],1, mean, na.rm=T))%>%
   cbind(july[,2:4])
+
+
+#For site 6
+site6maxjul<-max(micro6$means)
+site6meanjul<-mean(micro6$means)
+site6medianjul<-median(micro6$means)
+
+#For site 3
+site3maxjul<-max(micro3$means)
+site3meanjul<-mean(micro3$means)
+site3medianjul<-median(micro3$means)
 
 ```
 
@@ -2108,13 +2130,112 @@ ggsave(plot=last_plot(),filename="Female_july_allarea_future.jpg",  path="Output
 
 # ###########################################################################################################################################
 
-## Looking at the deeper soil temperatures
+# Calculating differences between microclimate and performance
 
 ```{r}
-soil<-read.csv("../Data/Environment/soil10cmtempsmerge2.csv")
+dat<-read.csv("Outputs/ToptandRopts_trim.csv")
+
+dat<-dat%>%
+  filter(ind!=213) %>% #213 was a very flat line, we have dowubts about whether there was a leak
+  mutate(stage=fct_relevel(stage, levels=c("Protonymph", "Deutonymph", "Tritonymph",  "Male", "Female"))) %>%
+  arrange(stage) %>%
+  mutate(date=fct_relevel(date, levels=c("2022-06-23", "2022-06-21", "2022-06-22", "2022-06-24"))) %>%
+  arrange(date)
+
+#Adding site to the data
+data<-read.csv("Data/Environment/Datos pseudos summer 2022 - Data.csv")
+data<-data%>%
+  select(1,2,4) %>%
+  rename(ind=ID)
+
+dat<-left_join(dat, data, by="ind")
+
+
+sample<-dat %>%
+  group_by(stage) %>%
+  summarize(n=n())
+sample
+```
+
+## Estimating environmental values
+```{r}
+#Current 
+##All area, all season
+
+allmax<-max(micro$means2)
+allmean<-mean(micro$means2)
+allmedian<-median(micro$means2)
+
+##All area, july
+julmax<-max(july$means2)
+julmean<-mean(july$means2)
+julmedian<-median(july$means2)
+
+
+#Future 
+##All area, all season
+allmaxf<-max(future$temp)
+allmeanf<-mean(future$temp)
+allmedianf<-median(future$temp)
+
+
+##All area,july
+julmaxf<-max(julyf$temp)
+julmeanf<-mean(julyf$temp)
+julmedianf<-median(julyf$temp)
+
+
+
+```
+## Estimating differences
+
+```{r}
+diffs<-dat%>%
+  mutate(currentallmax=tempcorr-allmax,
+         currentallmean=tempcorr-allmean,
+         currentallmedian=tempcorr-allmedian,
+         currentjulmax=tempcorr-julmax,
+        currentjulmean=tempcorr-julmean,
+        currentjulmedian=tempcorr-julmedian,
+        futureallmax=tempcorr-allmaxf,
+        futureallmean=tempcorr-allmeanf,
+        futureallmedian=tempcorr-allmedianf,
+        futurejulmax=tempcorr-julmaxf,
+        futurejulmean=tempcorr-julmeanf,
+        futurejulmedian=tempcorr-julmedianf)
+
+```
+
+```{r}
+# Comparing max, mean, and median differences for all season, all area on current
+p1<-ggplot(diffs, aes(y=currentallmax)) + geom_boxplot()+ scale_y_continuous(limits=c(-5, 25))
+p2<-ggplot(diffs, aes(y=currentallmean)) + geom_boxplot()+ scale_y_continuous(limits=c(-5, 25))
+p3<-ggplot(diffs, aes(y=currentallmedian)) + geom_boxplot()+ scale_y_continuous(limits=c(-5, 25))
+ggarrange(p1,p2,p3,nrow=1,ncol=3)  
+
+# Comparing max, mean, and median differences for july, all area on current
+p4<-ggplot(diffs, aes(y=currentjulmax)) + geom_boxplot() + scale_y_continuous(limits=c(-5, 25))
+p5<-ggplot(diffs, aes(y=currentjulmean)) + geom_boxplot() + scale_y_continuous(limits=c(-5, 25))
+p6<-ggplot(diffs, aes(y=currentjulmedian)) + geom_boxplot()+ scale_y_continuous(limits=c(-5, 25))
+ggarrange(p4,p5,p6,nrow=1,ncol=3)  
+
+# Comparing max, mean, and median differences for all season, all area on future
+p7<-ggplot(diffs, aes(y=futureallmax)) + geom_boxplot()+ scale_y_continuous(limits=c(-5, 25))
+p8<-ggplot(diffs, aes(y=futureallmean)) + geom_boxplot()+ scale_y_continuous(limits=c(-5, 25))
+p9<-ggplot(diffs, aes(y=futureallmedian)) + geom_boxplot()+ scale_y_continuous(limits=c(-5, 25))
+ggarrange(p7,p8,p9,nrow=1,ncol=3)  
+
+# Comparing max, mean, and median differences for july, all area on future
+p10<-ggplot(diffs, aes(y=futurejulmax)) + geom_boxplot()+ scale_y_continuous(limits=c(-5, 25))
+p11<-ggplot(diffs, aes(y=futurejulmean)) + geom_boxplot()+ scale_y_continuous(limits=c(-5, 25))
+p12<-ggplot(diffs, aes(y=futurejulmedian)) + geom_boxplot()+ scale_y_continuous(limits=c(-5, 25))
+ggarrange(p10,p11,p12,nrow=1,ncol=3) 
+
+#Comparing current vs future all season
+ggarrange(p1,p7,p2,p8,nrow=2,ncol=2) 
+
+ggarrange(p4,p10,p5,p11,nrow=2,ncol=2) 
+
 ```
 
 
-### For the whole season
-
-### For the warmest month
