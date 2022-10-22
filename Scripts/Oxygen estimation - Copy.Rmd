@@ -23,16 +23,22 @@ This is the final code to use. The other script for oxygen estimation for some r
 
 What to do next (10oct22):  
 
+* **For Topt**
+
+** Make final result plots
+
 * **For Activation energy:**
 
-** Check if the max points match those of the Topt data
+** Check for other data distribution
 ** Clean code, add notes and leave only the final version of the working code on this file
 
 * **For microclimate data:**
 
-** Create a separate script
-** plot final curves of Topt  against microclimate
+** Ran statistical tests
 ** Clean code, add notes and leave only the final version of the working code on this file
+
+**For all**:
+Write a summary of all the data processing
 
 
 

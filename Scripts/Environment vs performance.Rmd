@@ -550,7 +550,6 @@ deutos_all<-ggarrange(plotlist3[[1]]+ rremove("ylab") + rremove("xlab"),
           plotlist3[[8]]+ rremove("ylab") + rremove("xlab"),
           plotlist3[[9]]+ rremove("ylab") + rremove("xlab"),
           plotlist3[[10]]+ rremove("ylab") + rremove("xlab"),
-          plotlist3[[11]]+ rremove("ylab") + rremove("xlab"),
           plotlist6[[1]]+ rremove("ylab") + rremove("xlab"),
           plotlist6[[2]]+ rremove("ylab") + rremove("xlab"), 
           plotlist6[[3]]+ rremove("ylab") + rremove("xlab"), 
@@ -1347,7 +1346,6 @@ deutos_all<-ggarrange(plotlist3[[1]]+ rremove("ylab") + rremove("xlab"),
           plotlist3[[8]]+ rremove("ylab") + rremove("xlab"),
           plotlist3[[9]]+ rremove("ylab") + rremove("xlab"),
           plotlist3[[10]]+ rremove("ylab") + rremove("xlab"),
-          plotlist3[[11]]+ rremove("ylab") + rremove("xlab"),
           plotlist6[[1]]+ rremove("ylab") + rremove("xlab"),
           plotlist6[[2]]+ rremove("ylab") + rremove("xlab"), 
           plotlist6[[3]]+ rremove("ylab") + rremove("xlab"), 
@@ -2204,6 +2202,65 @@ diffs<-dat%>%
         futurejulmean=tempcorr-julmeanf,
         futurejulmedian=tempcorr-julmedianf)
 
+diffsum<-diffs%>%select(15:26) %>% na.omit()
+diffsumallmeans<-as.data.frame(sapply(diffsum, mean))
+diffsumallsd<-as.data.frame(sapply(diffsum, sd))
+diffsall<-bind_cols(diffsumallmeans,diffsumallsd) 
+diffsallfinal<-diffsall%>%
+  rename("means"="sapply(diffsum, mean)", "sd" ="sapply(diffsum, sd)") %>%
+  mutate(se=sd/sqrt(as.numeric(nrow(diffsum))))
+
+sd(diffsum$currentallmax)
+sd(diffsum$futurejulmax)
+
+
+diffs3<-diffs %>%
+  filter(site=="site 3") %>%
+  mutate(site3allmax=tempcorr-site3max,
+         site3allmean=tempcorr-site3mean,
+         site3allmedian=tempcorr-site3median,
+         site3julmax=tempcorr-site3maxjul,
+         site3julmean=tempcorr-site3meanjul,
+         site3julmedian=tempcorr-site3medianjul)
+
+diffsum<-diffs3%>%select(27:32) %>% na.omit()
+diffsumallmeans<-as.data.frame(sapply(diffsum, mean))
+diffsumallsd<-as.data.frame(sapply(diffsum, sd))
+diffsall<-bind_cols(diffsumallmeans,diffsumallsd) 
+diffs3summ<-diffsall%>%
+  rename("means"="sapply(diffsum, mean)", "sd" ="sapply(diffsum, sd)") %>%
+  mutate(se=sd/sqrt(as.numeric(nrow(diffsum))))
+
+
+
+diffs6<-diffs %>%
+  filter(site=="site 6") %>%
+  mutate(site6allmax=tempcorr-site6max,
+         site6allmean=tempcorr-site6mean,
+         site6allmedian=tempcorr-site6median,
+         site6julmax=tempcorr-site6maxjul,
+         site6julmean=tempcorr-site6meanjul,
+         site6julmedian=tempcorr-site6medianjul)
+
+diffsum<-diffs6%>%select(27:32) %>% na.omit()
+diffsumallmeans<-as.data.frame(sapply(diffsum, mean))
+diffsumallsd<-as.data.frame(sapply(diffsum, sd))
+diffsall<-bind_cols(diffsumallmeans,diffsumallsd) 
+diffs6summ<-diffsall%>%
+  rename("means"="sapply(diffsum, mean)", "sd" ="sapply(diffsum, sd)") %>%
+  mutate(se=sd/sqrt(as.numeric(nrow(diffsum))))
+
+diffsumall<-bind_rows(diffsallfinal, diffs3summ, diffs6summ) 
+diffsumall<-diffsumall %>%
+  mutate(names=row.names(diffsumall),
+         lwr=means-se, 
+         upr=means+se)
+
+
+diffs<-bind_rows(diffs3, diffs6)
+
+
+
 ```
 
 ```{r}
@@ -2235,6 +2292,57 @@ ggarrange(p10,p11,p12,nrow=1,ncol=3)
 ggarrange(p1,p7,p2,p8,nrow=2,ncol=2) 
 
 ggarrange(p4,p10,p5,p11,nrow=2,ncol=2) 
+
+# Comparing max, mean, and median differences for all season, site 3 on current
+p13<-ggplot(diffs, aes(y=site3allmax)) + geom_boxplot()+ scale_y_continuous(limits=c(-5, 25))
+p14<-ggplot(diffs, aes(y=site3allmean)) + geom_boxplot()+ scale_y_continuous(limits=c(-5, 25))
+p15<-ggplot(diffs, aes(y=site3allmedian)) + geom_boxplot()+ scale_y_continuous(limits=c(-5, 25))
+ggarrange(p13,p14,p15,nrow=1,ncol=3) 
+
+# Comparing max, mean, and median differences for july, site 3 on current
+p16<-ggplot(diffs, aes(y=site3julmax)) + geom_boxplot()+ scale_y_continuous(limits=c(-5, 25))
+p17<-ggplot(diffs, aes(y=site3julmean)) + geom_boxplot()+ scale_y_continuous(limits=c(-5, 25))
+p18<-ggplot(diffs, aes(y=site3julmedian)) + geom_boxplot()+ scale_y_continuous(limits=c(-5, 25))
+ggarrange(p16,p17,p18,nrow=1,ncol=3) 
+
+
+# Comparing max, mean, and median differences for all season, site 6 on current
+p19<-ggplot(diffs, aes(y=site6allmax)) + geom_boxplot()+ scale_y_continuous(limits=c(-5, 25))
+p20<-ggplot(diffs, aes(y=site6allmean)) + geom_boxplot()+ scale_y_continuous(limits=c(-5, 25))
+p21<-ggplot(diffs, aes(y=site6allmedian)) + geom_boxplot()+ scale_y_continuous(limits=c(-5, 25))
+ggarrange(p19,p20,p21,nrow=1,ncol=3) 
+
+# Comparing max, mean, and median differences for july, site 6 on current
+p22<-ggplot(diffs, aes(y=site6julmax)) + geom_boxplot()+ scale_y_continuous(limits=c(-5, 25))
+p23<-ggplot(diffs, aes(y=site6julmean)) + geom_boxplot()+ scale_y_continuous(limits=c(-5, 25))
+p24<-ggplot(diffs, aes(y=site6julmedian)) + geom_boxplot()+ scale_y_continuous(limits=c(-5, 25))
+ggarrange(p22,p23,p24,nrow=1,ncol=3) 
+
+ggarrange(p1, p13, p2, p15, nrow=2, ncol=2)
+ggarrange(p1, p19, p2, p20, nrow=2,ncol=2)
+
+ggarrange(p1, p16, p2, p17, nrow=2,ncol=2)
+ggarrange(p1, p22, p2, p23, nrow=2,ncol=2)
+
+diffsmax<-diffsumall %>%
+  filter(grepl("max", names))
+
+diffsmean<-diffsumall %>%
+  filter(grepl("mean", names))
+
+plot<-ggplot(diffsmax, aes(x =names, color=names))+ 
+  geom_point(aes(y = means), size = 2,  width=0.2) + 
+  geom_errorbar(aes(x=names, ymin = lwr, ymax = upr),   width=0.2) + theme_classic()+ theme(text = element_text(size = 15))+ 
+  xlab("Parameter")+
+  ylab("Difference with respect to Topt")
+plot
+
+plot<-ggplot(diffsmean, aes(x =names, color=names))+ 
+  geom_point(aes(y = means), size = 2,  width=0.2) + 
+  geom_errorbar(aes(x=names, ymin = lwr, ymax = upr),   width=0.2) + theme_classic()+ theme(text = element_text(size = 15))+ 
+  xlab("Parameter")+
+  ylab("Difference with respect to Topt")
+plot
 
 ```
 
