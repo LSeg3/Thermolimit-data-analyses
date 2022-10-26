@@ -259,9 +259,9 @@ averages$upr3 <- with(averages, mean + sem)
 # Plot with prediction trends, standard error and data
 plot<-ggplot(dat2b, aes(x = stage))+ 
   geom_point(aes(y = tempcorr, color=stage), size = 3, shape=1, stroke=1.2)  + 
-  geom_point(aes(y = mean, color=stage),color = "black", size = 3, data = averages, position=position_nudge(x=0.1)) + 
-  geom_errorbar(aes(x=stage, ymin = lwr3, ymax = upr3, group=stage), color = "black", data = averages, inherit.aes = FALSE, position=position_nudge(x=0.1), width=0.2) +
-geom_point(aes(y = median),color = "red", size = 3, data = averages, position=position_nudge(x=0.2))+ #plotting the median
+  geom_point(aes(y = mean, color=stage),color = "black", size = 3, data = averages, position=position_nudge(x=0.2)) + 
+  geom_errorbar(aes(x=stage, ymin = lwr3, ymax = upr3, group=stage), color = "black", data = averages, inherit.aes = FALSE, position=position_nudge(x=0.2), width=0.2) +
+#geom_point(aes(y = median),color = "red", size = 3, data = averages, position=position_nudge(x=0.2))+ #plotting the median
   theme_classic()+ theme(text = element_text(size = 15))+ 
   xlab("Stage")+
   ylab("Thermal optima (Celsius)")
@@ -376,13 +376,33 @@ ggplot(rr, aes(x = stage, y = .fitted, color=stage)) + geom_point()+geom_jitter(
 
 Data seems fairly ok. Now I can look at the results:
 
-#### Looking at the results
+#### Looking at the results (This is the final model I decided to use)
 ```{r}
 summary (t1b3)
+sjPlot::tab_model(t1b3, show.se = T, show.ci = F, show.re.var = F, show.intercept = T, 
+                  show.icc = FALSE, show.ngroups = F, show.r2 = T,
+                  dv.labels = c("Thermal optima per stage"), 
+                  string.se = "SE", transform = NULL, file = "Outputs/Statistics/Topt_stage.doc")
 
 confint(t1b3)
 coefTable <- summary(t1b3, ddf = "Kenward-Roger")$coefficients
 coefTable
+
+# Plotting the raw averages
+ dat2b<-dat2b%>% 
+  mutate(stage=fct_relevel(stage, levels=c("Female", "Protonymph", "Deutonymph", "Tritonymph",  "Male"))) %>%
+  arrange(stage)
+ 
+plot<-ggplot(dat2b, aes(x = stage))+ 
+  geom_point(aes(y = tempcorr, color=stage), size = 3, shape=1, stroke=1.2)  + 
+  geom_point(aes(y = mean, color=stage),color = "black", size = 3, data = averages, position=position_nudge(x=0.2)) + 
+  geom_errorbar(aes(x=stage, ymin = lwr3, ymax = upr3, group=stage), color = "black", data = averages, inherit.aes = FALSE, position=position_nudge(x=0.2), width=0.2) +
+#geom_point(aes(y = median),color = "red", size = 3, data = averages, position=position_nudge(x=0.2))+ #plotting the median
+  theme_classic()+ theme(text = element_text(size = 15))+ 
+  xlab("Stage")+
+  ylab("Thermal optima (Celsius)")
+plot
+ggsave(plot=last_plot(),filename="Topt_stage_minustrial2and outliers.jpg",  path="Outputs/Statistics/")
 
 
 #nd<-data.frame(ramp=seq(0.24,0.26,0.005), date=c("2022-06-23"), stage=c("Protonymph", "Deutonymph", "Tritonymph", "Female", "Male"))
@@ -520,7 +540,7 @@ ols_test_normality(t1) #Kolmogorov (more than n=50): data is normal
 
 Data is normal (Kolmogorov Smirnoff is non-significant).
 
-#### Bacwards selection
+#### Backwards selection
 ```{r}
 drop1(t1, test="Chisq")
 
@@ -646,7 +666,8 @@ t1plot<-ggplot(dat2, aes(x = stage))+
   ylab("Thermal optima (Celsius)")
 t1plot
 
-#ggsave(plot=last_plot(),filename="Topt_stage.jpg",  path="Outputs/Statistics/")
+
+
 ```
 
 
@@ -893,6 +914,11 @@ It seems like the points we removed were not outliers. Now, considering that: (1
 ## Final model
 ```{r}
 summary(t1b3)
+
+
+
+
+
 nd<-data.frame(stage=rep(c("Protonymph", "Deutonymph", "Tritonymph", "Male", "Female"), each=5), ramp=seq(0.24,0.26,0.005))
 predict.t1b3<-cbind(nd, estimates=predict(t1b3, newdata=nd,re.form = ~0))
 
@@ -1027,7 +1053,13 @@ datf<-dat2b %>%
   mutate(stage=fct_relevel(stage, levels=c( "Protonymph", "Deutonymph", "Tritonymph",  "Male", "Female"))) %>%
   arrange(stage)
 
-
+plot<-ggplot(datf, aes(x = weight))+ 
+  geom_point(aes(y = tempcorr, color=stage), size = 3, shape=1, stroke=1.2)  + 
+  geom_smooth(aes(y=tempcorr), method = "lm", se = FALSE)+
+  theme_classic()+ theme(text = element_text(size = 15))+ 
+  xlab("Weight (mg)")+
+  ylab("Thermal optima (Celsius)")
+plot
 
 # Making the plot
 #nd = expand.grid(weight=seq(0.1,2.2,0.05))
@@ -1060,7 +1092,7 @@ datf<-dat2b %>%
 #  xlab("Weight (mg)")+
 #  ylab("Thermal optima (Celsius)")
 #r10plot
-#ggsave(plot=last_plot(),filename="Topt_weight_perstage_minustrial2andOutliers.jpg",  path="Outputs/Statistics/")
+ggsave(plot=last_plot(),filename="Topt_weight_perstage_minustrial2andOutliers.jpg",  path="Outputs/Statistics/")
 
 
 ```
@@ -1330,7 +1362,7 @@ ggplot(datf, aes(x=stage, y=ropt2, color=stage))+
   ylab("Rate optima (Oxygen (mg/L)/ time(min))")
 
 
-ggsave(plot=last_plot(),filename="Ropt_stage.jpg",  path="Outputs/Statistics/")
+ggsave(plot=last_plot(),filename="Ropt_stage_perstage_minustrial2andOutliers.jpg.jpg",  path="Outputs/Statistics/", height=4.5, width=7.29, units="in")
 ```
 
 
@@ -1432,14 +1464,14 @@ r10plot
 ggsave(plot=last_plot(),filename="Ropt_weight_minustrial2and outliers.jpg",  path="Outputs/Statistics/")
 
 r10plot<-ggplot(datf, aes(x = weight))+ 
-  geom_point(aes(y = ropt2, color=stage), size = 3) + #scale_color_gradient(low="#9ecae1", high="#08306b")  + 
+  geom_point(aes(y = ropt2, color=stage), size = 3, shape=1, stroke=1.2) + #scale_color_gradient(low="#9ecae1", high="#08306b")  + 
   geom_line(aes(y = .fitted), data = predicted.r10, size = 2) + 
   geom_ribbon(aes(ymin = lwr, ymax = upr), data = predicted.r10, alpha = 0.5) + 
   theme_classic()+ theme(text = element_text(size = 15))+ 
   xlab("Weight (mg)")+
   ylab("Rate optima (Oxygen (mg/L) / time (min))")
 r10plot
-ggsave(plot=last_plot(),filename="Ropt_weight_perstage_minustrial2andOutliers.jpg",  path="Outputs/Statistics/")
+ggsave(plot=last_plot(),filename="Ropt_weight_perstage_minustrial2andOutliers.jpg",  path="Outputs/Statistics/",height=4.5, width=7.29, units="in")
 
 ```
 
@@ -1500,10 +1532,10 @@ r10plot<-ggplot(datf, aes(x = log(weight)))+
   xlab("log(Weight)")+
   ylab("log(Rate optima")
 r10plot
-ggsave(plot=last_plot(),filename="Ropt_weight_minustrial2and outliers.jpg",  path="Outputs/Statistics/")
+#ggsave(plot=last_plot(),filename="Ropt_weight_minustrial2and outliers.jpg",  path="Outputs/Statistics/")
 
 r10plot<-ggplot(datf, aes(x = log(weight)))+ 
-  geom_point(aes(y = log(ropt2), color=stage), size = 3) + #scale_color_gradient(low="#9ecae1", high="#08306b")  + 
+  geom_point(aes(y = log(ropt2), color=stage), size = 3, stroke=1.2, shape=1) + #scale_color_gradient(low="#9ecae1", high="#08306b")  + 
   geom_line(aes(y = .fitted), data = predicted.r10, size = 2) + 
   geom_ribbon(aes(ymin = lwr, ymax = upr), data = predicted.r10, alpha = 0.5) + 
   theme_classic()+ theme(text = element_text(size = 15))+ 
@@ -1529,7 +1561,8 @@ dat<-dat%>%
    filter(ind!=213) %>% #213 was a very flat line, we have dowubts about whether there was a leak
    mutate(stage=fct_relevel(stage, levels=c("Female", "Protonymph", "Deutonymph", "Tritonymph",  "Male"))) %>%
   arrange(stage) %>%
-  mutate(date=fct_relevel(date, levels=c("2022-06-23", "2022-06-21", "2022-06-22", "2022-06-24"))) %>%
+  mutate(date=fct_relevel(date, levels=c("2022-06-23", "2022-06-21", "2022-06-22", "2022-06-24")),
+         slope=slope*-1) %>% #Making the slope positive to better visualize the activation energy magnitude
   arrange(date)
 
 sample<-dat %>%
@@ -1801,12 +1834,52 @@ ggplot(rr, aes(x = stage, y = .fitted, color=stage)) + geom_point()+geom_jitter(
 #### Looking at the results
 ```{r}
 summary (t1b3)
+sjPlot::tab_model(t1b3, show.se = T, show.ci = F, show.re.var = F, show.intercept = T, 
+                  show.icc = FALSE, show.ngroups = F, show.r2 = T,
+                  dv.labels = c("Activation energy per stage"), 
+                  string.se = "SE", transform = NULL, file = "Outputs/Statistics/energy_stage.doc")
 
+
+#Organizing stages for plots
+datf<-dat2b %>%
+  mutate(stage=fct_relevel(stage, levels=c( "Protonymph", "Deutonymph", "Tritonymph",  "Male", "Female"))) %>%
+  arrange(stage)
+
+plot<-ggplot(datf, aes(x = stage))+ 
+  geom_point(aes(y = slope, color=stage), size = 3, shape=1, stroke=1.2)  + 
+  geom_point(aes(y = mean, color=stage),color = "black", size = 3, data = averages, position=position_nudge(x=0.2)) + 
+  geom_errorbar(aes(x=stage, ymin = lwr3, ymax = upr3, group=stage), color = "black", data = averages, inherit.aes = FALSE, position=position_nudge(x=0.2), width=0.2) +
+#geom_point(aes(y = median),color = "red", size = 3, data = averages, position=position_nudge(x=0.2))+ #plotting the median
+  theme_classic()+ theme(text = element_text(size = 15))+ 
+  xlab("Stage")+
+  ylab("Activation energy (eV)")
+plot
+ggsave(plot=last_plot(),filename="energy_stage_minustrial2andoutliers.jpg",  path="Outputs/Statistics/",height=4.5, width=7.29, units="in")
 confint(t1b3)
 coefTable <- summary(t1b3, ddf = "Kenward-Roger")$coefficients
 coefTable
 
 ```
+
+### Trying out a non-parametric approach
+
+Since the model violates the assumption of equal variance, I will try a non-paramtric approch that allows to include random factors: the Friedman test
+
+```{r}
+weight.means <- aggregate(slope~stage, dat2b, mean)
+
+#friedman.test(slope~stage, weight.means)
+#fried<-friedman.test(slope ~ stage, data=dat2b)
+
+
+kruskal.test(slope~stage, data=dat2b)
+pairwise.wilcox.test(dat2b$slope, dat2b$stage,
+                 p.adjust.method = "BH")
+
+
+```
+
+
 
 ## Exploring different statistical models for weight
 
@@ -1867,7 +1940,7 @@ int <- y[1L] - slope * x[1L]
 ggplot(rr, aes(sample = .resid)) + geom_qq(size = rel(4)) + geom_abline(intercept = int,
     slope = slope, linetype = 2, size = 2)
 
-ggplot(rr, aes(x = stage, y = .fitted, color=stage)) + geom_point()+geom_jitter()
+ggplot(rr, aes(x = weight, y = .fitted, color=weight)) + geom_point()+geom_jitter()
 
 
 ```
@@ -1876,6 +1949,26 @@ ggplot(rr, aes(x = stage, y = .fitted, color=stage)) + geom_point()+geom_jitter(
 #### Looking at the results
 ```{r}
 summary (t1b3)
+sjPlot::tab_model(t1b3, show.se = T, show.ci = F, show.re.var = F, show.intercept = T, 
+                  show.icc = FALSE, show.ngroups = F, show.r2 = T,
+                  dv.labels = c("Activation energy per weight"), 
+                  string.se = "SE", transform = NULL, file = "Outputs/Statistics/energy_weight.doc")
+
+
+#Organizing stages for plots
+datf<-dat2b %>%
+  mutate(stage=fct_relevel(stage, levels=c( "Protonymph", "Deutonymph", "Tritonymph",  "Male", "Female"))) %>%
+  arrange(stage)
+
+plot<-ggplot(datf, aes(x = weight))+ 
+  geom_point(aes(y = slope, color=stage), size = 3, shape=1, stroke=1.2)  + 
+  geom_smooth(aes(y=slope), method = "lm", se = FALSE)+
+  theme_classic()+ theme(text = element_text(size = 15))+ 
+  xlab("Weight (mg)")+
+  ylab("Activation energy (eV)")
+plot
+ggsave(plot=last_plot(),filename="energy_weight_minustrial2andoutliers.jpg",  path="Outputs/Statistics/",height=4.5, width=7.29, units="in")
+
 
 confint(t1b3)
 coefTable <- summary(t1b3, ddf = "Kenward-Roger")$coefficients
@@ -1883,1238 +1976,66 @@ coefTable
 
 ```
 
-
-
-
-# ############################################## * ###########################
-
-# Using all trials
-
-# Comparing Topt
-
-## Looking at stage
-
-### Global model
-```{r, eval=FALSE, echo=FALSE}
-t1<-lm(tempcorr~stage+date+weight+ramp+stage:ramp, data=dat)
-summary(t1)
-check_assumptions(t1) #it doesnt look too bad
-hist(t1$residuals, main = "Residual Histogram") #it doesnt look too bad
-ols_test_normality(t1) #Kolmogorov (more than n=50): data is normal
+# Comparing environmental conditions to Topt
+ 
+## Calling data
+```{r}
+data<-read.csv("Outputs/toptvsenv.csv")
 ```
 
-
-### Backwards selection of global model
-```{r, eval=FALSE, echo=FALSE}
-## For now, I will use the model with the normal distribution and do backwards selection, later I will try a different distribution to see if the fit improves
-# Doing backwards selection
-drop1(t1, test="Chisq")
-
-t2 <- update(t1, .~. -date)
-drop1(t2, test="Chisq")
-
-t3 <- update(t2, .~. -weight)
-drop1(t3, test="Chisq")
-```
-
-It seems like the model with just ramp:stage is the best model. Now I will look to see if it meets the assumptions
-
-### Checking assumptions
-```{r, eval=FALSE, echo=FALSE}
-check_assumptions(t3)
-hist(t3$residuals, main = "Residual Histogram") #it doesnt look too bad
-ols_test_normality(t3) #data is  normal
-# Still  normal
-```
-
-### Summary and result plots
-
-```{r, eval=FALSE, echo=FALSE}
-summary(t3)
-# Making the plot
-nd = expand.grid(ramp=seq(0.2,0.26,0.005), stage=c("Protonymph", "Deutonymph", "Tritonymph", "Female", "Male"))
-predicted.t3 <- augment(t3, newdata = nd, se_fit=TRUE)
-stats.t3<-glance(t3)
-
-
-# calculate the lower and upper 95% confidence limits on the mean
-tcrit <- qt(0.975, df = stats.t3$df.residual)
-predicted.t3$lwr <- with(predicted.t3, .fitted - tcrit * .se.fit)
-predicted.t3$upr <- with(predicted.t3, .fitted + tcrit * .se.fit)
-
-# Plot with just prediction trend
-t3plot <- ggplot(dat, aes(x = ramp, y = tempcorr)) + 
-  geom_line(aes(y = .fitted, group = stage, linetype = stage, color=stage),size=1.5, data = predicted.t3) + theme_classic()+ theme(text = element_text(size = 15))+ 
-  xlab("Heat ramping rate (Celsius/minute)")+
-  ylab("Thermal optima (Celsius)")
-t3plot
+```{r}
+all<-lm(data$currentallmean~data$stage)
+summary(all)
+shapiro.test((data$currentallmean)) #not normal
+shapiro.test((data$currentallmax)) #not normal
+shapiro.test((data$currentallmedian)) #not normal
+shapiro.test((data$currentjulmax)) #not normal
+shapiro.test((data$currentjulmean)) #not normal
+shapiro.test((data$currentjulmedian)) #not normal
+shapiro.test((data$futureallmax)) #not normal
+shapiro.test((data$futureallmean)) #not normal
+shapiro.test((data$futureallmedian)) #not normal
+shapiro.test((data$futurejulmax)) #not normal
+shapiro.test((data$futurejulmean)) #not normal
+shapiro.test((data$futurejulmedian)) #not normal
+shapiro.test((data$site3allmax)) #not normal
+shapiro.test((data$site3allmean)) #not normal
+shapiro.test((data$site3allmedian)) #not normal
+shapiro.test((data$site3julmax)) #not normal
+shapiro.test((data$site3julmean)) #not normal
+shapiro.test((data$site3julmedian)) #not normal
+shapiro.test((data$site6allmax)) #normal
+shapiro.test((data$site6allmean)) #normal
+shapiro.test((data$site6allmedian)) #normal
+shapiro.test((data$site6julmax)) #normal
+shapiro.test((data$site6julmean)) #normal
+shapiro.test((data$site6julmedian)) #normal
 
 
 
-# Plot with prediction trends, confidence intervals and data
-t3plot<-ggplot(dat, aes(x = ramp)) + 
-  geom_line(aes(y = .fitted, color=stage, group=stage,linetype = stage), 
-            data = predicted.t3, size = 2) + 
-  geom_ribbon(aes(ymin = lwr, ymax = upr, group=stage, fill=stage), 
-              data = predicted.t3, alpha = 0.5) + theme_classic()+ theme(text = element_text(size = 15))+ 
-  xlab("Heat ramping rate (Celsius/minute)")+
-  ylab("Thermal optima (Celsius)")+ 
-  geom_point(aes(y = tempcorr, color=stage), size = 3) 
-t3plot
+ggplot(data, aes(x=(currentallmax))) + geom_histogram() 
+ggplot(data, aes(x=(currentallmean))) + geom_histogram() 
 
-ggsave(plot=last_plot(),filename="Topt_stage.jpg",  path="Outputs/Statistics/")
-```
+allmax<-t.test(data$currentallmax, data$futureallmax)
+allmax #Max urrent temperatures are much closer to the topt than future temperatures, future temperatures bring the threshold past what the species can potentially tolerate
+allmean<-t.test(data$currentallmean, data$futureallmean)
+allmean #same as for the max, mean temperatures are providing more room for the animals to adapt, future temperatures significantly reduce this "room"
+julmean<-t.test(data$currentjulmean, data$futurejulmean)
+julmean #same pattern repeats for the warmer month
 
+# The differences between topt and site temperature are larger for the whole are average  than for each site, with the exception of site 6 on july:
+t.test(data$site3allmax, data$currentallmax)
+t.test(data$site3julmax, data$currentjulmax)
+t.test(data$site6allmax, data$currentallmax)
+t.test(data$site6julmax, data$currentjulmax) #this is the one that is no different
 
-### Trying out using a random effect
-```{r, eval=FALSE, echo=FALSE}
-# Since I know the ramp is having an interaction with the stage, I will try to control for it as a random factor, since I am not really interested in testing for that?
-
-# Trying out with a random effects
-t4<-lmer(tempcorr~stage+date+weight+(stage|ramp), data=dat, REML=FALSE)
-summary(t4)
-
-#Checking assumptions
-rr <- broom.mixed::augment(t4)
-ggplot(rr, aes(x = .fitted, y = .resid)) + geom_point() + geom_smooth() +
-    geom_hline(yintercept = 0, linetype = 2)
-
-# get int and slope for qqline
-probs <- c(0.25, 0.75)
-y <- quantile(rr$.resid, probs, names = FALSE, na.rm = TRUE)
-x <- qnorm(probs)
-slope <- diff(y)/diff(x)
-int <- y[1L] - slope * x[1L]
-ggplot(rr, aes(sample = .resid)) + geom_qq(size = rel(4)) + geom_abline(intercept = int,
-    slope = slope, linetype = 2, size = 2)
-
-ggplot(rr, aes(x = .fitted, y = sqrt(abs(.resid)))) + geom_point() +
-    geom_smooth() + geom_hline(yintercept = 0.822)
-
-#Geeting the coefficients for each group taking into account the random effects
-#t4summ<-knitr::kable(cbind(ranef(t4)$stage, coef(t4)$stage))
-
-t4<-lmer(tempcorr~stage+date+weight+(stage|ramp), data=dat)
-coefTable <- summary(t4, ddf = "Kenward-Roger")$coefficients
-coefTable
-
-#Backwards selection
-step(t4, ddf = "Satterthwaite")
-
-t5<-lmer(tempcorr~stage+(stage|ramp), data=dat)
-summary(t5)
-coefTable <- summary(t5, ddf = "Kenward-Roger")$coefficients
-coefTable
-
-#Checking assumptions
-rr <- broom.mixed::augment(t5)
-ggplot(rr, aes(x = .fitted, y = .resid)) + geom_point() + geom_smooth() +
-    geom_hline(yintercept = 0, linetype = 2)
-
-# get int and slope for qqline
-probs <- c(0.25, 0.75)
-y <- quantile(rr$.resid, probs, names = FALSE, na.rm = TRUE)
-x <- qnorm(probs)
-slope <- diff(y)/diff(x)
-int <- y[1L] - slope * x[1L]
-ggplot(rr, aes(sample = .resid)) + geom_qq(size = rel(4)) + geom_abline(intercept = int,
-    slope = slope, linetype = 2, size = 2)
-
-ggplot(rr, aes(x = .fitted, y = sqrt(abs(.resid)))) + geom_point() +
-    geom_smooth() + geom_hline(yintercept = 0.822)
-
-```
-
-I am not convinced the random effect helped. However, since stage and weight might be correlated (e.g. deutonymphs and protonymps are alwasys smaller than adults), and since weight becomes relevant in other models, I will test replacing stage for weight to keep all models consistent. 
-
-## Looking at weight
-
-### Global model
-```{r, eval=FALSE, echo=FALSE}
-t6<-lm(tempcorr~stage+date+weight+ramp+weight:ramp, data=dat)
-summary(t6)
-check_assumptions(t6) #it doesnt look too bad
-hist(t6$residuals, main = "Residual Histogram") #it doesnt look too bad
-ols_test_normality(t6) #Kolmogorov (more than n=50): data is normal
-```
-
-
-### Backwards selection for weight
-```{r, eval=FALSE, echo=FALSE}
-drop1(t6, test="Chisq")
-
-t7 <- update(t6, .~. -date)
-drop1(t7, test="Chisq")
-
-t8 <- update(t7, .~. -stage)
-drop1(t8, test="Chisq")
-
-```
-
-It seems like the model with just ramp:weight is the best model. Now I will look to see if it meets the assumptions
-
-### Checking assumptions
-```{r, eval=FALSE, echo=FALSE}
-check_assumptions(t8)
-hist(t8$residuals, main = "Residual Histogram") #it doesnt look too bad
-ols_test_normality(t8) #data is  normal
-```
-
-### Summary and result plots
-
-```{r, eval=FALSE, echo=FALSE}
-summary(t8)
-# Making the plot
-nd = expand.grid(ramp=seq(0.20,0.26,0.005), weight=c(0.1, 1.1, 2.3))
-predicted.t8 <- augment(t8, newdata = nd, se_fit=TRUE)
-stats.t8<-glance(t8)
-
-
-# calculate the lower and upper 95% confidence limits on the mean
-tcrit <- qt(0.975, df = stats.t8$df.residual)
-predicted.t8$lwr <- with(predicted.t8, .fitted - tcrit * .se.fit)
-predicted.t8$upr <- with(predicted.t8, .fitted + tcrit * .se.fit)
-
-
-# Plot with just prediction trends
-#t8plot <- ggplot(dat, aes(x = ramp, y = tempcorr)) + 
-#  geom_line(aes(y = .fitted, group = as.factor(weight), linetype = as.factor(weight), color=weight),size=1.5, data = predicted.t8)  + theme_classic()+ theme(text = #element_text(size = 15))+ 
-#  xlab("Heat ramping rate (Celsius/minute)")+
-#  ylab("Thermal optima (Celsius)")
-#t8plot
-
-# Plot with prediction trends, confidence intervals and data
-t8plot<-ggplot(dat, aes(x = ramp))  + 
-  geom_line(aes(y = .fitted, color=weight, group=as.factor(weight),linetype = as.factor(weight)), 
-            data = predicted.t8, size = 2) + 
-  geom_ribbon(aes(ymin = lwr, ymax = upr, group=as.factor(weight), fill=weight), 
-              data = predicted.t8, alpha = 0.5) + theme_classic()+ theme(text = element_text(size = 15))+ 
-  xlab("Heat ramping rate (Celsius/minute)")+
-  ylab("Thermal optima (Celsius)")+ 
-  geom_point(aes(y = tempcorr, color=weight), size = 3) + scale_color_gradient(low="#9ecae1", high="#08306b") + scale_fill_gradient(low="#9ecae1", high="#08306b")
-t8plot
-ggsave(plot=last_plot(),filename="Topt_weight.jpg",  path="Outputs/Statistics/")
+# The diffs betwen topt and mean temperatures of site 3 are significantly lower than those of the whole area. Site 6 does not differ from the whole area average
+t.test(data$site3allmean, data$currentallmean)
+t.test(data$site3julmean, data$currentjulmean)
+t.test(data$site6allmean, data$currentallmean) #no different
+t.test(data$site6julmean, data$currentjulmean) #no difference
 
 
 
 ```
-
-
-# Comparing Ropt
-
-## Looking at stage
-
-### Global model
-```{r, eval=FALSE, echo=FALSE}
-r1<-lm(ropt2~stage+date+weight+ramp+stage:ramp, data=dat)
-summary(r1)
-check_assumptions(r1)
-hist(r1$residuals, main = "Residual Histogram")
-ols_test_normality(r1) #Kolmogorov: data is normal
-```
-
-
-### Backwards selection
-
-```{r, eval=FALSE, echo=FALSE}
-# Doing backwards selection
-drop1(r1, test="Chisq")
-
-r2 <- update(r1, .~. -stage:ramp)
-drop1(r2, test="Chisq")
-
-r3 <- update(r2, .~. -weight)
-drop1(r3, test="Chisq")
-
-r4 <- update(r3, .~. -date)
-drop1(r4, test="Chisq")
-```
-
-### Checking assumptions
-
-```{r, eval=FALSE, echo=FALSE}
-check_assumptions(r4)
-hist(r4$residuals, main = "Residual Histogram")
-ols_test_normality(r4) #Kolmogorov: data is normal
-```
-
-### Summary and result plots
-```{r, eval=FALSE, echo=FALSE}
-summary(r4)
-
-# Making the plot
-nd = expand.grid(ramp=seq(0.2,0.26,0.005), stage=c("Protonymph", "Deutonymph", "Tritonymph", "Female", "Male"))
-predicted.r4 <- augment(r4, newdata = nd, se_fit=TRUE)
-stats.r4<-glance(r4)
-
-
-# calculate the lower and upper 95% confidence limits on the mean
-tcrit <- qt(0.975, df = stats.r4$df.residual)
-predicted.r4$lwr <- with(predicted.r4, .fitted - tcrit * .se.fit)
-predicted.r4$upr <- with(predicted.r4, .fitted + tcrit * .se.fit)
-
-
-
-# Plot with prediction trends
-r4plot <- ggplot(dat, aes(x = ramp, y = ropt2)) + 
-  geom_line(aes(y = .fitted, group = stage, linetype = stage, color=stage),size=1.5, data = predicted.r4) + theme_classic()+ theme(text = element_text(size = 15))+ 
-  xlab("Heat ramping rate (Celsius/minute)")+
-  ylab("Rate optima (Oxygen (mg/L) / time (min))")
-r4plot
-
-# Plot with prediction trends, confidence intervals and data
-r4plot<-ggplot(dat, aes(x = ramp)) + 
-  geom_line(aes(y = .fitted, color=stage, group=stage,linetype = stage), 
-            data = predicted.r4, size = 2) + 
-  geom_ribbon(aes(ymin = lwr, ymax = upr, group=stage, fill=stage), 
-              data = predicted.r4, alpha = 0.5) + theme_classic()+ theme(text = element_text(size = 15))+ 
-  xlab("Heat ramping rate (Celsius/minute)")+
-  ylab("Rate optima (Oxygen (mg/L) / time (min))")+ 
-  geom_point(aes(y = ropt2, color=stage), size = 3) 
-r4plot
-
-
-
-ggsave(plot=last_plot(),filename="Ropt_stage.jpg",  path="Outputs/Statistics/")
-
-```
-## Looking at weight
-
-### Global model
-
-```{r, eval=FALSE, echo=FALSE}
-r5<-lm(ropt2~stage+date+weight+ramp+weight:ramp, data=dat)
-summary(r5)
-check_assumptions(r5)
-hist(r5$residuals, main = "Residual Histogram")
-ols_test_normality(r5) #Kolmogorov: data is normal
-```
-
-### Backwards selection
-```{r, eval=FALSE, echo=FALSE}
-drop1(r5, test="Chisq")
-
-r6 <- update(r5, .~. -weight:ramp)
-drop1(r6, test="Chisq")
-
-r7 <- update(r6, .~. -stage)
-drop1(r7, test="Chisq")
-
-r8 <- update(r7, .~. -date)
-drop1(r8, test="Chisq")
-```
-
-
-### Checking assumptions
-
-```{r, eval=FALSE, echo=FALSE}
-check_assumptions(r8)
-hist(r8$residuals, main = "Residual Histogram")
-ols_test_normality(r8) #Kolmogorov: data is normal
-```
-
-### Summary and result plots
-
-```{r, eval=FALSE, echo=FALSE}
-summary(r8)
-# Making the plot
-nd = expand.grid(ramp=seq(0.2,0.26,0.005), weight=c(0.1, 1.1, 2.3))
-predicted.r8 <- augment(r8, newdata = nd, se_fit=TRUE)
-stats.r8<-glance(r8)
-
-
-# calculate the lower and upper 95% confidence limits on the mean
-tcrit <- qt(0.975, df = stats.r8$df.residual)
-predicted.r8$lwr <- with(predicted.r8, .fitted - tcrit * .se.fit)
-predicted.r8$upr <- with(predicted.r8, .fitted + tcrit * .se.fit)
-
-
-
-# reuse ggplot object from above. fix color to black or geom_line looks for fBeach. x aesthetic inherited from Richness_NAP
-r8plot <- ggplot(dat, aes(x = ramp, y = ropt2)) + 
-  geom_line(aes(y = .fitted, group = as.factor(weight), linetype = as.factor(weight), color=weight),size=1.5, data = predicted.r8)+ theme_classic()+ theme(text = element_text(size = 15))+ 
-  xlab("Heat ramping rate (Celsius/minute)")+
-  ylab("Rate optima (Oxygen (mg/L) / time (min))")
-r8plot
-
-
-# Plot with prediction trends, confidence intervals and data
-r8plot<-ggplot(dat, aes(x = ramp))+ 
-  geom_line(aes(y = .fitted, color=weight, group=as.factor(weight),linetype = as.factor(weight)), 
-            data = predicted.r8, size = 2)+#scale_color_continuous(trans = 'reverse') + 
-  geom_ribbon(aes(ymin = lwr, ymax = upr, group=as.factor(weight), fill=weight), 
-              data = predicted.r8, alpha = 0.5) + theme_classic()+ theme(text = element_text(size = 15))+#scale_color_continuous(trans = 'reverse')+ 
-  xlab("Heat ramping rate (Celsius/minute)")+
-  ylab("Rate optima (Oxygen (mg/L) / time (min))") + 
-  geom_point(aes(y = ropt2, color=weight), size = 3)+ scale_color_gradient(low="#9ecae1", high="#08306b")+ scale_fill_gradient(low="#9ecae1", high="#08306b")
-r8plot
-
-
-
-
-
-ggsave(plot=last_plot(),filename="Ropt_weight.jpg",  path="Outputs/Statistics/")
-
-
-
-```
-
-
-# Comparing Activation energy
-
-## Getting the data
-
-```{r, eval=FALSE, echo=FALSE}
-energy<-read.csv("Outputs/activation energy final.csv")
-energy<-energy%>%
-  mutate(stage=fct_relevel(stage, levels=c("Protonymph", "Deutonymph", "Tritonymph", "Female", "Male" ))) %>%
-  arrange(stage) %>%
-  mutate(slope=slope*-1)
-```
-
-## Looking at stage
-
-### Global model
-```{r, eval=FALSE, echo=FALSE}
-e1<-lm(slope~stage+date+weight+ramp+stage:ramp, data=energy)
-summary(e1)
-check_assumptions(e1)
-hist(e1$residuals, main = "Residual Histogram")
-ols_test_normality(e1) #Kolmogorov: data is  normal
-```
-
-### Backwards selection
-```{r, eval=FALSE, echo=FALSE}
-# Doing backwards selection
-drop1(e1, test="Chisq")
-
-e2 <- update(e1, .~. -weight)
-drop1(e2, test="Chisq")
-```
-
-### Checking assumptions
-```{r, eval=FALSE, echo=FALSE}
-check_assumptions(e2)
-hist(e2$residuals, main = "Residual Histogram")
-ols_test_normality(e2) #Kolmogorov: data is  normal
-```
-
-
-### Summary and result plots
-
-```{r, eval=FALSE, echo=FALSE}
-summary(e2)
-# Making the plot for ramp*stage
-nd = expand.grid(ramp=seq(0.2,0.25,0.005), stage=c("Protonymph", "Deutonymph", "Tritonymph", "Female", "Male"), date="2022-06-21")
-predicted.e2 <- augment(e2, newdata = nd)
-
-# reuse ggplot object from above. fix color to black or geom_line looks for fBeach. x aesthetic inherited from Richness_NAP
-e2plot <- ggplot(energy, aes(x = ramp, y = slope)) + 
-  geom_line(aes(y = .fitted, group = stage, linetype = stage, color=stage),size=1.5, data = predicted.e2)+ theme_classic()+ theme(text = element_text(size = 15))+ 
-  xlab("Heat ramping rate (Celsius/minute)")+
-  ylab("Activation energy")
-e2plot
-ggsave(plot=last_plot(),filename="Energy_stage.jpg",  path="Outputs/Statistics/")
-
-
-
-# Making the plot for date
-nd = expand.grid(ramp=0.225, stage=c("Protonymph"), date=factor(levels(as.factor(energy$date))))
-predicted.e2 <- augment(e2, newdata = nd)
-
-# reuse ggplot object from above. fix color to black or geom_line looks for fBeach. x aesthetic inherited from Richness_NAP
-e2plot2 <- ggplot(energy, aes(x = date, y = slope)) + 
-  geom_point(aes(y = .fitted), data = predicted.e2)+ylab("Äctivation energy") + theme_classic()+ theme(text = element_text(size = 15))+ 
-  xlab("Date")+
-  ylab("Activation energy")
-e2plot2 
-ggsave(plot=last_plot(),filename="Energy_stage_weight.jpg",  path="Outputs/Statistics/")
-
-
-```
-
-## Looking at weight
-
-### Global model
-```{r, eval=FALSE, echo=FALSE}
-e3<-lm(slope~stage+date+weight+ramp+weight:ramp, data=energy)
-summary(e3)
-check_assumptions(e3)
-hist(e3$residuals, main = "Residual Histogram")
-ols_test_normality(e3) #Kolmogorov: data is  NOT normal
-```
-
-### Backwards selection
-```{r, eval=FALSE, echo=FALSE}
-# Doing backwards selection
-drop1(e3, test="Chisq")
-
-e4 <- update(e3, .~. -stage)
-drop1(e4, test="Chisq")
-```
-
-### Checking assumptions
-```{r, eval=FALSE, echo=FALSE}
-check_assumptions(e4)
-hist(e4$residuals, main = "Residual Histogram")
-ols_test_normality(e4) #Kolmogorov: data is  normal
-```
-
-
-### Summary and result plots
-
-```{r, eval=FALSE, echo=FALSE}
-summary(e4)
-# Making the plot for ramp*stage
-nd = expand.grid(ramp=seq(0.2,0.25,0.005),  weight=c(0.1, 1.1, 2.3), date="2022-06-21")
-predicted.e4 <- augment(e4, newdata = nd)
-
-# reuse ggplot object from above. fix color to black or geom_line looks for fBeach. x aesthetic inherited from Richness_NAP
-e4plot <- ggplot(energy, aes(x = ramp, y = slope)) + 
-  geom_line(aes(y = .fitted, group = as.factor(weight), linetype = as.factor(weight), color=weight),size=1.5, data = predicted.e4)  + theme_classic()+ theme(text = element_text(size = 15))+ 
-  xlab("Heat ramping rate (Celsius/minute)")+
-  ylab("Activation energy") + scale_color_gradient(low="#9ecae1", high="#08306b")
-e4plot
-ggsave(plot=last_plot(),filename="Energy_weight.jpg",  path="Outputs/Statistics/")
-
-# Making the plot for date
-ndb = expand.grid(ramp=0.225, weight=1.1, date=factor(levels(as.factor(energy$date))))
-predicted.e4b <- augment(e4, newdata = ndb)
-
-# reuse ggplot object from above. fix color to black or geom_line looks for fBeach. x aesthetic inherited from Richness_NAP
-e4plot2 <- ggplot(energy, aes(x = date, y = slope)) + 
-  geom_point(aes(y = .fitted), data = predicted.e4b)+ylab("Äctivation energy") + theme_classic()+ theme(text = element_text(size = 15))+ 
-  xlab("Date")+
-  ylab("Activation energy")
-e4plot2 
-ggsave(plot=last_plot(),filename="Energy_weight_date.jpg",  path="Outputs/Statistics/")
-
-```
-
-
-# Dropping trial 2
-
-Turns out trial 2 was the only one with a ramp below 0.24. Lets see if dropping it changes anything
-```{r, eval=FALSE, echo=FALSE}
-dat2<-dat%>%filter(trial!=2)
-
-sample2<-dat2 %>%
-  group_by(stage) %>%
-  summarize(n=n())
-sample2
-```
-
-
-
-# Comparing Topt
-
-## Looking at stage
-
-### Global model
-```{r, eval=FALSE, echo=FALSE}
-t1<-lm(tempcorr~stage+date+weight+ramp+stage:ramp, data=dat2)
-summary(t1)
-check_assumptions(t1) #it doesnt look too bad
-hist(t1$residuals, main = "Residual Histogram") #it doesnt look too bad
-ols_test_normality(t1) #Kolmogorov (more than n=50): data is normal
-```
-# Bacwards selection
-```{r, eval=FALSE, echo=FALSE}
-drop1(t1, test="Chisq")
-
-t2 <- update(t1, .~. -weight)
-drop1(t2, test="Chisq")
-
-t3 <- update(t2, .~. -date)
-drop1(t3, test="Chisq")
-
-t4 <- update(t3, .~. -stage:ramp)
-drop1(t4, test="Chisq")
-
-t5 <- update(t4, .~. -ramp)
-drop1(t5, test="Chisq")
-
-
-
-
-
-t2 <- update(t1, .~. -stage:ramp)
-drop1(t2, test="Chisq")
-
-t3 <- update(t2, .~. -weight)
-drop1(t3, test="Chisq")
-
-t4 <- update(t3, .~. -date)
-drop1(t4, test="Chisq")
-
-t5 <- update(t4, .~. -ramp)
-drop1(t5, test="Chisq")
-
-
-```
-
-### Checking assumptions
-```{r, eval=FALSE, echo=FALSE}
-check_assumptions(t5)
-hist(t5$residuals, main = "Residual Histogram") #it doesnt look too bad
-ols_test_normality(t5) #data is  normal
-# Still  normal
-```
-### Summary and result plots
-
-```{r, eval=FALSE, echo=FALSE}
-summary(t5)
-sjPlot::tab_model(t5, show.se = T, show.ci = F, show.re.var = F, show.intercept = T, 
-                  show.icc = FALSE, show.ngroups = F, show.r2 = T,
-                  dv.labels = c("Activation energy per weight and date"), 
-                  string.se = "SE", transform = NULL, file = "Outputs/Statistics/Temp_stages.doc")
-
-
-# Making the plot
-nd = expand.grid(stage=c("Protonymph", "Deutonymph", "Tritonymph", "Female", "Male"))
-predicted.t5 <- augment(t5, newdata = nd, se_fit=TRUE)
-stats.t5<-glance(t5)
-
-
-# calculate the lower and upper 95% confidence limits on the mean
-tcrit <- qt(0.975, df = stats.t5$df.residual)
-predicted.t5$lwr <- with(predicted.t5, .fitted - tcrit * .se.fit) # 95% confidence interval as estimated when doing the continuous line
-predicted.t5$upr <- with(predicted.t5, .fitted + tcrit * .se.fit)
-predicted.t5$lwr2 <- with(predicted.t5, .fitted - 1.96 * .se.fit)# 95% confidence interval as estimated when doing the vcategorical variables in Drew's class
-predicted.t5$upr2 <- with(predicted.t5, .fitted + 1.96 * .se.fit)
-predicted.t5$lwr3 <- with(predicted.t5, .fitted -  .se.fit) #Using just the standard error
-predicted.t5$upr3 <- with(predicted.t5, .fitted + .se.fit)
-
-
-# Plot with prediction trends, confidence intervals and data
-t5plot<-ggplot(dat2, aes(x = stage))+ 
-  geom_point(aes(y = tempcorr, color=stage), size = 3, shape=1)  + 
-  geom_point(aes(y = .fitted, color=stage),color = "black", size = 2, data = predicted.t5, position=position_nudge(x=0.1), width=0.2) + 
-  geom_errorbar(aes(x=stage, ymin = lwr, ymax = upr, group=stage), color = "black", data = predicted.t5, inherit.aes = FALSE, position=position_nudge(x=0.1), width=0.2) + theme_classic()+ theme(text = element_text(size = 15))+ 
-  xlab("Stage")+
-  ylab("Thermal optima (Celsius)")
-t5plot
-
-# Plot with prediction trends, confidence interval 2 and data
-t5plot<-ggplot(dat2, aes(x = stage))+ 
-  geom_point(aes(y = tempcorr, color=stage), size = 3, shape=1)  + 
-  geom_point(aes(y = .fitted, color=stage),color = "black", size = 2, data = predicted.t5, position=position_nudge(x=0.1), width=0.2) + 
-  geom_errorbar(aes(x=stage, ymin = lwr2, ymax = upr2, group=stage), color = "black", data = predicted.t5, inherit.aes = FALSE, position=position_nudge(x=0.1), width=0.2) + theme_classic()+ theme(text = element_text(size = 15))+ 
-  xlab("Stage")+
-  ylab("Thermal optima (Celsius)")
-t5plot
-
-# Plot with prediction trends, standard error and data
-t5plot<-ggplot(dat2, aes(x = stage))+ 
-  geom_point(aes(y = tempcorr, color=stage), size = 3, shape=1)  + 
-  geom_point(aes(y = .fitted, color=stage),color = "black", size = 2, data = predicted.t5,position=position_nudge(x=0.1), width=0.2) + 
-  geom_errorbar(aes(x=stage, ymin = lwr3, ymax = upr3, group=stage), color = "black", data = predicted.t5, inherit.aes = FALSE, position=position_nudge(x=0.1), width=0.2) + theme_classic()+ theme(text = element_text(size = 15))+ 
-  xlab("Stage")+
-  ylab("Thermal optima (Celsius)")
-t5plot
-
-
-# check Chads code
-ggplot(dat2, aes(x=stage, y=tempcorr, color=stage))+
-  geom_point(shape=1, size=3, stroke=1.2)+
-  scale_fill_brewer(palette="Set1")+
-  stat_summary(geom="point", fun=mean, size=3, color="black", position=position_nudge(x=0.2))+
-  stat_summary(geom="errorbar", fun.data=mean_se, width=0.1, position=position_nudge(x=0.2), color="black")+
-  theme_classic()+ theme(text = element_text(size = 15))+ 
-  xlab("Stage")+
-  ylab("Thermal optima (Celsius)")
-
-
-
-
-
-
-
-
-
-ggsave(plot=last_plot(),filename="Topt_stage_minustrial2.jpg",  path="Outputs/Statistics/")
-```
-
-
-## Plotting from the raw data
-
-```{r, eval=FALSE, echo=FALSE}
-averages<-dat2%>%
-  group_by(stage) %>%
-  summarize(mean=mean(tempcorr), sd=sd(tempcorr), n=n(), sem=sd/sqrt(n))
-averages
-
-averages$lwr3 <- with(averages, mean -  sem) #Using just the standard error
-averages$upr3 <- with(averages, mean + sem)
-
-
-# Plot with prediction trends, standard error and data
-t5plot<-ggplot(dat2, aes(x = stage))+ 
-  geom_point(aes(y = tempcorr, color=stage), size = 3, shape=1, stroke=1.2)  + 
-  geom_point(aes(y = mean, color=stage),color = "black", size = 3, data = averages, position=position_nudge(x=0.1)) + 
-  geom_errorbar(aes(x=stage, ymin = lwr3, ymax = upr3, group=stage), color = "black", data = averages, inherit.aes = FALSE, position=position_nudge(x=0.1), width=0.2) + 
-  theme_classic()+ theme(text = element_text(size = 15))+ 
-  xlab("Stage")+
-  ylab("Thermal optima (Celsius)")
-t5plot
-
-```
-
-
-## Looking at weight
-
-### Global model
-```{r, eval=FALSE, echo=FALSE}
-t6<-lm(tempcorr~date+weight+ramp+weight:ramp, data=dat2)
-summary(t6)
-check_assumptions(t6) #it doesnt look too bad
-hist(t6$residuals, main = "Residual Histogram") #it doesnt look too bad
-ols_test_normality(t6) #Kolmogorov (more than n=50): data is normal
-```
-
-
-### Backwards selection for weight
-```{r, eval=FALSE, echo=FALSE}
-drop1(t6, test="Chisq")
-
-t7 <- update(t6, .~. -date)
-drop1(t7, test="Chisq")
-
-t8 <- update(t7, .~. -weight:ramp)
-drop1(t8, test="Chisq")
-
-t9<- update(t8, .~. -ramp)
-drop1(t9, test="Chisq")
-
-
-```
-
-It seems like the model with just ramp:weight is the best model. Now I will look to see if it meets the assumptions
-
-### Checking assumptions
-```{r, eval=FALSE, echo=FALSE}
-check_assumptions(t9)
-hist(t9$residuals, main = "Residual Histogram") #it doesnt look too bad
-ols_test_normality(t9) #data is  normal
-```
-
-
-### Summary and result plots
-
-```{r, eval=FALSE, echo=FALSE}
-meanweight <- dat2 %>%
-  group_by(stage) %>%
-  summarize(mean=mean(weight), sd=sd(weight), n=n(), sem=sd/sqrt(n))
-round(meanweight$mean,digits=2)
-
-
-summary(t9)
-sjPlot::tab_model(t9, show.se = T, show.ci = F, show.re.var = F, show.intercept = T, 
-                  show.icc = FALSE, show.ngroups = F, show.r2 = T,
-                  dv.labels = c("Activation energy per weight and date"), 
-                  string.se = "SE", transform = NULL, file = "Outputs/Statistics/Temp_weight.doc")
-
-# Making the plot
-nd = expand.grid(weight=seq(0.1,2.2,0.05))
-predicted.t9 <- augment(t9, newdata = nd, se_fit=TRUE)
-stats.t9<-glance(t9)
-
-
-# calculate the lower and upper 95% confidence limits on the mean
-tcrit <- qt(0.975, df = stats.t9$df.residual)
-predicted.t9$lwr <- with(predicted.t9, .fitted - tcrit * .se.fit)
-predicted.t9$upr <- with(predicted.t9, .fitted + tcrit * .se.fit)
-
-
-# Plot with just prediction trends
-#t9plot <- ggplot(dat, aes(x = ramp, y = tempcorr)) + 
-#  geom_line(aes(y = .fitted, group = as.factor(weight), linetype = as.factor(weight), color=weight),size=1.5, data = predicted.t9)  + theme_classic()+ theme(text = #element_text(size = 15))+ 
-#  xlab("Heat ramping rate (Celsius/minute)")+
-#  ylab("Thermal optima (Celsius)")
-#t9plot
-
-# Plot with prediction trends, confidence intervals and data
-t9plot<-ggplot(dat2, aes(x = weight))+ 
-  geom_point(aes(y = tempcorr, color=weight), size = 3) + scale_color_gradient(low="#9ecae1", high="#08306b")  + 
-  geom_line(aes(y = .fitted), data = predicted.t9, size = 2) + 
-  geom_ribbon(aes(ymin = lwr, ymax = upr), data = predicted.t9, alpha = 0.5) + 
-  theme_classic()+ theme(text = element_text(size = 15))+ 
-  xlab("Weight (mg)")+
-  ylab("Thermal optima (Celsius)")
-t9plot
-ggsave(plot=last_plot(),filename="Topt_weight_minustrial2.jpg",  path="Outputs/Statistics/")
-
-
-# Plot with prediction trends, confidence intervals and data
-t9plot<-ggplot(dat2, aes(x = weight))+ 
-  geom_point(aes(y = tempcorr, color=stage), size = 3) + #scale_color_gradient(low="#9ecae1", high="#08306b")  + 
-  geom_line(aes(y = .fitted), data = predicted.t9, size = 2) + 
-  geom_ribbon(aes(ymin = lwr, ymax = upr), data = predicted.t9, alpha = 0.5) + 
-  theme_classic()+ theme(text = element_text(size = 15))+ 
-  xlab("Weight (mg)")+
-  ylab("Thermal optima (Celsius)")
-t9plot
-
-ggsave(plot=last_plot(),filename="Topt_weight_perstage_minustrial2.jpg",  path="Outputs/Statistics/")
-
-
-
-```
-
-
-
-# Comparing Ropt
-
-## Looking at stage
-
-### Global model
-```{r, eval=FALSE, echo=FALSE}
-r1<-lm(ropt2~stage+date+weight+ramp+stage:ramp, data=dat2)
-summary(r1)
-check_assumptions(r1)
-hist(r1$residuals, main = "Residual Histogram")
-ols_test_normality(r1) #Kolmogorov: data is normal
-```
-
-
-### Backwards selection
-
-```{r, eval=FALSE, echo=FALSE}
-# Doing backwards selection
-drop1(r1, test="Chisq")
-
-r2 <- update(r1, .~. -stage:ramp)
-drop1(r2, test="Chisq")
-
-r3 <- update(r2, .~. -date)
-drop1(r3, test="Chisq")
-
-r4 <- update(r3, .~. -weight)
-drop1(r4, test="Chisq")
-
-r5 <- update(r4, .~. -ramp)
-drop1(r5, test="Chisq")
-
-
-```
-
-### Checking assumptions
-
-```{r, eval=FALSE, echo=FALSE}
-check_assumptions(r5)
-hist(r5$residuals, main = "Residual Histogram")
-ols_test_normality(r5) #Kolmogorov: data is normal
-```
-
-
-
-### Summary and result plots
-
-```{r, eval=FALSE, echo=FALSE}
-summary(r5)
-sjPlot::tab_model(r5, show.se = T, show.ci = F, show.re.var = F, show.intercept = T, 
-                  show.icc = FALSE, show.ngroups = F, show.r2 = T,
-                  dv.labels = c("Rate optima per stage"), 
-                  string.se = "SE", transform = NULL, file = "Outputs/Statistics/Rate_stage.doc")
-
-
-# Making the plot
-nd = expand.grid(stage=c("Protonymph", "Deutonymph", "Tritonymph", "Female", "Male"))
-predicted.r5 <- augment(r5, newdata = nd, se_fit=TRUE)
-stats.r5<-glance(r5)
-
-
-# calculate the lower and upper 95% confidence limits on the mean
-tcrit <- qt(0.975, df = stats.r5$df.residual)
-predicted.r5$lwr <- with(predicted.r5, .fitted - tcrit * .se.fit) # 95% confidence interval as estimated when doing the continuous line
-predicted.r5$upr <- with(predicted.r5, .fitted + tcrit * .se.fit)
-predicted.r5$lwr2 <- with(predicted.r5, .fitted - 1.96 * .se.fit)# 95% confidence interval as estimated when doing the vcategorical variables in Drew's class
-predicted.r5$upr2 <- with(predicted.r5, .fitted + 1.96 * .se.fit)
-predicted.r5$lwr3 <- with(predicted.r5, .fitted -  .se.fit) #Using just the standard error
-predicted.r5$upr3 <- with(predicted.r5, .fitted + .se.fit)
-
-
-# Plot with prediction trends, confidence intervals and data
-r5plot<-ggplot(dat2, aes(x = stage))+ 
-  geom_point(aes(y = ropt2, color=stage), size = 3, shape=1)  + 
-  geom_point(aes(y = .fitted, color=stage),color = "black", size = 2, data = predicted.r5,position=position_nudge(x=0.1), width=0.2) + 
-  geom_errorbar(aes(x=stage, ymin = lwr, ymax = upr, group=stage), color = "black", data = predicted.r5, inherit.aes = FALSE,position=position_nudge(x=0.1), width=0.2) + theme_classic()+ theme(text = element_text(size = 15))+ 
-  xlab("Stage")+
-  ylab("Thermal optima (Celsius)")
-r5plot
-
-# Plot with prediction trends, confidence interval 2 and data
-r5plot<-ggplot(dat2, aes(x = stage))+ 
-  geom_point(aes(y = ropt2, color=stage), size = 3, shape=1)  + 
-  geom_point(aes(y = .fitted, color=stage),color = "black", size = 2, data = predicted.r5,position=position_nudge(x=0.1), width=0.2) + 
-  geom_errorbar(aes(x=stage, ymin = lwr2, ymax = upr2, group=stage), color = "black", data = predicted.r5, inherit.aes = FALSE,position=position_nudge(x=0.1), width=0.2) + theme_classic()+ theme(text = element_text(size = 15))+ 
-  xlab("Stage")+
-  ylab("Thermal optima (Celsius)")
-r5plot
-
-# Plot with prediction trends, standard error and data
-r5plot<-ggplot(dat2, aes(x = stage))+ 
-  geom_point(aes(y = ropt2, color=stage), size = 3, shape=1)  + 
-  geom_point(aes(y = .fitted, color=stage),color = "black", size = 2, data = predicted.r5,position=position_nudge(x=0.1), width=0.2) + 
-  geom_errorbar(aes(x=stage, ymin = lwr3, ymax = upr3, group=stage), color = "black", data = predicted.r5, inherit.aes = FALSE,position=position_nudge(x=0.1), width=0.2) + theme_classic()+ theme(text = element_text(size = 15))+ 
-  xlab("Stage")+
-  ylab("Thermal optima (Celsius)")
-r5plot
-
-
-# check Chads code
-ggplot(dat2, aes(x=stage, y=ropt2, color=stage))+
-  geom_point(shape=1, size=3, stroke=1.2)+
-  scale_fill_brewer(palette="Set1")+
-  stat_summary(geom="point", fun=mean, size=3, color="black", position=position_nudge(x=0.1))+
-  stat_summary(geom="errorbar", fun.data=mean_se, width=0.1, position=position_nudge(x=0.1), color="black")+
-  theme_classic()+ theme(text = element_text(size = 15))+ 
-  xlab("Stage")+
-  ylab("Thermal optima (Celsius)")
-
-
-
-
-
-
-
-
-
-ggsave(plot=last_plot(),filename="Ropt_stage_minustrial2.jpg",  path="Outputs/Statistics/")
-```
-
-
-## Looking at weight
-
-### Global model
-
-```{r, eval=FALSE, echo=FALSE}
-r6<-lm(ropt2~stage+date+weight+ramp+weight:ramp, data=dat2)
-summary(r6)
-check_assumptions(r6)
-hist(r6$residuals, main = "Residual Histogram")
-ols_test_normality(r6) #Kolmogorov: data is normal
-```
-
-### Backwards selection
-```{r, eval=FALSE, echo=FALSE}
-drop1(r6, test="Chisq")
-
-r7 <- update(r6, .~. -weight:ramp)
-drop1(r7, test="Chisq")
-
-r8 <- update(r7, .~. -stage)
-drop1(r8, test="Chisq")
-
-r9 <- update(r8, .~. -date)
-drop1(r9, test="Chisq")
-
-r10 <- update(r9, .~. -ramp)
-drop1(r10, test="Chisq")
-
-```
-
-
-### Checking assumptions
-
-```{r, eval=FALSE, echo=FALSE}
-check_assumptions(r10)
-hist(r10$residuals, main = "Residual Histogram")
-ols_test_normality(r10) #Kolmogorov: data is normal
-```
-
-### Summary and result plots
-
-```{r, eval=FALSE, echo=FALSE}
-
-summary(r10)
-sjPlot::tab_model(r10, show.se = T, show.ci = F, show.re.var = F, show.intercept = T, 
-                  show.icc = FALSE, show.ngroups = F, show.r2 = T,
-                  dv.labels = c("Rate optima per weight"), 
-                  string.se = "SE", transform = NULL, file = "Outputs/Statistics/Rate_weight.doc")
-
-
-# Making the plot
-nd = expand.grid(weight=seq(0.1,2.2,0.05))
-predicted.r10 <- augment(r10, newdata = nd, se_fit=TRUE)
-stats.r10<-glance(r10)
-
-
-# calculate the lower and upper 95% confidence limits on the mean
-tcrit <- qt(0.975, df = stats.r10$df.residual)
-predicted.r10$lwr <- with(predicted.r10, .fitted - tcrit * .se.fit)
-predicted.r10$upr <- with(predicted.r10, .fitted + tcrit * .se.fit)
-
-
-# Plot with prediction trends, confidence intervals and data
-r10plot<-ggplot(dat2, aes(x = weight))+ 
-  geom_point(aes(y = ropt2, color=weight), size = 3) + scale_color_gradient(low="#9ecae1", high="#08306b")  + 
-  geom_line(aes(y = .fitted), data = predicted.r10, size = 2) + 
-  geom_ribbon(aes(ymin = lwr, ymax = upr), data = predicted.r10, alpha = 0.5) + 
-  theme_classic()+ theme(text = element_text(size = 15))+ 
-  xlab("Weight (mg)")+
-  ylab("Rate optima (Oxygen (mg/L) / time (min))")
-r10plot
-ggsave(plot=last_plot(),filename="Ropt_weight_minustrial2.jpg",  path="Outputs/Statistics/")
-
-r10plot<-ggplot(dat2, aes(x = weight))+ 
-  geom_point(aes(y = ropt2, color=stage), size = 3) + #scale_color_gradient(low="#9ecae1", high="#08306b")  + 
-  geom_line(aes(y = .fitted), data = predicted.r10, size = 2) + 
-  geom_ribbon(aes(ymin = lwr, ymax = upr), data = predicted.r10, alpha = 0.5) + 
-  theme_classic()+ theme(text = element_text(size = 15))+ 
-  xlab("Weight (mg)")+
-  ylab("Rate optima (Oxygen (mg/L) / time (min))")
-r10plot
-ggsave(plot=last_plot(),filename="Ropt_weight_perstage_minustrial2.jpg",  path="Outputs/Statistics/")
-
-
-```
-
-
-# Activation energy
-
-## Dropping trial 2
-
-```{r, eval=FALSE, echo=FALSE}
-energy2<-energy %>%
-  filter(trial!=2, trial !=3)
-```
-
-
-
-## Looking at stage
-
-### Global model
-```{r, eval=FALSE, echo=FALSE}
-e1<-lm(slope~stage+date+weight+ramp+stage:ramp, data=energy2)
-summary(e1)
-check_assumptions(e1)
-hist(e1$residuals, main = "Residual Histogram")
-ols_test_normality(e1) #Kolmogorov: data is  normal
-```
-
-### Backwards selection
-```{r, eval=FALSE, echo=FALSE}
-# Doing backwards selection
-drop1(e1, test="Chisq")
-
-e2 <- update(e1, .~. -stage:ramp)
-drop1(e2, test="Chisq")
-
-e3 <- update(e2, .~. -weight)
-drop1(e3, test="Chisq")
-
-e4 <- update(e3, .~. -ramp)
-drop1(e4, test="Chisq")
-
-```
-
-### Checking assumptions
-```{r, eval=FALSE, echo=FALSE}
-check_assumptions(e4)
-hist(e4$residuals, main = "Residual Histogram")
-ols_test_normality(e4) #Kolmogorov: data is  normal
-```
-### Summary and result plots
-
-```{r, eval=FALSE, echo=FALSE}
-summary(e4)
-sjPlot::tab_model(e4, show.se = T, show.ci = F, show.re.var = F, show.intercept = T, 
-                  show.icc = FALSE, show.ngroups = F, show.r2 = T,
-                  dv.labels = c("Activation energy per stage and date"), 
-                  string.se = "SE", transform = NULL, file = "Outputs/Statistics/Energy_stage.doc")
-
-
-# Making the plot
-nd = expand.grid(ramp=seq(0.2,0.25,0.005), stage=c("Protonymph", "Deutonymph", "Tritonymph", "Female", "Male"), date="2022-06-22")
-predicted.e4 <- augment(e4, newdata = nd, se_fit=TRUE)
-stats.e4<-glance(e4)
-
-
-# calculate the lower and upper 95% confidence limits on the mean
-tcrit <- qt(0.975, df = stats.e4$df.residual)
-predicted.e4$lwr <- with(predicted.e4, .fitted - tcrit * .se.fit) # 95% confidence interval as estimated when doing the continuous line
-predicted.e4$upr <- with(predicted.e4, .fitted + tcrit * .se.fit)
-predicted.e4$lwr2 <- with(predicted.e4, .fitted - 1.96 * .se.fit)# 95% confidence interval as estimated when doing the vcategorical variables in Drew's class
-predicted.e4$upr2 <- with(predicted.e4, .fitted + 1.96 * .se.fit)
-predicted.e4$lwr3 <- with(predicted.e4, .fitted -  .se.fit) #Using just the standard error
-predicted.e4$upr3 <- with(predicted.e4, .fitted + .se.fit)
-
-
-# Plot with prediction trends, confidence intervals and data
-e4plot<-ggplot(energy2, aes(x = stage))+ 
-  geom_point(aes(y = slope, color=stage), size = 3, shape=1)  + 
-  geom_point(aes(y = .fitted, color=stage),color = "black", size = 2, data = predicted.e4,position=position_nudge(x=0.1), width=0.2) + 
-  geom_errorbar(aes(x=stage, ymin = lwr, ymax = upr, group=stage), color = "black", data = predicted.e4, inherit.aes = FALSE,position=position_nudge(x=0.1), width=0.2) + theme_classic()+ theme(text = element_text(size = 15))+ 
-  xlab("Stage")+
-  ylab("Activation energy")
-e4plot
-
-# Plot with prediction trends, confidence interval 2 and data
-e4plot<-ggplot(energy2, aes(x = stage))+ 
-  geom_point(aes(y = slope, color=stage), size = 3, shape=1)  + 
-  geom_point(aes(y = .fitted, color=stage),color = "black", size = 2, data = predicted.e4,position=position_nudge(x=0.1), width=0.2) + 
-  geom_errorbar(aes(x=stage, ymin = lwr2, ymax = upr2, group=stage), color = "black", data = predicted.e4, inherit.aes = FALSE,position=position_nudge(x=0.1), width=0.2) + theme_classic()+ theme(text = element_text(size = 15))+ 
-  xlab("Stage")+
-  ylab("Activation energy")
-e4plot
-
-# Plot with prediction trends, standard error and data
-e4plot<-ggplot(energy2, aes(x = stage))+ 
-  geom_point(aes(y = slope, color=stage), size = 3, shape=1)  + 
-  geom_point(aes(y = .fitted, color=stage),color = "black", size = 2, data = predicted.e4,position=position_nudge(x=0.1), width=0.2) + 
-  geom_errorbar(aes(x=stage, ymin = lwr3, ymax = upr3, group=stage), color = "black", data = predicted.e4, inherit.aes = FALSE,position=position_nudge(x=0.1), width=0.2) + theme_classic()+ theme(text = element_text(size = 15))+ 
-  xlab("Stage")+
-  ylab("Activation energy")
-e4plot
-
-
-# check Chads code
-ggplot(energy2, aes(x=stage, y=slope, color=stage))+
-  geom_point(shape=1, size=3, stroke=1.2)+
-  scale_fill_brewer(palette="Set1")+
-  stat_summary(geom="point", fun=mean, size=3, color="black", position=position_nudge(x=0.1))+
-  stat_summary(geom="errorbar", fun.data=mean_se, width=0.1, position=position_nudge(x=0.1), color="black")+
-  theme_classic()+ theme(text = element_text(size = 15))+ 
-  xlab("Stage")+
-  ylab("Activation energy")
-
-
-
-
-
-
-
-
-
-ggsave(plot=last_plot(),filename="Ropt_stage_minustrial2.jpg",  path="Outputs/Statistics/")
-
-
-# Making the plot for date
-nd = expand.grid(ramp=0.225, stage=c("Protonymph"), date=factor(levels(as.factor(energy2$date))))
-predicted.e4 <- augment(e4, newdata = nd)
-
-# reuse ggplot object from above. fix color to black or geom_line looks for fBeach. x aesthetic inherited from Richness_NAP
-e4plot2 <- ggplot(energy, aes(x = date, y = slope)) + 
-  geom_point(aes(y = .fitted), data = predicted.e4)+ylab("Äctivation energy") + theme_classic()+ theme(text = element_text(size = 15))+ 
-  xlab("Date")+
-  ylab("Activation energy")
-e4plot2 
-ggsave(plot=last_plot(),filename="Energy_stage_weight.jpg",  path="Outputs/Statistics/")
-
-
-
-
-```
-
-
-## Plotting from the raw data
-
-```{r, eval=FALSE, echo=FALSE}
-averages<-energy2%>%
-  group_by(stage,date ) %>%
-  summarize(mean=mean(slope), sd=sd(slope), n=n(), sem=sd/sqrt(n)) %>% 
-  mutate_all(~replace(., is.na(.), 0))
-averages
-
-averages$lwr3 <- with(averages, mean -  sem) #Using just the standard error
-averages$upr3 <- with(averages, mean + sem)
-
-
-# Plot with prediction trends, standard error and data
-e4plot<-ggplot(energy2, aes(x = stage))+ 
-  geom_point(aes(y = slope, color=date), size = 3, shape=1, stroke=1)  + 
-  geom_point(aes(y = mean, color=date), size = 3, data = averages, position=position_nudge(x=0.2)) + 
-  geom_errorbar(aes(x=stage, ymin = lwr3, ymax = upr3, group=date, color=date),  data = averages, inherit.aes = FALSE, position=position_nudge(x=0.2), width=0.2) + 
-  theme_classic()+ theme(text = element_text(size = 15))+ 
-  xlab("Stage")+
-  ylab("Activation energy")
-e4plot
-
-```
-
-
-
-## Looking at weight
-
-### Global model
-```{r, eval=FALSE, echo=FALSE}
-e5<-lm(slope~stage+date+weight+ramp+weight:ramp, data=energy2)
-summary(e5)
-check_assumptions(e5)
-hist(e5$residuals, main = "Residual Histogram")
-ols_test_normality(e5) #Kolmogorov: data is normal
-```
-
-### Backwards selection
-```{r, eval=FALSE, echo=FALSE}
-# Doing backwards selection
-drop1(e5, test="Chisq")
-
-e6 <- update(e5, .~. -stage)
-drop1(e6, test="Chisq")
-```
-
-### Checking assumptions
-```{r, eval=FALSE, echo=FALSE}
-check_assumptions(e6)
-hist(e6$residuals, main = "Residual Histogram")
-ols_test_normality(e6) #Kolmogorov: data is  normal
-```
-
-
-```{r, eval=FALSE, echo=FALSE}
-summary(e6)
-sjPlot::tab_model(e6, show.se = T, show.ci = F, show.re.var = F, show.intercept = T, 
-                  show.icc = FALSE, show.ngroups = F, show.r2 = T,
-                  dv.labels = c("Activation energy per weight and date"), 
-                  string.se = "SE", transform = NULL, file = "Outputs/Statistics/Energy_weight.doc")
-
-
-
-# Making the plot
-nd = expand.grid(ramp=seq(0.24,0.26,0.005), weight=c(0.1, 1.1, 2.3), date="2022-06-22")
-predicted.e6 <- augment(e6, newdata = nd, se_fit=TRUE)
-stats.e6<-glance(e6)
-
-
-# calculate the lower and upper 95% confidence limits on the mean
-tcrit <- qt(0.975, df = stats.e6$df.residual)
-predicted.e6$lwr <- with(predicted.e6, .fitted - tcrit * .se.fit)
-predicted.e6$upr <- with(predicted.e6, .fitted + tcrit * .se.fit)
-
-
-
-# Plot with prediction trends, confidence intervals and data
-e6plot<-ggplot(energy2, aes(x = ramp))+ 
-  geom_line(aes(y = .fitted, color=weight, group=as.factor(weight),linetype = as.factor(weight)), 
-            data = predicted.e6, size = 2)+#scale_color_continuous(trans = 'reverse') + 
-  geom_ribbon(aes(ymin = lwr, ymax = upr, group=as.factor(weight), fill=weight), 
-              data = predicted.e6, alpha = 0.5) + theme_classic()+ theme(text = element_text(size = 15))+#scale_color_continuous(trans = 'reverse')+ 
-  xlab("Heat ramping rate (Celsius/minute)")+
-  ylab("Activation energy") + 
-  geom_point(aes(y = slope, color=weight), size = 3)+ scale_color_gradient(low="#9ecae1", high="#08306b")+ scale_fill_gradient(low="#9ecae1", high="#08306b")
-e6plot
-
-
-# Plot with prediction trends, standard error and data
-e6plot2<-ggplot(energy2, aes(x = ramp))+ 
-  geom_point(aes(y = slope, color=date), size = 3, shape=1, stroke=1)  + 
-  geom_point(aes(y = mean, color=date), size = 3, data = averages, position=position_nudge(x=0.2)) + 
-  geom_errorbar(aes(x=stage, ymin = lwr3, ymax = upr3, group=date, color=date),  data = averages, inherit.aes = FALSE, position=position_nudge(x=0.2), width=0.2) + 
-  theme_classic()+ theme(text = element_text(size = 15))+ 
-  xlab("Stage")+
-  ylab("Activation energy")
-e6plot2
-
-
-ggsave(plot=last_plot(), filename="Ropt_weight.jpg",  path="Outputs/Statistics/")
-```
-
-
-Kennas code for saving output as word doc:
-sjPlot::tab_model(prop.mod, show.se = T, show.ci = F, show.re.var = F, show.intercept = T, 
-                  show.icc = FALSE, show.ngroups = F, show.r2 = F,
-                  dv.labels = c("Proportion of time spent on correct side"), 
-                  string.se = "SE", transform = NULL, file = here::here("output/3.table_proptime.doc"))
 

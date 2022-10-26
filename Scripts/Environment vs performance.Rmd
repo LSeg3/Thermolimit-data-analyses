@@ -43,7 +43,7 @@ derivs2<-derivs2%>%
   rename(ind=id.x)%>%
   filter(trial!=2) %>%
   filter(first2>=0) %>%
-  filter(!ind %in% c(87,54,244, 213)) #Removing outliers for ropt (as selected in the "Thermolimit statistical analyses" script) and 213 that had a very flat line
+  filter(!ind %in% c(87,54,244)) #Removing outliers for ropt (as selected in the "Thermolimit statistical analyses" script)
 
 data<-read.csv("Data/Environment/Datos pseudos summer 2022 - Data.csv")
 data<-data%>%
@@ -360,12 +360,10 @@ micro9<-microtemp%>%
   mutate(means=apply(microtemp[,1:last],1, mean, na.rm=T))%>%
   cbind(micro[,2:4])
 
-
 #For site 6
 site6max<-max(micro6$means)
 site6mean<-mean(micro6$means)
 site6median<-median(micro6$means)
-
 #For site 3
 site3max<-max(micro3$means)
 site3mean<-mean(micro3$means)
@@ -550,6 +548,7 @@ deutos_all<-ggarrange(plotlist3[[1]]+ rremove("ylab") + rremove("xlab"),
           plotlist3[[8]]+ rremove("ylab") + rremove("xlab"),
           plotlist3[[9]]+ rremove("ylab") + rremove("xlab"),
           plotlist3[[10]]+ rremove("ylab") + rremove("xlab"),
+          plotlist3[[11]]+ rremove("ylab") + rremove("xlab"),
           plotlist6[[1]]+ rremove("ylab") + rremove("xlab"),
           plotlist6[[2]]+ rremove("ylab") + rremove("xlab"), 
           plotlist6[[3]]+ rremove("ylab") + rremove("xlab"), 
@@ -1161,12 +1160,10 @@ micro9<-microtemp%>%
 site6maxjul<-max(micro6$means)
 site6meanjul<-mean(micro6$means)
 site6medianjul<-median(micro6$means)
-
 #For site 3
 site3maxjul<-max(micro3$means)
 site3meanjul<-mean(micro3$means)
 site3medianjul<-median(micro3$means)
-
 ```
 
 ##### Plotting for each life stage
@@ -1346,6 +1343,7 @@ deutos_all<-ggarrange(plotlist3[[1]]+ rremove("ylab") + rremove("xlab"),
           plotlist3[[8]]+ rremove("ylab") + rremove("xlab"),
           plotlist3[[9]]+ rremove("ylab") + rremove("xlab"),
           plotlist3[[10]]+ rremove("ylab") + rremove("xlab"),
+          plotlist3[[11]]+ rremove("ylab") + rremove("xlab"),
           plotlist6[[1]]+ rremove("ylab") + rremove("xlab"),
           plotlist6[[2]]+ rremove("ylab") + rremove("xlab"), 
           plotlist6[[3]]+ rremove("ylab") + rremove("xlab"), 
@@ -1912,7 +1910,8 @@ ggsave(plot=last_plot(),filename="Female_allseason_allarea_future.jpg",  path="O
 
 
 
-# ##########################################################################################################################################
+
+ ##########################################################################################################################################
 
 ## For the warmest month (July)
 
@@ -1940,9 +1939,7 @@ ggplot(july, aes(x=means2))+
   xlab("Microclimate temperature (Celsius)")+
   ylab("Frequency")+
   scale_x_continuous(limits=c(5,55), breaks=c(5,20,35,50))
-
 ggsave(plot=last_plot(),filename="Climate_july_allarea_future.jpg",  path="Outputs/Microclimate vs performance/",width=7, height=7, units="in")
-
 ```
 
 
@@ -1952,11 +1949,8 @@ ggsave(plot=last_plot(),filename="Climate_july_allarea_future.jpg",  path="Outpu
 protos <- derivs2%>%
   filter(stage=="Protonymph")
   
-
 meanline<-mean(july$means2)
 medianline<-median(july$means2)
-
-
 coeff<-10000
 ggplot()+
   geom_histogram(july, mapping=aes(x=tempcorr),fill="#d95f02", alpha=0.5)+
@@ -1971,23 +1965,14 @@ ggplot()+
   scale_y_continuous("Frequency", sec.axis = sec_axis(~ ./coeff, name = "Rate optima (Oxygen (mg/L)/ time(min))")) + 
   facet_wrap(vars(ind))+
   labs(colour = "Trial")
-
-
-
 ggsave(plot=last_plot(),filename="Proto_july_allarea_future.jpg",  path="Outputs/Microclimate vs performance/",width=7, height=7, units="in")
-
   
-
-
 ##### Deutonymphs
 deutos<- derivs2%>%
   filter(stage=="Deutonymph")
   
-
 meanline<-mean(july$means2)
 medianline<-median(july$means2)
-
-
 coeff<-10000
 ggplot()+
   geom_histogram(july, mapping=aes(x=tempcorr),fill="#d95f02", alpha=0.5)+
@@ -2002,22 +1987,14 @@ ggplot()+
   scale_y_continuous("Frequency", sec.axis = sec_axis(~ ./coeff, name = "Rate optima (Oxygen (mg/L)/ time(min))")) + 
   facet_wrap(vars(ind))+
   labs(colour = "Trial")
-
-
-
 ggsave(plot=last_plot(),filename="Deuto_july_allarea_future.jpg",  path="Outputs/Microclimate vs performance/",width=7, height=7, units="in")
-
   
-
 ##### Tritonymphs
 tritos<- derivs2%>%
   filter(stage=="Tritonymph")
   
-
 meanline<-mean(july$means2)
 medianline<-median(july$means2)
-
-
 coeff<-10000
 ggplot()+
   geom_histogram(july, mapping=aes(x=tempcorr),fill="#d95f02", alpha=0.5)+
@@ -2032,22 +2009,14 @@ ggplot()+
   scale_y_continuous("Frequency", sec.axis = sec_axis(~ ./coeff, name = "Rate optima (Oxygen (mg/L)/ time(min))")) + 
   facet_wrap(vars(ind))+
   labs(colour = "Trial")
-
-
-
 ggsave(plot=last_plot(),filename="Trito_july_allarea_future.jpg",  path="Outputs/Microclimate vs performance/",width=7, height=7, units="in")
-
   
-
 ##### Males
 males <- derivs2%>%
   filter(stage=="Male")
   
-
 meanline<-mean(july$means2)
 medianline<-median(july$means2)
-
-
 coeff<-10000
 ggplot()+
   geom_histogram(july, mapping=aes(x=tempcorr),fill="#d95f02", alpha=0.5)+
@@ -2062,23 +2031,14 @@ ggplot()+
   scale_y_continuous("Frequency", sec.axis = sec_axis(~ ./coeff, name = "Rate optima (Oxygen (mg/L)/ time(min))")) + 
   facet_wrap(vars(ind))+
   labs(colour = "Trial")
-
-
-
 ggsave(plot=last_plot(),filename="Male_july_allarea_future.jpg",  path="Outputs/Microclimate vs performance/",width=7, height=7, units="in")
-
   
-
-
 ##### Females
 females <- derivs2%>%
   filter(stage=="Female")
   
-
 meanline<-mean(july$means2)
 medianline<-median(july$means2)
-
-
 coeff<-10000
 ggplot()+
   geom_histogram(july, mapping=aes(x=tempcorr),fill="#d95f02", alpha=0.5)+
@@ -2093,9 +2053,6 @@ ggplot()+
   scale_y_continuous("Frequency", sec.axis = sec_axis(~ ./coeff, name = "Rate optima (Oxygen (mg/L)/ time(min))")) + 
   facet_wrap(vars(ind))+
   labs(colour = "Trial")
-
-
-
 ggsave(plot=last_plot(),filename="Female_july_allarea_future.jpg",  path="Outputs/Microclimate vs performance/",width=7, height=7, units="in")
 ```
 
@@ -2132,23 +2089,18 @@ ggsave(plot=last_plot(),filename="Female_july_allarea_future.jpg",  path="Output
 
 ```{r}
 dat<-read.csv("Outputs/ToptandRopts_trim.csv")
-
 dat<-dat%>%
   filter(ind!=213) %>% #213 was a very flat line, we have dowubts about whether there was a leak
   mutate(stage=fct_relevel(stage, levels=c("Protonymph", "Deutonymph", "Tritonymph",  "Male", "Female"))) %>%
   arrange(stage) %>%
   mutate(date=fct_relevel(date, levels=c("2022-06-23", "2022-06-21", "2022-06-22", "2022-06-24"))) %>%
   arrange(date)
-
 #Adding site to the data
 data<-read.csv("Data/Environment/Datos pseudos summer 2022 - Data.csv")
 data<-data%>%
   select(1,2,4) %>%
   rename(ind=ID)
-
 dat<-left_join(dat, data, by="ind")
-
-
 sample<-dat %>%
   group_by(stage) %>%
   summarize(n=n())
@@ -2159,31 +2111,22 @@ sample
 ```{r}
 #Current 
 ##All area, all season
-
 allmax<-max(micro$means2)
 allmean<-mean(micro$means2)
 allmedian<-median(micro$means2)
-
 ##All area, july
 julmax<-max(july$means2)
 julmean<-mean(july$means2)
 julmedian<-median(july$means2)
-
-
 #Future 
 ##All area, all season
 allmaxf<-max(future$temp)
 allmeanf<-mean(future$temp)
 allmedianf<-median(future$temp)
-
-
 ##All area,july
 julmaxf<-max(julyf$temp)
 julmeanf<-mean(julyf$temp)
 julmedianf<-median(julyf$temp)
-
-
-
 ```
 ## Estimating differences
 
@@ -2201,7 +2144,6 @@ diffs<-dat%>%
         futurejulmax=tempcorr-julmaxf,
         futurejulmean=tempcorr-julmeanf,
         futurejulmedian=tempcorr-julmedianf)
-
 diffsum<-diffs%>%select(15:26) %>% na.omit()
 diffsumallmeans<-as.data.frame(sapply(diffsum, mean))
 diffsumallsd<-as.data.frame(sapply(diffsum, sd))
@@ -2212,7 +2154,6 @@ diffsallfinal<-diffsall%>%
 
 sd(diffsum$currentallmax)
 sd(diffsum$futurejulmax)
-
 
 diffs3<-diffs %>%
   filter(site=="site 3") %>%
@@ -2230,9 +2171,6 @@ diffsall<-bind_cols(diffsumallmeans,diffsumallsd)
 diffs3summ<-diffsall%>%
   rename("means"="sapply(diffsum, mean)", "sd" ="sapply(diffsum, sd)") %>%
   mutate(se=sd/sqrt(as.numeric(nrow(diffsum))))
-
-
-
 diffs6<-diffs %>%
   filter(site=="site 6") %>%
   mutate(site6allmax=tempcorr-site6max,
@@ -2241,7 +2179,6 @@ diffs6<-diffs %>%
          site6julmax=tempcorr-site6maxjul,
          site6julmean=tempcorr-site6meanjul,
          site6julmedian=tempcorr-site6medianjul)
-
 diffsum<-diffs6%>%select(27:32) %>% na.omit()
 diffsumallmeans<-as.data.frame(sapply(diffsum, mean))
 diffsumallsd<-as.data.frame(sapply(diffsum, sd))
@@ -2249,18 +2186,14 @@ diffsall<-bind_cols(diffsumallmeans,diffsumallsd)
 diffs6summ<-diffsall%>%
   rename("means"="sapply(diffsum, mean)", "sd" ="sapply(diffsum, sd)") %>%
   mutate(se=sd/sqrt(as.numeric(nrow(diffsum))))
-
 diffsumall<-bind_rows(diffsallfinal, diffs3summ, diffs6summ) 
 diffsumall<-diffsumall %>%
   mutate(names=row.names(diffsumall),
          lwr=means-se, 
          upr=means+se)
-
-
 diffs<-bind_rows(diffs3, diffs6)
 
-
-
+write.csv(diffs, "Outputs/toptvsenv.csv")
 ```
 
 ```{r}
@@ -2269,73 +2202,59 @@ p1<-ggplot(diffs, aes(y=currentallmax)) + geom_boxplot()+ scale_y_continuous(lim
 p2<-ggplot(diffs, aes(y=currentallmean)) + geom_boxplot()+ scale_y_continuous(limits=c(-5, 25))
 p3<-ggplot(diffs, aes(y=currentallmedian)) + geom_boxplot()+ scale_y_continuous(limits=c(-5, 25))
 ggarrange(p1,p2,p3,nrow=1,ncol=3)  
-
 # Comparing max, mean, and median differences for july, all area on current
 p4<-ggplot(diffs, aes(y=currentjulmax)) + geom_boxplot() + scale_y_continuous(limits=c(-5, 25))
 p5<-ggplot(diffs, aes(y=currentjulmean)) + geom_boxplot() + scale_y_continuous(limits=c(-5, 25))
 p6<-ggplot(diffs, aes(y=currentjulmedian)) + geom_boxplot()+ scale_y_continuous(limits=c(-5, 25))
 ggarrange(p4,p5,p6,nrow=1,ncol=3)  
-
 # Comparing max, mean, and median differences for all season, all area on future
 p7<-ggplot(diffs, aes(y=futureallmax)) + geom_boxplot()+ scale_y_continuous(limits=c(-5, 25))
 p8<-ggplot(diffs, aes(y=futureallmean)) + geom_boxplot()+ scale_y_continuous(limits=c(-5, 25))
 p9<-ggplot(diffs, aes(y=futureallmedian)) + geom_boxplot()+ scale_y_continuous(limits=c(-5, 25))
 ggarrange(p7,p8,p9,nrow=1,ncol=3)  
-
 # Comparing max, mean, and median differences for july, all area on future
 p10<-ggplot(diffs, aes(y=futurejulmax)) + geom_boxplot()+ scale_y_continuous(limits=c(-5, 25))
 p11<-ggplot(diffs, aes(y=futurejulmean)) + geom_boxplot()+ scale_y_continuous(limits=c(-5, 25))
 p12<-ggplot(diffs, aes(y=futurejulmedian)) + geom_boxplot()+ scale_y_continuous(limits=c(-5, 25))
 ggarrange(p10,p11,p12,nrow=1,ncol=3) 
-
 #Comparing current vs future all season
 ggarrange(p1,p7,p2,p8,nrow=2,ncol=2) 
-
 ggarrange(p4,p10,p5,p11,nrow=2,ncol=2) 
-
 # Comparing max, mean, and median differences for all season, site 3 on current
 p13<-ggplot(diffs, aes(y=site3allmax)) + geom_boxplot()+ scale_y_continuous(limits=c(-5, 25))
 p14<-ggplot(diffs, aes(y=site3allmean)) + geom_boxplot()+ scale_y_continuous(limits=c(-5, 25))
 p15<-ggplot(diffs, aes(y=site3allmedian)) + geom_boxplot()+ scale_y_continuous(limits=c(-5, 25))
 ggarrange(p13,p14,p15,nrow=1,ncol=3) 
-
 # Comparing max, mean, and median differences for july, site 3 on current
 p16<-ggplot(diffs, aes(y=site3julmax)) + geom_boxplot()+ scale_y_continuous(limits=c(-5, 25))
 p17<-ggplot(diffs, aes(y=site3julmean)) + geom_boxplot()+ scale_y_continuous(limits=c(-5, 25))
 p18<-ggplot(diffs, aes(y=site3julmedian)) + geom_boxplot()+ scale_y_continuous(limits=c(-5, 25))
 ggarrange(p16,p17,p18,nrow=1,ncol=3) 
-
-
 # Comparing max, mean, and median differences for all season, site 6 on current
 p19<-ggplot(diffs, aes(y=site6allmax)) + geom_boxplot()+ scale_y_continuous(limits=c(-5, 25))
 p20<-ggplot(diffs, aes(y=site6allmean)) + geom_boxplot()+ scale_y_continuous(limits=c(-5, 25))
 p21<-ggplot(diffs, aes(y=site6allmedian)) + geom_boxplot()+ scale_y_continuous(limits=c(-5, 25))
 ggarrange(p19,p20,p21,nrow=1,ncol=3) 
-
 # Comparing max, mean, and median differences for july, site 6 on current
 p22<-ggplot(diffs, aes(y=site6julmax)) + geom_boxplot()+ scale_y_continuous(limits=c(-5, 25))
 p23<-ggplot(diffs, aes(y=site6julmean)) + geom_boxplot()+ scale_y_continuous(limits=c(-5, 25))
 p24<-ggplot(diffs, aes(y=site6julmedian)) + geom_boxplot()+ scale_y_continuous(limits=c(-5, 25))
 ggarrange(p22,p23,p24,nrow=1,ncol=3) 
-
 ggarrange(p1, p13, p2, p15, nrow=2, ncol=2)
 ggarrange(p1, p19, p2, p20, nrow=2,ncol=2)
-
 ggarrange(p1, p16, p2, p17, nrow=2,ncol=2)
 ggarrange(p1, p22, p2, p23, nrow=2,ncol=2)
-
 diffsmax<-diffsumall %>%
   filter(grepl("max", names))
-
 diffsmean<-diffsumall %>%
   filter(grepl("mean", names))
-
 plot<-ggplot(diffsmax, aes(x =names, color=names))+ 
   geom_point(aes(y = means), size = 2,  width=0.2) + 
   geom_errorbar(aes(x=names, ymin = lwr, ymax = upr),   width=0.2) + theme_classic()+ theme(text = element_text(size = 15))+ 
   xlab("Parameter")+
   ylab("Difference with respect to Topt")
 plot
+ggsave(plot=last_plot(),filename="environmenttoptdiffs_maxs.jpg",  path="Outputs/Microclimate vs performance/",width=10, height=7, units="in")
 
 plot<-ggplot(diffsmean, aes(x =names, color=names))+ 
   geom_point(aes(y = means), size = 2,  width=0.2) + 
@@ -2343,7 +2262,19 @@ plot<-ggplot(diffsmean, aes(x =names, color=names))+
   xlab("Parameter")+
   ylab("Difference with respect to Topt")
 plot
+ggsave(plot=last_plot(),filename="environmenttoptdiffs_means.jpg",  path="Outputs/Microclimate vs performance/",width=10, height=7, units="in")
 
 ```
+
+
+
+
+
+
+
+
+
+
+
 
 

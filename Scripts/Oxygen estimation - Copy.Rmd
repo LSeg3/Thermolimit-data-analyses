@@ -23,9 +23,7 @@ This is the final code to use. The other script for oxygen estimation for some r
 
 What to do next (10oct22):  
 
-* **For Topt**
 
-** Make final result plots
 
 * **For Activation energy:**
 
