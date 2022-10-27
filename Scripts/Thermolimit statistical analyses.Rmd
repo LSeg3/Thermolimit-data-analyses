@@ -28,12 +28,12 @@ library(olsrr)
 library(broom)
 library(ggplot2)
 library(lmerTest)
+library(emmeans)
+library(reporter)
 ```
 TO DO:
 
-Organize code
-See how to plot results for mixed models
-
+Make prediction plot for microenv data
 
 
 # Calling data
@@ -1302,6 +1302,29 @@ sjPlot::tab_model(t1b5, show.se = T, show.ci = F, show.re.var = F, show.intercep
                   dv.labels = c("Rate optima per stage"), 
                   string.se = "SE", transform = NULL, file = "Outputs/Statistics/Ropt_stage.doc")
 
+#Pairwise comparison
+pair<-emmeans(t1b5, pairwise~stage, adjust="holm")
+pair
+means<-as.data.frame(pair$emmeans)
+means<-means %>%
+  mutate(emmean=round(emmean, digits=2),
+         SE=round(SE, digits=3),
+         lower.CL=round(lower.CL, digits=2),
+         upper.CL=round(upper.CL, digits=2))
+
+contrasts<-as.data.frame(pair$contrasts)
+contrasts<-contrasts %>%
+  mutate(estimate=round(estimate, digits=2),
+         SE=round(SE, digits=3),
+         t.ratio=round(t.ratio, digits=2),
+         p.value=round(p.value, digits=3))
+
+table1<-  create_table(means)
+table2<-  create_table(contrasts)
+report<-reporter::create_report(file_path = "Outputs/Statistics/Ropt_stage_pairwise", output_type = "DOCX",orientation = "portrait",font="Times") %>%
+  add_content(table1) %>%
+  add_content(table2)
+write_report(report)
 
 #Organizing stages for plots
 datf<-dat2b %>%
@@ -1839,6 +1862,30 @@ sjPlot::tab_model(t1b3, show.se = T, show.ci = F, show.re.var = F, show.intercep
                   dv.labels = c("Activation energy per stage"), 
                   string.se = "SE", transform = NULL, file = "Outputs/Statistics/energy_stage.doc")
 
+#Pairwise comparison
+pair<-emmeans(t1b3, pairwise~stage, adjust="holm")
+pair
+means<-as.data.frame(pair$emmeans)
+means<-means %>%
+  mutate(emmean=round(emmean, digits=2),
+         SE=round(SE, digits=3),
+         lower.CL=round(lower.CL, digits=2),
+         upper.CL=round(upper.CL, digits=2))
+
+contrasts<-as.data.frame(pair$contrasts)
+contrasts<-contrasts %>%
+  mutate(estimate=round(estimate, digits=2),
+         SE=round(SE, digits=3),
+         t.ratio=round(t.ratio, digits=2),
+         p.value=round(p.value, digits=3))
+
+table1<-  create_table(means)
+table2<-  create_table(contrasts)
+report<-reporter::create_report(file_path = "Outputs/Statistics/energy_stage_pairwise", output_type = "DOCX",orientation = "portrait",font="Times") %>%
+  add_content(table1) %>%
+  add_content(table2)
+write_report(report)
+
 
 #Organizing stages for plots
 datf<-dat2b %>%
@@ -2038,4 +2085,60 @@ t.test(data$site6julmean, data$currentjulmean) #no difference
 
 
 ```
+
+## Making final plot
+```{r}
+#Plotting means
+currentmean<-data%>%
+  select(1:15, currentallmean) %>%
+  mutate(period="Current") %>%
+  rename(means=currentallmean)
+futuremean<-data%>%
+  select(1:15, futureallmean) %>%
+  mutate(period="Future") %>%
+  rename(means=futureallmean)
+meansplot<-bind_rows(currentmean, futuremean) %>%
+  mutate(stage=fct_relevel(stage, levels=c( "Protonymph", "Deutonymph", "Tritonymph",  "Male", "Female"))) %>%
+  arrange(stage)
+
+# check Chads code
+ggplot(meansplot, aes(x=period, y=means, color=stage))+
+  geom_jitter(shape=1, size=3, stroke=1.2, width=0.1)+
+  scale_fill_brewer(palette="Set1")+
+  stat_summary(geom="point", fun=mean, size=3, color="black", position=position_nudge(x=0.2))+
+  stat_summary(geom="errorbar", fun.data=mean_se, width=0.1, position=position_nudge(x=0.2), color="black")+
+  theme_classic()+ theme(text = element_text(size = 15))+ 
+  xlab("Period")+
+  ylab("Difference")
+
+
+ggsave(plot=last_plot(),filename="means_microenv.jpg",  path="Outputs/Statistics/", height=4.5, width=7.29, units="in")
+
+# Plotting maxs
+currentmax<-data%>%
+  select(1:15, currentallmax) %>%
+  mutate(period="Current") %>%
+  rename(maxs=currentallmax)
+futuremax<-data%>%
+  select(1:15, futureallmax) %>%
+  mutate(period="Future") %>%
+  rename(maxs=futureallmax)
+maxsplot<-bind_rows(currentmax, futuremax)%>%
+  mutate(stage=fct_relevel(stage, levels=c( "Protonymph", "Deutonymph", "Tritonymph",  "Male", "Female"))) %>%
+  arrange(stage)
+
+# check Chads code
+ggplot(maxsplot, aes(x=period, y=maxs, color=stage))+
+  geom_jitter(shape=1, size=3, stroke=1.2, width=0.1)+
+  scale_fill_brewer(palette="Set1")+
+  stat_summary(geom="point", fun=mean, size=3, color="black", position=position_nudge(x=0.2))+
+  stat_summary(geom="errorbar", fun.data=mean_se, width=0.1, position=position_nudge(x=0.2), color="black")+
+  theme_classic()+ theme(text = element_text(size = 15))+ 
+  xlab("Period")+
+  ylab("Difference")
+
+
+ggsave(plot=last_plot(),filename="maxs_microenv.jpg",  path="Outputs/Statistics/", height=4.5, width=7.29, units="in")
+```
+
 

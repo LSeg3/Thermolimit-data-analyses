@@ -44,14 +44,11 @@ derivs2<-derivs2%>%
   filter(trial!=2) %>%
   filter(first2>=0) %>%
   filter(!ind %in% c(87,54,244)) #Removing outliers for ropt (as selected in the "Thermolimit statistical analyses" script)
-
 data<-read.csv("Data/Environment/Datos pseudos summer 2022 - Data.csv")
 data<-data%>%
   select(1,2,4) %>%
   rename(ind=ID)
-
 derivs2<-left_join(derivs2, data, by="ind")
-
 ```
 
 
@@ -65,9 +62,7 @@ The files used to get the environmental data were previously modified in the scr
 
 ```{r}
 micro<-read.csv("./Data/Environment/microhabtempsmerge3means.csv")
-
 colnames(micro)
-
 micro<-micro%>%
   select(!contains("10cm"))%>%
   rename("date2"="date2.x.x",
@@ -107,11 +102,8 @@ micro<-micro%>%
          diff=means-means2,
          tempcorr=means2,
          date2=as.POSIXct(date2, format="%m/%d/%y")) 
-
 micro<-subset(micro, date2 >"2020-05-30" & date2 < "2020-08-04") #Choosing same dates as for future projections
-
   
-
 colnames(micro)
 ```
 
@@ -134,9 +126,7 @@ ggplot(micro, aes(x=means2))+
   xlab("Microclimate temperature (Celsius)")+
   ylab("Frequency")+
   scale_x_continuous(limits=c(5,55), breaks=c(5,20,35,50))
-
 ggsave(plot=last_plot(),filename="Climate_allseason_allarea.jpg",  path="Outputs/Microclimate vs performance/",width=7, height=7, units="in")
-
 ```
 
 
@@ -146,11 +136,8 @@ ggsave(plot=last_plot(),filename="Climate_allseason_allarea.jpg",  path="Outputs
 protos <- derivs2%>%
   filter(stage=="Protonymph")
   
-
 meanline<-mean(micro$means2)
 medianline<-median(micro$means2)
-
-
 coeff<-10000
 ggplot()+
   geom_histogram(micro, mapping=aes(x=tempcorr),fill="#d95f02", alpha=0.5)+
@@ -164,23 +151,14 @@ ggplot()+
   scale_y_continuous("Frequency", sec.axis = sec_axis(~ ./coeff, name = "Rate optima (Oxygen (mg/L)/ time(min))")) + 
   facet_wrap(vars(ind))+
   labs(colour = "Trial")
-
-
-
 ggsave(plot=last_plot(),filename="Proto_allseason_allarea.jpg",  path="Outputs/Microclimate vs performance/",width=7, height=7, units="in")
-
   
-
-
 ##### Deutonymphs
 deutos<- derivs2%>%
   filter(stage=="Deutonymph")
   
-
 meanline<-mean(micro$means2)
 medianline<-median(micro$means2)
-
-
 coeff<-10000
 ggplot()+
   geom_histogram(micro, mapping=aes(x=tempcorr),fill="#d95f02", alpha=0.5)+
@@ -194,22 +172,14 @@ ggplot()+
   scale_y_continuous("Frequency", sec.axis = sec_axis(~ ./coeff, name = "Rate optima (Oxygen (mg/L)/ time(min))")) + 
   facet_wrap(vars(ind))+
   labs(colour = "Trial")
-
-
-
 ggsave(plot=last_plot(),filename="Deuto_allseason_allarea.jpg",  path="Outputs/Microclimate vs performance/",width=7, height=7, units="in")
-
   
-
 ##### Tritonymphs
 tritos<- derivs2%>%
   filter(stage=="Tritonymph")
   
-
 meanline<-mean(micro$means2)
 medianline<-median(micro$means2)
-
-
 coeff<-10000
 ggplot()+
   geom_histogram(micro, mapping=aes(x=tempcorr),fill="#d95f02", alpha=0.5)+
@@ -223,22 +193,14 @@ ggplot()+
   scale_y_continuous("Frequency", sec.axis = sec_axis(~ ./coeff, name = "Rate optima (Oxygen (mg/L)/ time(min))")) + 
   facet_wrap(vars(ind))+
   labs(colour = "Trial")
-
-
-
 ggsave(plot=last_plot(),filename="Trito_allseason_allarea.jpg",  path="Outputs/Microclimate vs performance/",width=7, height=7, units="in")
-
   
-
 ##### Males
 males <- derivs2%>%
   filter(stage=="Male")
   
-
 meanline<-mean(micro$means2)
 medianline<-median(micro$means2)
-
-
 coeff<-10000
 ggplot()+
   geom_histogram(micro, mapping=aes(x=tempcorr),fill="#d95f02", alpha=0.5)+
@@ -252,23 +214,14 @@ ggplot()+
   scale_y_continuous("Frequency", sec.axis = sec_axis(~ ./coeff, name = "Rate optima (Oxygen (mg/L)/ time(min))")) + 
   facet_wrap(vars(ind))+
   labs(colour = "Trial")
-
-
-
 ggsave(plot=last_plot(),filename="Male_allseason_allarea.jpg",  path="Outputs/Microclimate vs performance/",width=7, height=7, units="in")
-
   
-
-
 ##### Females
 females <- derivs2%>%
   filter(stage=="Female")
   
-
 meanline<-mean(micro$means2)
 medianline<-median(micro$means2)
-
-
 coeff<-10000
 ggplot()+
   geom_histogram(micro, mapping=aes(x=tempcorr),fill="#d95f02", alpha=0.5)+
@@ -282,11 +235,7 @@ ggplot()+
   scale_y_continuous("Frequency", sec.axis = sec_axis(~ ./coeff, name = "Rate optima (Oxygen (mg/L)/ time(min))")) + 
   facet_wrap(vars(ind))+
   labs(colour = "Trial")
-
-
-
 ggsave(plot=last_plot(),filename="Female_allseason_allarea.jpg",  path="Outputs/Microclimate vs performance/",width=7, height=7, units="in")
-
   
 ```
 
@@ -303,63 +252,54 @@ last<-as.numeric(ncol(microtemp))
 micro1<-microtemp%>%
   mutate(means=apply(microtemp[,1:last],1, mean, na.rm=T))%>%
   cbind(micro[,2:4])
-
 microtemp<-micro%>%
   select(contains("site2")) 
 last<-as.numeric(ncol(microtemp))
 micro2<-microtemp%>%
   mutate(means=apply(microtemp[,1:last],1, mean, na.rm=T))%>%
   cbind(micro[,2:4])
-
 microtemp<-micro%>%
   select(contains("site3")) 
 last<-as.numeric(ncol(microtemp))
 micro3<-microtemp%>%
   mutate(means=apply(microtemp[,1:last],1, mean, na.rm=T))%>%
   cbind(micro[,2:4])
-
 microtemp<-micro%>%
   select(contains("site4")) 
 last<-as.numeric(ncol(microtemp))
 micro4<-microtemp%>%
   mutate(means=apply(microtemp[,1:last],1, mean, na.rm=T))%>%
   cbind(micro[,2:4])
-
 microtemp<-micro%>%
   select(contains("site5")) 
 last<-as.numeric(ncol(microtemp))
 micro5<-microtemp%>%
   mutate(means=apply(microtemp[,1:last],1, mean, na.rm=T))%>%
   cbind(micro[,2:4])
-
 microtemp<-micro%>%
   select(contains("site6")) 
 last<-as.numeric(ncol(microtemp))
 micro6<-microtemp%>%
   mutate(means=apply(microtemp[,1:last],1, mean, na.rm=T))%>%
   cbind(micro[,2:4])
-
 microtemp<-micro%>%
   select(contains("site7")) 
 last<-as.numeric(ncol(microtemp))
 micro7<-microtemp%>%
   mutate(means=apply(microtemp[,1:last],1, mean, na.rm=T))%>%
   cbind(micro[,2:4])
-
 microtemp<-micro%>%
   select(contains("site8")) 
 last<-as.numeric(ncol(microtemp))
 micro8<-microtemp%>%
   mutate(means=apply(microtemp[,1:last],1, mean, na.rm=T))%>%
   cbind(micro[,2:4])
-
 microtemp<-micro%>%
   select(contains("site9")) 
 last<-as.numeric(ncol(microtemp))
 micro9<-microtemp%>%
   mutate(means=apply(microtemp[,1:last],1, mean, na.rm=T))%>%
   cbind(micro[,2:4])
-
 #For site 6
 site6max<-max(micro6$means)
 site6mean<-mean(micro6$means)
@@ -368,7 +308,6 @@ site6median<-median(micro6$means)
 site3max<-max(micro3$means)
 site3mean<-mean(micro3$means)
 site3median<-median(micro3$means)
-
 ```
 
 #### Plotting for each life stage
@@ -377,17 +316,13 @@ site3median<-median(micro3$means)
 ##### Protonymphs
 protos <- derivs2%>%
   filter(stage=="Protonymph")
-
 #Choosing individuals for site 6
 protos6<-protos %>%
   filter(site=="site 6")
-
 #Choosing individuals for site 3
 protos3<-protos %>%
   filter(site=="site 3")
-
 coeff<-10000
-
 #Creating plots for site 3
 plotsite3 = function(ind) {
   #Creating histogram for conditions in site 3
@@ -409,10 +344,8 @@ plotsite3 = function(ind) {
   scale_y_continuous("Frequency", sec.axis = sec_axis(~ ./coeff, name = "Rate optima (Oxygen (mg/L)/ time(min))"))
    
       }
-
 ind<-levels(as.factor(protos3$ind))
 plotlist3<-map(ind, plotsite3)
-
 #Creating plots for site 6
 plotsite6 = function(ind) {
   #Creating histogram for conditions in site 6
@@ -434,12 +367,8 @@ plotsite6 = function(ind) {
   scale_y_continuous("Frequency", sec.axis = sec_axis(~ ./coeff, name = "Rate optima (Oxygen (mg/L)/ time(min))"))
    
       }
-
 ind<-levels(as.factor(protos6$ind))
 plotlist6<-map(ind, plotsite6)
-
-
-
 #Cretaing the combined figure
 protos_all<-ggarrange(plotlist3[[1]]+ rremove("ylab") + rremove("xlab"),
           plotlist3[[2]]+ rremove("ylab") + rremove("xlab"),
@@ -453,35 +382,26 @@ protos_all<-ggarrange(plotlist3[[1]]+ rremove("ylab") + rremove("xlab"),
           plotlist6[[7]]+ rremove("ylab") + rremove("xlab"), 
           plotlist6[[8]]+ rremove("ylab") + rremove("xlab"), 
           nrow=3, ncol=4)
-
 protosall<-annotate_figure(protos_all, left = textGrob("Frequency", rot = 90, vjust = 1, gp = gpar(cex = 1.3)),
                     bottom = textGrob("Temperature (Celsius)", gp = gpar(cex = 1.3)), right=textGrob("Oxygen consumed ((mg/L)/min)", rot = 270, vjust = 1, gp = gpar(cex = 1.3)))
 protosall
-
 ggsave(plot=last_plot(),filename="protos_allseason_persite.jpg",  path="Outputs/Microclimate vs performance/",width=10, height=7, units="in")
-
-
 ```
 
 ##### Deutonymphs
 ```{r}
 deutos <- derivs2%>%
   filter(stage=="Deutonymph")
-
 #Checking how many sites we need to filter for:
 levels(as.factor(deutos$site))
   
 #Choosing individuals for site 6
 deutos6<-deutos %>%
   filter(site=="site 6")
-
 #Choosing individuals for site 3
 deutos3<-deutos %>%
   filter(site=="site 3")
-
 coeff<-10000
-
-
 #Creating plots for site 3
 plotsite3 = function(ind) {
   #Creating histogram for conditions in site 3
@@ -503,11 +423,9 @@ plotsite3 = function(ind) {
   scale_y_continuous("Frequency", sec.axis = sec_axis(~ ./coeff, name = "Rate optima (Oxygen (mg/L)/ time(min))"))
    
       }
-
 ind<-levels(as.factor(deutos3$ind))
 ind
 plotlist3<-map(ind, plotsite3)
-
 #Creating plots for site 6
 plotsite6 = function(ind) {
   #Creating histogram for conditions in site 6
@@ -529,14 +447,9 @@ plotsite6 = function(ind) {
   scale_y_continuous("Frequency", sec.axis = sec_axis(~ ./coeff, name = "Rate optima (Oxygen (mg/L)/ time(min))"))
    
       }
-
 ind<-levels(as.factor(deutos6$ind))
 plotlist6<-map(ind, plotsite6)
-
-
-
 ind<-levels(as.factor(deutos$ind))
-
 #Creating the combined figure
 deutos_all<-ggarrange(plotlist3[[1]]+ rremove("ylab") + rremove("xlab"),
           plotlist3[[2]]+ rremove("ylab") + rremove("xlab"),
@@ -561,34 +474,26 @@ deutos_all<-ggarrange(plotlist3[[1]]+ rremove("ylab") + rremove("xlab"),
           plotlist6[[10]]+ rremove("ylab") + rremove("xlab"),
           plotlist6[[10]]+ rremove("ylab") + rremove("xlab"),
           nrow=5, ncol=5)
-
 deutosall<-annotate_figure(deutos_all, left = textGrob("Frequency", rot = 90, vjust = 1, gp = gpar(cex = 1.3)),
                     bottom = textGrob("Temperature (Celsius)", gp = gpar(cex = 1.3)), right=textGrob("Oxygen consumed ((mg/L)/min)", rot = 270, vjust = 1, gp = gpar(cex = 1.3)))
 deutosall
-
 ggsave(plot=last_plot(),filename="deutos_allseason_persite.jpg",  path="Outputs/Microclimate vs performance/",width=10, height=7, units="in")
-
-
 ```
 
 ##### Tritonymphs
 ```{r}
 tritos <- derivs2%>%
   filter(stage=="Tritonymph")
-
 #Checking how many sites we need to filter for:
 levels(as.factor(tritos$site))
   
 #Choosing individuals for site 6
 tritos6<-tritos %>%
   filter(site=="site 6")
-
 #Choosing individuals for site 3
 tritos3<-tritos %>%
   filter(site=="site 3")
-
 coeff<-10000
-
 #Creating plots for site 3
 plotsite3 = function(ind) {
   #Creating histogram for conditions in site 3
@@ -610,11 +515,9 @@ plotsite3 = function(ind) {
   scale_y_continuous("Frequency", sec.axis = sec_axis(~ ./coeff, name = "Rate optima (Oxygen (mg/L)/ time(min))"))
    
       }
-
 ind<-levels(as.factor(tritos3$ind))
 ind
 plotlist3<-map(ind, plotsite3)
-
 #Creating plots for site 6
 plotsite6 = function(ind) {
   #Creating histogram for conditions in site 6
@@ -636,14 +539,9 @@ plotsite6 = function(ind) {
   scale_y_continuous("Frequency", sec.axis = sec_axis(~ ./coeff, name = "Rate optima (Oxygen (mg/L)/ time(min))"))
    
       }
-
 ind<-levels(as.factor(tritos6$ind))
 plotlist6<-map(ind, plotsite6)
-
-
-
 ind<-levels(as.factor(tritos$ind))
-
 #Creating the combined figure
 tritos_all<-ggarrange(plotlist3[[1]]+ rremove("ylab") + rremove("xlab"),
           plotlist3[[2]]+ rremove("ylab") + rremove("xlab"),
@@ -667,34 +565,26 @@ tritos_all<-ggarrange(plotlist3[[1]]+ rremove("ylab") + rremove("xlab"),
           plotlist6[[5]]+ rremove("ylab") + rremove("xlab"), 
           plotlist6[[6]]+ rremove("ylab") + rremove("xlab"), 
           nrow=5, ncol=5)
-
 tritosall<-annotate_figure(tritos_all, left = textGrob("Frequency", rot = 90, vjust = 1, gp = gpar(cex = 1.3)),
                     bottom = textGrob("Temperature (Celsius)", gp = gpar(cex = 1.3)), right=textGrob("Oxygen consumed ((mg/L)/min)", rot = 270, vjust = 1, gp = gpar(cex = 1.3)))
 tritosall
-
 ggsave(plot=last_plot(),filename="tritos_allseason_persite.jpg",  path="Outputs/Microclimate vs performance/",width=10, height=7, units="in")
-
-
 ```
 
 ##### Males
 ```{r}
 males <- derivs2%>%
   filter(stage=="Male")
-
 #Checking how many sites we need to filter for:
 levels(as.factor(males$site))
   
 #Choosing individuals for site 6
 males6<-males %>%
   filter(site=="site 6")
-
 #Choosing individuals for site 3
 males3<-males %>%
   filter(site=="site 3")
-
 coeff<-10000
-
 #Creating plots for site 3
 plotsite3 = function(ind) {
   #Creating histogram for conditions in site 3
@@ -716,11 +606,9 @@ plotsite3 = function(ind) {
   scale_y_continuous("Frequency", sec.axis = sec_axis(~ ./coeff, name = "Rate optima (Oxygen (mg/L)/ time(min))"))
    
       }
-
 ind<-levels(as.factor(males3$ind))
 ind
 plotlist3<-map(ind, plotsite3)
-
 #Creating plots for site 6
 plotsite6 = function(ind) {
   #Creating histogram for conditions in site 6
@@ -742,14 +630,9 @@ plotsite6 = function(ind) {
   scale_y_continuous("Frequency", sec.axis = sec_axis(~ ./coeff, name = "Rate optima (Oxygen (mg/L)/ time(min))"))
    
       }
-
 ind<-levels(as.factor(males6$ind))
 plotlist6<-map(ind, plotsite6)
-
-
-
 ind<-levels(as.factor(males$ind))
-
 #Creating the combined figure
 males_all<-ggarrange(plotlist3[[1]]+ rremove("ylab") + rremove("xlab"),
           plotlist3[[2]]+ rremove("ylab") + rremove("xlab"),
@@ -773,34 +656,26 @@ males_all<-ggarrange(plotlist3[[1]]+ rremove("ylab") + rremove("xlab"),
           plotlist6[[7]]+ rremove("ylab") + rremove("xlab"), 
           plotlist6[[8]]+ rremove("ylab") + rremove("xlab"), 
           nrow=5, ncol=5)
-
 malesall<-annotate_figure(males_all, left = textGrob("Frequency", rot = 90, vjust = 1, gp = gpar(cex = 1.3)),
                     bottom = textGrob("Temperature (Celsius)", gp = gpar(cex = 1.3)), right=textGrob("Oxygen consumed ((mg/L)/min)", rot = 270, vjust = 1, gp = gpar(cex = 1.3)))
 malesall
-
 ggsave(plot=last_plot(),filename="males_allseason_persite.jpg",  path="Outputs/Microclimate vs performance/",width=10, height=7, units="in")
-
-
 ```
 
 ##### Females
 ```{r}
 females <- derivs2%>%
   filter(stage=="Female")
-
 #Checking how many sites we need to filter for:
 levels(as.factor(females$site))
   
 #Choosing individuals for site 6
 females6<-females %>%
   filter(site=="site 6")
-
 #Choosing individuals for site 3
 females3<-females %>%
   filter(site=="site 3")
-
 coeff<-10000
-
 #Creating plots for site 3
 plotsite3 = function(ind) {
   #Creating histogram for conditions in site 3
@@ -822,11 +697,9 @@ plotsite3 = function(ind) {
   scale_y_continuous("Frequency", sec.axis = sec_axis(~ ./coeff, name = "Rate optima (Oxygen (mg/L)/ time(min))"))
    
       }
-
 ind<-levels(as.factor(females3$ind))
 ind
 plotlist3<-map(ind, plotsite3)
-
 #Creating plots for site 6
 plotsite6 = function(ind) {
   #Creating histogram for conditions in site 6
@@ -848,14 +721,9 @@ plotsite6 = function(ind) {
   scale_y_continuous("Frequency", sec.axis = sec_axis(~ ./coeff, name = "Rate optima (Oxygen (mg/L)/ time(min))"))
    
       }
-
 ind<-levels(as.factor(females6$ind))
 plotlist6<-map(ind, plotsite6)
-
-
-
 ind<-levels(as.factor(females$ind))
-
 #Creating the combined figure
 females_all<-ggarrange(plotlist3[[1]]+ rremove("ylab") + rremove("xlab"),
           plotlist3[[2]]+ rremove("ylab") + rremove("xlab"),
@@ -881,14 +749,10 @@ females_all<-ggarrange(plotlist3[[1]]+ rremove("ylab") + rremove("xlab"),
           plotlist6[[5]]+ rremove("ylab") + rremove("xlab"), 
           plotlist6[[6]]+ rremove("ylab") + rremove("xlab"), 
           nrow=5, ncol=5)
-
 femalesall<-annotate_figure(females_all, left = textGrob("Frequency", rot = 90, vjust = 1, gp = gpar(cex = 1.3)),
                     bottom = textGrob("Temperature (Celsius)", gp = gpar(cex = 1.3)), right=textGrob("Oxygen consumed ((mg/L)/min)", rot = 270, vjust = 1, gp = gpar(cex = 1.3)))
 femalesall
-
 ggsave(plot=last_plot(),filename="females_allseason_persite.jpg",  path="Outputs/Microclimate vs performance/",width=10, height=7, units="in")
-
-
 ```
 
 
@@ -931,7 +795,6 @@ ggplot(july, aes(x=means2))+
   ylab("Frequency")+
   scale_x_continuous(limits=c(5,55), breaks=c(5,20,35,50))
 ggsave(plot=last_plot(),filename="Climate_July_allarea.jpg",  path="Outputs/Microclimate vs performance/",width=7, height=7, units="in")
-
 ```
 
 
@@ -941,10 +804,8 @@ ggsave(plot=last_plot(),filename="Climate_July_allarea.jpg",  path="Outputs/Micr
 protos <- derivs2%>%
   filter(stage=="Protonymph")
   
-
 meanline<-mean(july$means2)
 medianline<-median(july$means2)
-
     
  coeff<-10000
 ggplot()+
@@ -959,23 +820,14 @@ ggplot()+
   scale_y_continuous("Frequency", sec.axis = sec_axis(~ ./coeff, name = "Rate optima (Oxygen (mg/L)/ time(min))")) + 
   facet_wrap(vars(ind))+
   labs(colour = "Trial")
-
-
-
 ggsave(plot=last_plot(),filename="Proto_july_allarea.jpg",  path="Outputs/Microclimate vs performance/",width=7, height=7, units="in")
-
   
-
-
 ##### Deutonymphs
 deutos<- derivs2%>%
   filter(stage=="Deutonymph")
   
-
 meanline<-mean(july$means2)
 medianline<-median(july$means2)
-
-
 coeff<-10000
 ggplot()+
   geom_histogram(july,mapping=aes(x=tempcorr),fill="#d95f02", alpha=0.5)+
@@ -989,22 +841,14 @@ ggplot()+
   scale_y_continuous("Frequency", sec.axis = sec_axis(~ ./coeff, name = "Rate optima (Oxygen (mg/L)/ time(min))")) + 
   facet_wrap(vars(ind))+
   labs(colour = "Trial")
-
-
-
 ggsave(plot=last_plot(),filename="Deuto_july_allarea.jpg",  path="Outputs/Microclimate vs performance/",width=7, height=7, units="in")
-
   
-
 ##### Tritonymphs
 tritos<- derivs2%>%
   filter(stage=="Tritonymph")
   
-
 meanline<-mean(july$means2)
 medianline<-median(july$means2)
-
-
 coeff<-10000
 ggplot()+
   geom_histogram(july,mapping=aes(x=tempcorr),fill="#d95f02", alpha=0.5)+
@@ -1018,22 +862,14 @@ ggplot()+
   scale_y_continuous("Frequency", sec.axis = sec_axis(~ ./coeff, name = "Rate optima (Oxygen (mg/L)/ time(min))")) + 
   facet_wrap(vars(ind))+
   labs(colour = "Trial")
-
-
-
 ggsave(plot=last_plot(),filename="Trito_july_allarea.jpg",  path="Outputs/Microclimate vs performance/",width=7, height=7, units="in")
-
   
-
 ##### Males
 males <- derivs2%>%
   filter(stage=="Male")
   
-
 meanline<-mean(july$means2)
 medianline<-median(july$means2)
-
-
 coeff<-10000
 ggplot()+
   geom_histogram(july,mapping=aes(x=tempcorr),fill="#d95f02", alpha=0.5)+
@@ -1047,23 +883,14 @@ ggplot()+
   scale_y_continuous("Frequency", sec.axis = sec_axis(~ ./coeff, name = "Rate optima (Oxygen (mg/L)/ time(min))")) + 
   facet_wrap(vars(ind))+
   labs(colour = "Trial")
-
-
-
 ggsave(plot=last_plot(),filename="Male_july_allarea.jpg",  path="Outputs/Microclimate vs performance/",width=7, height=7, units="in")
-
   
-
-
 ##### Females
 females <- derivs2%>%
   filter(stage=="Female")
   
-
 meanline<-mean(july$means2)
 medianline<-median(july$means2)
-
-
 coeff<-10000
 ggplot()+
   geom_histogram(july,mapping=aes(x=tempcorr),fill="#d95f02", alpha=0.5)+
@@ -1077,11 +904,7 @@ ggplot()+
   scale_y_continuous("Frequency", sec.axis = sec_axis(~ ./coeff, name = "Rate optima (Oxygen (mg/L)/ time(min))")) + 
   facet_wrap(vars(ind))+
   labs(colour = "Trial")
-
-
-
 ggsave(plot=last_plot(),filename="Female_july_allarea.jpg",  path="Outputs/Microclimate vs performance/",width=7, height=7, units="in")
-
   
 ```
 
@@ -1098,64 +921,54 @@ last<-as.numeric(ncol(microtemp))
 micro1<-microtemp%>%
   mutate(means=apply(microtemp[,1:last],1, mean, na.rm=T))%>%
   cbind(july[,2:4])
-
 microtemp<-july%>%
   select(contains("site2")) 
 last<-as.numeric(ncol(microtemp))
 micro2<-microtemp%>%
   mutate(means=apply(microtemp[,1:last],1, mean, na.rm=T))%>%
   cbind(july[,2:4])
-
 microtemp<-july%>%
   select(contains("site3")) 
 last<-as.numeric(ncol(microtemp))
 micro3<-microtemp%>%
   mutate(means=apply(microtemp[,1:last],1, mean, na.rm=T))%>%
   cbind(july[,2:4])
-
 microtemp<-july%>%
   select(contains("site4")) 
 last<-as.numeric(ncol(microtemp))
 micro4<-microtemp%>%
   mutate(means=apply(microtemp[,1:last],1, mean, na.rm=T))%>%
   cbind(july[,2:4])
-
 microtemp<-july%>%
   select(contains("site5")) 
 last<-as.numeric(ncol(microtemp))
 micro5<-microtemp%>%
   mutate(means=apply(microtemp[,1:last],1, mean, na.rm=T))%>%
   cbind(july[,2:4])
-
 microtemp<-july%>%
   select(contains("site6")) 
 last<-as.numeric(ncol(microtemp))
 micro6<-microtemp%>%
   mutate(means=apply(microtemp[,1:last],1, mean, na.rm=T))%>%
   cbind(july[,2:4])
-
 microtemp<-july%>%
   select(contains("site7")) 
 last<-as.numeric(ncol(microtemp))
 micro7<-microtemp%>%
   mutate(means=apply(microtemp[,1:last],1, mean, na.rm=T))%>%
   cbind(july[,2:4])
-
 microtemp<-july%>%
   select(contains("site8")) 
 last<-as.numeric(ncol(microtemp))
 micro8<-microtemp%>%
   mutate(means=apply(microtemp[,1:last],1, mean, na.rm=T))%>%
   cbind(july[,2:4])
-
 microtemp<-july%>%
   select(contains("site9")) 
 last<-as.numeric(ncol(microtemp))
 micro9<-microtemp%>%
   mutate(means=apply(microtemp[,1:last],1, mean, na.rm=T))%>%
   cbind(july[,2:4])
-
-
 #For site 6
 site6maxjul<-max(micro6$means)
 site6meanjul<-mean(micro6$means)
@@ -1172,17 +985,13 @@ site3medianjul<-median(micro3$means)
 ##### Protonymphs
 protos <- derivs2%>%
   filter(stage=="Protonymph")
-
 #Choosing individuals for site 6
 protos6<-protos %>%
   filter(site=="site 6")
-
 #Choosing individuals for site 3
 protos3<-protos %>%
   filter(site=="site 3")
-
 coeff<-10000
-
 #Creating plots for site 3
 plotsite3 = function(ind) {
   #Creating histogram for conditions in site 3
@@ -1204,10 +1013,8 @@ plotsite3 = function(ind) {
   scale_y_continuous("Frequency", limits=c(0,400),sec.axis = sec_axis(~ ./coeff, name = "Rate optima (Oxygen (mg/L)/ time(min))"))
    
       }
-
 ind<-levels(as.factor(protos3$ind))
 plotlist3<-map(ind, plotsite3)
-
 #Creating plots for site 6
 plotsite6 = function(ind) {
   #Creating histogram for conditions in site 6
@@ -1229,12 +1036,8 @@ plotsite6 = function(ind) {
   scale_y_continuous("Frequency",limits=c(0,400), sec.axis = sec_axis(~ ./coeff, name = "Rate optima (Oxygen (mg/L)/ time(min))"))
    
       }
-
 ind<-levels(as.factor(protos6$ind))
 plotlist6<-map(ind, plotsite6)
-
-
-
 #Creating the combined figure
 protos_all<-ggarrange(plotlist3[[1]]+ rremove("ylab") + rremove("xlab"),
           plotlist3[[2]]+ rremove("ylab") + rremove("xlab"),
@@ -1248,35 +1051,26 @@ protos_all<-ggarrange(plotlist3[[1]]+ rremove("ylab") + rremove("xlab"),
           plotlist6[[7]]+ rremove("ylab") + rremove("xlab"), 
           plotlist6[[8]]+ rremove("ylab") + rremove("xlab"), 
           nrow=3, ncol=4)
-
 protosall<-annotate_figure(protos_all, left = textGrob("Frequency", rot = 90, vjust = 1, gp = gpar(cex = 1.3)),
                     bottom = textGrob("Temperature (Celsius)", gp = gpar(cex = 1.3)), right=textGrob("Oxygen consumed ((mg/L)/min)", rot = 270, vjust = 1, gp = gpar(cex = 1.3)))
 protosall
-
 ggsave(plot=last_plot(),filename="protos_july_persite.jpg",  path="Outputs/Microclimate vs performance/",width=10, height=7, units="in")
-
-
 ```
 
 ###### Deutonymphs
 ```{r}
 deutos <- derivs2%>%
   filter(stage=="Deutonymph")
-
 #Checking how many sites we need to filter for:
 levels(as.factor(deutos$site))
   
 #Choosing individuals for site 6
 deutos6<-deutos %>%
   filter(site=="site 6")
-
 #Choosing individuals for site 3
 deutos3<-deutos %>%
   filter(site=="site 3")
-
 coeff<-10000
-
-
 #Creating plots for site 3
 plotsite3 = function(ind) {
   #Creating histogram for conditions in site 3
@@ -1298,11 +1092,9 @@ plotsite3 = function(ind) {
   scale_y_continuous("Frequency",limits=c(0,400), sec.axis = sec_axis(~ ./coeff, name = "Rate optima (Oxygen (mg/L)/ time(min))"))
    
       }
-
 ind<-levels(as.factor(deutos3$ind))
 ind
 plotlist3<-map(ind, plotsite3)
-
 #Creating plots for site 6
 plotsite6 = function(ind) {
   #Creating histogram for conditions in site 6
@@ -1324,14 +1116,9 @@ plotsite6 = function(ind) {
   scale_y_continuous("Frequency",limits=c(0,400), sec.axis = sec_axis(~ ./coeff, name = "Rate optima (Oxygen (mg/L)/ time(min))"))
    
       }
-
 ind<-levels(as.factor(deutos6$ind))
 plotlist6<-map(ind, plotsite6)
-
-
-
 ind<-levels(as.factor(deutos$ind))
-
 #Creating the combined figure
 deutos_all<-ggarrange(plotlist3[[1]]+ rremove("ylab") + rremove("xlab"),
           plotlist3[[2]]+ rremove("ylab") + rremove("xlab"),
@@ -1356,34 +1143,26 @@ deutos_all<-ggarrange(plotlist3[[1]]+ rremove("ylab") + rremove("xlab"),
           plotlist6[[10]]+ rremove("ylab") + rremove("xlab"),
           plotlist6[[10]]+ rremove("ylab") + rremove("xlab"),
           nrow=5, ncol=5)
-
 deutosall<-annotate_figure(deutos_all, left = textGrob("Frequency", rot = 90, vjust = 1, gp = gpar(cex = 1.3)),
                     bottom = textGrob("Temperature (Celsius)", gp = gpar(cex = 1.3)), right=textGrob("Oxygen consumed ((mg/L)/min)", rot = 270, vjust = 1, gp = gpar(cex = 1.3)))
 deutosall
-
 ggsave(plot=last_plot(),filename="deutos_july_persite.jpg",  path="Outputs/Microclimate vs performance/",width=10, height=7, units="in")
-
-
 ```
 
 ###### Tritonymphs
 ```{r}
 tritos <- derivs2%>%
   filter(stage=="Tritonymph")
-
 #Checking how many sites we need to filter for:
 levels(as.factor(tritos$site))
   
 #Choosing individuals for site 6
 tritos6<-tritos %>%
   filter(site=="site 6")
-
 #Choosing individuals for site 3
 tritos3<-tritos %>%
   filter(site=="site 3")
-
 coeff<-10000
-
 #Creating plots for site 3
 plotsite3 = function(ind) {
   #Creating histogram for conditions in site 3
@@ -1405,11 +1184,9 @@ plotsite3 = function(ind) {
   scale_y_continuous("Frequency",limits=c(0,400), sec.axis = sec_axis(~ ./coeff, name = "Rate optima (Oxygen (mg/L)/ time(min))"))
    
       }
-
 ind<-levels(as.factor(tritos3$ind))
 ind
 plotlist3<-map(ind, plotsite3)
-
 #Creating plots for site 6
 plotsite6 = function(ind) {
   #Creating histogram for conditions in site 6
@@ -1431,14 +1208,9 @@ plotsite6 = function(ind) {
   scale_y_continuous("Frequency",limits=c(0,400), sec.axis = sec_axis(~ ./coeff, name = "Rate optima (Oxygen (mg/L)/ time(min))"))
    
       }
-
 ind<-levels(as.factor(tritos6$ind))
 plotlist6<-map(ind, plotsite6)
-
-
-
 ind<-levels(as.factor(tritos$ind))
-
 #Creating the combined figure
 tritos_all<-ggarrange(plotlist3[[1]]+ rremove("ylab") + rremove("xlab"),
           plotlist3[[2]]+ rremove("ylab") + rremove("xlab"),
@@ -1462,34 +1234,26 @@ tritos_all<-ggarrange(plotlist3[[1]]+ rremove("ylab") + rremove("xlab"),
           plotlist6[[5]]+ rremove("ylab") + rremove("xlab"), 
           plotlist6[[6]]+ rremove("ylab") + rremove("xlab"),
           nrow=5, ncol=5)
-
 tritosall<-annotate_figure(tritos_all, left = textGrob("Frequency", rot = 90, vjust = 1, gp = gpar(cex = 1.3)),
                     bottom = textGrob("Temperature (Celsius)", gp = gpar(cex = 1.3)), right=textGrob("Oxygen consumed ((mg/L)/min)", rot = 270, vjust = 1, gp = gpar(cex = 1.3)))
 tritosall
-
 ggsave(plot=last_plot(),filename="tritos_july_persite.jpg",  path="Outputs/Microclimate vs performance/",width=10, height=7, units="in")
-
-
 ```
 
 ###### Males
 ```{r}
 males <- derivs2%>%
   filter(stage=="Male")
-
 #Checking how many sites we need to filter for:
 levels(as.factor(males$site))
   
 #Choosing individuals for site 6
 males6<-males %>%
   filter(site=="site 6")
-
 #Choosing individuals for site 3
 males3<-males %>%
   filter(site=="site 3")
-
 coeff<-10000
-
 #Creating plots for site 3
 plotsite3 = function(ind) {
   #Creating histogram for conditions in site 3
@@ -1511,11 +1275,9 @@ plotsite3 = function(ind) {
   scale_y_continuous("Frequency",limits=c(0,400), sec.axis = sec_axis(~ ./coeff, name = "Rate optima (Oxygen (mg/L)/ time(min))"))
    
       }
-
 ind<-levels(as.factor(males3$ind))
 ind
 plotlist3<-map(ind, plotsite3)
-
 #Creating plots for site 6
 plotsite6 = function(ind) {
   #Creating histogram for conditions in site 6
@@ -1537,14 +1299,9 @@ plotsite6 = function(ind) {
   scale_y_continuous("Frequency",limits=c(0,400), sec.axis = sec_axis(~ ./coeff, name = "Rate optima (Oxygen (mg/L)/ time(min))"))
    
       }
-
 ind<-levels(as.factor(males6$ind))
 plotlist6<-map(ind, plotsite6)
-
-
-
 ind<-levels(as.factor(males$ind))
-
 #Creating the combined figure
 males_all<-ggarrange(plotlist3[[1]]+ rremove("ylab") + rremove("xlab"),
           plotlist3[[2]]+ rremove("ylab") + rremove("xlab"),
@@ -1568,34 +1325,26 @@ males_all<-ggarrange(plotlist3[[1]]+ rremove("ylab") + rremove("xlab"),
           plotlist6[[7]]+ rremove("ylab") + rremove("xlab"), 
           plotlist6[[8]]+ rremove("ylab") + rremove("xlab"), 
           nrow=5, ncol=5)
-
 malesall<-annotate_figure(males_all, left = textGrob("Frequency", rot = 90, vjust = 1, gp = gpar(cex = 1.3)),
                     bottom = textGrob("Temperature (Celsius)", gp = gpar(cex = 1.3)), right=textGrob("Oxygen consumed ((mg/L)/min)", rot = 270, vjust = 1, gp = gpar(cex = 1.3)))
 malesall
-
 ggsave(plot=last_plot(),filename="males_july_persite.jpg",  path="Outputs/Microclimate vs performance/",width=10, height=7, units="in")
-
-
 ```
 
 ###### Females
 ```{r}
 females <- derivs2%>%
   filter(stage=="Female")
-
 #Checking how many sites we need to filter for:
 levels(as.factor(females$site))
   
 #Choosing individuals for site 6
 females6<-females %>%
   filter(site=="site 6")
-
 #Choosing individuals for site 3
 females3<-females %>%
   filter(site=="site 3")
-
 coeff<-10000
-
 #Creating plots for site 3
 plotsite3 = function(ind) {
   #Creating histogram for conditions in site 3
@@ -1617,11 +1366,9 @@ plotsite3 = function(ind) {
   scale_y_continuous("Frequency", limits=c(0,400),sec.axis = sec_axis(~ ./coeff, name = "Rate optima (Oxygen (mg/L)/ time(min))"))
    
       }
-
 ind<-levels(as.factor(females3$ind))
 ind
 plotlist3<-map(ind, plotsite3)
-
 #Creating plots for site 6
 plotsite6 = function(ind) {
   #Creating histogram for conditions in site 6
@@ -1643,14 +1390,9 @@ plotsite6 = function(ind) {
   scale_y_continuous("Frequency",limits=c(0,400), sec.axis = sec_axis(~ ./coeff, name = "Rate optima (Oxygen (mg/L)/ time(min))"))
    
       }
-
 ind<-levels(as.factor(females6$ind))
 plotlist6<-map(ind, plotsite6)
-
-
-
 ind<-levels(as.factor(females$ind))
-
 #Creating the combined figure
 females_all<-ggarrange(plotlist3[[1]]+ rremove("ylab") + rremove("xlab"),
           plotlist3[[2]]+ rremove("ylab") + rremove("xlab"),
@@ -1676,14 +1418,10 @@ females_all<-ggarrange(plotlist3[[1]]+ rremove("ylab") + rremove("xlab"),
           plotlist6[[5]]+ rremove("ylab") + rremove("xlab"), 
           plotlist6[[6]]+ rremove("ylab") + rremove("xlab"), 
           nrow=5, ncol=5)
-
 femalesall<-annotate_figure(females_all, left = textGrob("Frequency", rot = 90, vjust = 1, gp = gpar(cex = 1.3)),
                     bottom = textGrob("Temperature (Celsius)", gp = gpar(cex = 1.3)), right=textGrob("Oxygen consumed ((mg/L)/min)", rot = 270, vjust = 1, gp = gpar(cex = 1.3)))
 femalesall
-
 ggsave(plot=last_plot(),filename="females_july_persite.jpg",  path="Outputs/Microclimate vs performance/",width=10, height=7, units="in")
-
-
 ```
 
 
@@ -1745,10 +1483,7 @@ ggplot(micro, aes(x=means2))+
   xlab("Microclimate temperature (Celsius)")+
   ylab("Frequency")+
   scale_x_continuous(limits=c(5,55), breaks=c(5,20,35,50))
-
-
 ggsave(plot=last_plot(),filename="Climate_allseason_allarea_future.jpg",  path="Outputs/Microclimate vs performance/",width=7, height=7, units="in")
-
 ```
 
 
@@ -1758,11 +1493,8 @@ ggsave(plot=last_plot(),filename="Climate_allseason_allarea_future.jpg",  path="
 protos <- derivs2%>%
   filter(stage=="Protonymph")
   
-
 meanline<-mean(micro$means2)
 medianline<-median(micro$means2)
-
-
 coeff<-10000
 ggplot()+
   geom_histogram(micro, mapping=aes(x=tempcorr),fill="#d95f02", alpha=0.5)+
@@ -1777,23 +1509,14 @@ ggplot()+
   scale_y_continuous("Frequency", sec.axis = sec_axis(~ ./coeff, name = "Rate optima (Oxygen (mg/L)/ time(min))")) + 
   facet_wrap(vars(ind))+
   labs(colour = "Trial")
-
-
-
 ggsave(plot=last_plot(),filename="Proto_allseason_allarea_future.jpg",  path="Outputs/Microclimate vs performance/",width=7, height=7, units="in")
-
   
-
-
 ##### Deutonymphs
 deutos<- derivs2%>%
   filter(stage=="Deutonymph")
   
-
 meanline<-mean(micro$means2)
 medianline<-median(micro$means2)
-
-
 coeff<-10000
 ggplot()+
   geom_histogram(micro, mapping=aes(x=tempcorr),fill="#d95f02", alpha=0.5)+
@@ -1808,22 +1531,14 @@ ggplot()+
   scale_y_continuous("Frequency", sec.axis = sec_axis(~ ./coeff, name = "Rate optima (Oxygen (mg/L)/ time(min))")) + 
   facet_wrap(vars(ind))+
   labs(colour = "Trial")
-
-
-
 ggsave(plot=last_plot(),filename="Deuto_allseason_allarea_future.jpg",  path="Outputs/Microclimate vs performance/",width=7, height=7, units="in")
-
   
-
 ##### Tritonymphs
 tritos<- derivs2%>%
   filter(stage=="Tritonymph")
   
-
 meanline<-mean(micro$means2)
 medianline<-median(micro$means2)
-
-
 coeff<-10000
 ggplot()+
   geom_histogram(micro, mapping=aes(x=tempcorr),fill="#d95f02", alpha=0.5)+
@@ -1838,22 +1553,14 @@ ggplot()+
   scale_y_continuous("Frequency", sec.axis = sec_axis(~ ./coeff, name = "Rate optima (Oxygen (mg/L)/ time(min))")) + 
   facet_wrap(vars(ind))+
   labs(colour = "Trial")
-
-
-
 ggsave(plot=last_plot(),filename="Trito_allseason_allarea_future.jpg",  path="Outputs/Microclimate vs performance/",width=7, height=7, units="in")
-
   
-
 ##### Males
 males <- derivs2%>%
   filter(stage=="Male")
   
-
 meanline<-mean(micro$means2)
 medianline<-median(micro$means2)
-
-
 coeff<-10000
 ggplot()+
   geom_histogram(micro, mapping=aes(x=tempcorr),fill="#d95f02", alpha=0.5)+
@@ -1868,23 +1575,14 @@ ggplot()+
   scale_y_continuous("Frequency", sec.axis = sec_axis(~ ./coeff, name = "Rate optima (Oxygen (mg/L)/ time(min))")) + 
   facet_wrap(vars(ind))+
   labs(colour = "Trial")
-
-
-
 ggsave(plot=last_plot(),filename="Male_allseason_allarea_future.jpg",  path="Outputs/Microclimate vs performance/",width=7, height=7, units="in")
-
   
-
-
 ##### Females
 females <- derivs2%>%
   filter(stage=="Female")
   
-
 meanline<-mean(micro$means2)
 medianline<-median(micro$means2)
-
-
 coeff<-10000
 ggplot()+
   geom_histogram(micro, mapping=aes(x=tempcorr),fill="#d95f02", alpha=0.5)+
@@ -1899,11 +1597,7 @@ ggplot()+
   scale_y_continuous("Frequency", sec.axis = sec_axis(~ ./coeff, name = "Rate optima (Oxygen (mg/L)/ time(min))")) + 
   facet_wrap(vars(ind))+
   labs(colour = "Trial")
-
-
-
 ggsave(plot=last_plot(),filename="Female_allseason_allarea_future.jpg",  path="Outputs/Microclimate vs performance/",width=7, height=7, units="in")
-
   
 ```
 
@@ -2151,10 +1845,8 @@ diffsall<-bind_cols(diffsumallmeans,diffsumallsd)
 diffsallfinal<-diffsall%>%
   rename("means"="sapply(diffsum, mean)", "sd" ="sapply(diffsum, sd)") %>%
   mutate(se=sd/sqrt(as.numeric(nrow(diffsum))))
-
 sd(diffsum$currentallmax)
 sd(diffsum$futurejulmax)
-
 diffs3<-diffs %>%
   filter(site=="site 3") %>%
   mutate(site3allmax=tempcorr-site3max,
@@ -2163,7 +1855,6 @@ diffs3<-diffs %>%
          site3julmax=tempcorr-site3maxjul,
          site3julmean=tempcorr-site3meanjul,
          site3julmedian=tempcorr-site3medianjul)
-
 diffsum<-diffs3%>%select(27:32) %>% na.omit()
 diffsumallmeans<-as.data.frame(sapply(diffsum, mean))
 diffsumallsd<-as.data.frame(sapply(diffsum, sd))
@@ -2192,7 +1883,6 @@ diffsumall<-diffsumall %>%
          lwr=means-se, 
          upr=means+se)
 diffs<-bind_rows(diffs3, diffs6)
-
 write.csv(diffs, "Outputs/toptvsenv.csv")
 ```
 
@@ -2255,7 +1945,6 @@ plot<-ggplot(diffsmax, aes(x =names, color=names))+
   ylab("Difference with respect to Topt")
 plot
 ggsave(plot=last_plot(),filename="environmenttoptdiffs_maxs.jpg",  path="Outputs/Microclimate vs performance/",width=10, height=7, units="in")
-
 plot<-ggplot(diffsmean, aes(x =names, color=names))+ 
   geom_point(aes(y = means), size = 2,  width=0.2) + 
   geom_errorbar(aes(x=names, ymin = lwr, ymax = upr),   width=0.2) + theme_classic()+ theme(text = element_text(size = 15))+ 
@@ -2263,18 +1952,4 @@ plot<-ggplot(diffsmean, aes(x =names, color=names))+
   ylab("Difference with respect to Topt")
 plot
 ggsave(plot=last_plot(),filename="environmenttoptdiffs_means.jpg",  path="Outputs/Microclimate vs performance/",width=10, height=7, units="in")
-
 ```
-
-
-
-
-
-
-
-
-
-
-
-
-
