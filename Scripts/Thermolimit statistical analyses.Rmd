@@ -30,6 +30,7 @@ library(ggplot2)
 library(lmerTest)
 library(emmeans)
 library(reporter)
+library(svglite)
 ```
 TO DO:
 
@@ -2193,7 +2194,7 @@ p1<-ggplot()+
   geom_segment(aes(x = max(dummy$micro), y = 50, xend = 9.55, yend = 50), linetype="dashed", size=1.2, color="red")+
   geom_segment(aes(x = mean(dummy$micro), y = 51, xend = 9.55, yend = 51), linetype="dashed", size=1.2, color="red")
 p1
-ggsave(plot=last_plot(),filename="Predictionplot1.jpg",  path="Outputs/Statistics/",width=7, height=7, units="in")
+ggsave(plot=last_plot(),filename="Predictionplot1.svg",  path="Outputs/Statistics/",width=7, height=7, units="in")
 
 
 # Plot scenario 2: NO "room for adaptation"
@@ -2233,7 +2234,7 @@ ggplot()+
   geom_segment(aes(xend = max(dummy$micro), y = 50, x = 1.05, yend = 50), linetype="dashed", size=1.2, color="red")+
   geom_segment(aes(xend = mean(dummy$micro), y = 51, x = 1.05, yend = 51), linetype="dashed", size=1.2, color="red")
   
-ggsave(plot=last_plot(),filename="Predictionplot2.jpg",  path="Outputs/Statistics/",width=7, height=7, units="in")
+ggsave(plot=last_plot(),filename="Predictionplot2.svg",  path="Outputs/Statistics/",width=7, height=7, units="in")
 ```
 
 
