@@ -26,7 +26,8 @@ library(tidyr)
 library(dplyr)
 library(lubridate)
 library(ggplot2)
-
+library(fuzzyjoin)
+library(forcats)
 
 ```
 
@@ -861,4 +862,387 @@ p13
 save(all_corr,file = "Outputs/Temperature analyses.RData")
 ```
 
+
+# Behavioral trials thermolimit
+
+## Reading files
+
+```{r}
+cnames<-c("#", "datetime", "temp1", "temp2", "detached", "attached", "connected", "end","x")
+
+tb<-read.csv("Data/Temperature/Thermal_block_test.csv", skip=2, header=F, col.names=cnames)
+
+head(tb)
+
+```
+## Organizing and adding data
+
+
+```{r}
+tb2<- tb %>%
+  select(1:4) %>% #removing non-relevant columns
+  na.omit() %>% #removing NAs
+  mutate(datetime=as_datetime(datetime, format="%m/%d/%y %I:%M:%S %p")) %>% #converting the datetime column from character into a datetime format 
+  separate(datetime, c("date", "time"), remove=FALSE, sep=" ") %>% #separating date and time into two columns
+    mutate(date=ymd(date), #formatting date 
+         tempav=rowMeans(.[,5:6]), #calculating averages for the two temperature sensors
+        trial=case_when(datetime >= ymd_hms("2022-10-19 11:32:00") &  
+                               datetime <= ymd_hms("2022-10-19 13:55:00")~1, #Assigning trial 1
+                        datetime >= ymd_hms("2022-10-19 14:15:00") &  
+                               datetime <= ymd_hms("2022-10-19 16:36:00")~2,#Assigning trial 2
+                        datetime >= ymd_hms("2022-10-19 16:46:00") &  
+                               datetime <= ymd_hms("2022-10-19 19:03:00")~3,#Assigning trial 3
+                        datetime >= ymd_hms("2022-10-20 13:33:00") &  
+                               datetime <= ymd_hms("2022-10-20 15:51:00")~4,#Assigning trial 4
+                        datetime >= ymd_hms("2022-10-20 16:10:00") &  
+                               datetime <= ymd_hms("2022-10-20 18:32:00")~5,#Assigning trial 5
+                        datetime >= ymd_hms("2022-10-21 10:08:00") &  
+                               datetime <= ymd_hms("2022-10-21 12:17:00")~6,#Assigning trial 6
+                        datetime >= ymd_hms("2022-10-22 13:32:00") &  
+                               datetime <= ymd_hms("2022-10-22 15:53:00")~7,#Assigning trial 7
+                        datetime >= ymd_hms("2022-10-22 16:01:00") &  
+                               datetime <= ymd_hms("2022-10-22 18:23:00")~8,#Assigning trial 8
+                        TRUE~0)) %>%
+  mutate(datetime2=round_date(datetime, unit="minute")) #creating a coluns of datetime rounded by minutes to facilitate merging later
+
+```
+
+## Creating dataframe for thermocouple variables
+```{r}
+
+# Trial 1
+trial<-rep(1)
+datetime<-c("2022-10-19 11:35:00", "2022-10-19 11:41:00","2022-10-19 11:46:00","2022-10-19 11:53:00","2022-10-19 12:04:00","2022-10-19 12:17:00","2022-10-19 12:27:00","2022-10-19 12:38:00","2022-10-19 12:49:00","2022-10-19 12:57:00","2022-10-19 13:07:00","2022-10-19 13:27:00","2022-10-19 13:28:00")
+tempblock<-c(30,30,29,34,35,39,41,44,47,49,51,56,56)
+tempcouple<-c(24.4,28.2,28.3,33.9, 34.2,38,40,43.3,45.8, 47.5,50,54.8,54.8)
+
+t1<-data.frame(trial, datetime,tempblock, tempcouple)
+t1<-t1%>%
+  mutate(datetime2=ymd_hms(datetime))
+
+# Trial 2
+trial<-rep(2)
+datetime<-c("2022-10-19 14:19:00", "2022-10-19 14:25:00","2022-10-19 14:35:00","2022-10-19 14:55:00","2022-10-19 15:15:00","2022-10-19 15:36:00","2022-10-19 15:56:00","2022-10-19 16:11:00")
+tempblock<-c(30,30,35, 37, 43, 48, 53,56)
+tempcouple<-c(28.3, 28.6, 34.3, 36.2, 41.5, 46.7, 51.7, 54.7)
+
+t2<-data.frame(trial, datetime,tempblock, tempcouple)
+t2<-t2%>%
+  mutate(datetime2=ymd_hms(datetime))
+
+# Trial 3
+trial<-rep(3)
+datetime<-c("2022-10-19 16:46:00", "2022-10-19 16:56:00","2022-10-19 17:19:00","2022-10-19 17:42:00","2022-10-19 18:02:00","2022-10-19 18:22:00","2022-10-19 18:45:00")
+tempblock<-c(27,30,35,41,46,51,56)
+tempcouple<-c(25.2,28.7,34.1,40,45.1,49.9,54.7)
+
+t3<-data.frame(trial, datetime,tempblock, tempcouple)
+t3<-t3%>%
+  mutate(datetime2=ymd_hms(datetime))
+
+# Trial 4
+trial<-rep(4)
+datetime<-c("2022-10-20 13:44:00", "2022-10-20 14:05:00","2022-10-20 14:26:00","2022-10-20 14:46:00","2022-10-20 15:08:00","2022-10-20 15:27:00")
+tempblock<-c(30,35,40,45,51,55)
+tempcouple<-c(28.5,33.6,39.1, 44.1, 49.5, 53.7)
+
+t4<-data.frame(trial, datetime,tempblock, tempcouple)
+t4<-t4%>%
+  mutate(datetime2=ymd_hms(datetime))
+
+# Trial 5
+trial<-rep(5)
+datetime<-c("2022-10-20 16:24:00", "2022-10-20 16:46:00","2022-10-20 17:11:00","2022-10-20 17:32:00","2022-10-20 17:52:00","2022-10-20 18:12:00")
+tempblock<-c(30,35,41,47,52,57)
+tempcouple<-c(28.5,34.2,40.1,45.9, 50.6, 55.7)
+
+t5<-data.frame(trial, datetime,tempblock, tempcouple)
+t5<-t5%>%
+  mutate(datetime2=ymd_hms(datetime))
+
+
+# Trial 6
+trial<-rep(6)
+datetime<-c("2022-10-21 10:18:00", "2022-10-21 10:44:00","2022-10-21 11:05:00","2022-10-21 11:25:00","2022-10-21 11:46:00","2022-10-21 12:06:00")
+tempblock<-c(30,36,41,46,51,56)
+tempcouple<-c(28.6,35.4,40.2, 45, 49.9,54.8)
+
+t6<-data.frame(trial, datetime,tempblock, tempcouple)
+t6<-t6%>%
+  mutate(datetime2=ymd_hms(datetime))
+
+# Trial 7
+trial<-rep(7)
+datetime<-c("2022-10-22 13:43:00", "2022-10-22 14:05:00","2022-10-22 14:26:00","2022-10-22 14:45:00","2022-10-22 15:06:00","2022-10-22 15:26:00","2022-10-22 15:30:00")
+tempblock<-c(30,34,40,45,50,55,56)
+tempcouple<-c(28.5,33.4,39,44,48.8,53.8,54.6)
+
+t7<-data.frame(trial, datetime,tempblock, tempcouple)
+t7<-t7%>%
+  mutate(datetime2=ymd_hms(datetime))
+
+
+# Trial 8
+trial<-rep(8)
+datetime<-c("2022-10-22 16:12:00", "2022-10-22 16:33:00","2022-10-22 16:53:00","2022-10-22 17:13:00","2022-10-22 17:36:00","2022-10-22 17:57:00","2022-10-22 18:00:00")
+tempblock<-c(30,35,40,45,50,56,56)
+tempcouple<-c(28.3,34.4,38.3,42.7,47.6,53.0,53.3)
+
+t8<-data.frame(trial, datetime,tempblock, tempcouple)
+t8<-t8%>%
+  mutate(datetime2=ymd_hms(datetime))
+
+#Merging all into a single frame
+couples<-bind_rows(t1,t2,t3,t4,t5,t6,t7,t8)
+
+head(couples)
+
+```
+
+## Merging loggers and thermocouple data into a single dataframe
+```{r}
+all<-full_join(tb2, couples, by=c("datetime2","trial"), suffix=c("", ".cb"))
+head(all)
+```
+# Exploring data
+
+## Looking at the differences between loggers, thermalblock and thermocouple
+```{r,fig.show="hold", out.width="50%"}
+diffs<-all %>%
+  mutate(diffblock=tempblock-tempav,
+         diffcouple=tempcouple-tempav) %>%
+  na.omit() 
+
+head(diffs)
+
+ggplot(diffs, aes(x=tempav,y=diffblock, color=trial))+
+  geom_point()+ylim(-0.5,5) +theme_classic()+ggtitle("Difference between thermal block and loggers across temperatures")
+
+ggplot(diffs, aes(x=tempav,y=diffcouple, color=trial))+
+  geom_point()+ylim(-2.5,2.55)+theme_classic()+ggtitle("Difference between thermocouple  and loggers across temperatures")
+
+ggplot(diffs, aes(x=tempav,y=tempblock, color=trial))+
+  geom_point()+theme_classic()+ggtitle("Relationship between thermal block and loggers")
+
+ggplot(diffs, aes(x=tempav,y=tempcouple, color=trial))+
+  geom_point()+theme_classic()+ggtitle("Relationship between thermocouple and loggers")
+```
+***
+
+> I think using the block temperatures would be better to correct the logger temperatures because:
+ 
+1. The block sensor is always in the same position, but the thermocouple wire might have been placed on different spots or moved in between trials
+
+2. The thermal block was done to keep track of specific temperatures to do PCRs, etc, therefore, it should be fairly accurate on how much the samples were heat up
+
+***
+
+#Correcting data
+
+## Estimating the slope to correct the logger temperatures
+```{r}
+ggplot(all, aes(x=tempav,y=tempblock, color=trial))+
+  geom_point()+theme_classic()+ggtitle("Relationship between thermal block and loggers")
+
+lm1<-lm(tempblock~tempav, data=all)
+lm1
+slope<-lm1$coefficients[2]
+int<-lm1$coefficients[1]
+```
+
+
+
+
+
+***
+
+> As it is a linear relationship, I can now correct the loggers temps (x) to get the block temperature by using the formula:
+
+\begin{align*}
+y=m&x+b \\
+o&r \\ 
+block temperature = slope * l&ogger temperature + intercept \\
+\end{align*}
+
+***
+
+## Correcting the temperatures for each trial
+```{r}
+# Removing trial 0 and correcting all other temperatures
+all_corr<-all%>%
+  filter(trial!=0) %>%
+  mutate(tempcorr=(slope*tempav)+int)
+
+head(all_corr)
+
+ggplot(all_corr, aes(x=datetime2, y=tempcorr)) + geom_line()+ facet_wrap(~trial, scales="free")
+```
+
+## Estimating temperature slope for each trial
+
+### Without removing bump at the begining of ramp
+```{r, uncorrected}
+# Trial 1
+r1<-all_corr %>%
+  filter(trial==1,
+         datetime2 >= ymd_hms("2022-10-19 11:40:00") &  
+                               datetime <= ymd_hms("2022-10-19 13:28:00"))   %>%
+  mutate(timeseq=seq(from=0, to=108,by=0.5))
+
+ggplot(r1, aes(x=timeseq,y=tempcorr))+
+  geom_point()+theme_classic()+ggtitle("Trial 1")
+
+lmtemp<-lm(tempcorr~timeseq, data=r1)
+sl1<-lmtemp$coefficients[2]
+round(sl1, digits=2)
+
+# Trial 2
+r2<-all_corr %>%
+  filter(trial==2,
+         datetime2 >= ymd_hms("2022-10-19 14:25:00") &  
+                               datetime <= ymd_hms("2022-10-19 16:11:00"))   %>%
+  mutate(timeseq=seq(from=0, to=106,by=0.5))
+
+ggplot(r2, aes(x=datetime2,y=tempcorr))+
+  geom_point()+theme_classic()+ggtitle("Trial 2")
+
+lmtemp<-lm(tempcorr~timeseq, data=r2)
+sl2<-lmtemp$coefficients[2]
+round(sl2, digits=2)
+
+# Trial 3
+r3<-all_corr %>%
+  filter(trial==3,
+         datetime2 >= ymd_hms("2022-10-19 16:55:00") &  
+                               datetime <= ymd_hms("2022-10-19 18:45:00"))   %>%
+  mutate(timeseq=seq(from=0, to=110,by=0.5))
+
+ggplot(r3, aes(x=datetime2,y=tempcorr))+
+  geom_point()+theme_classic()+ggtitle("Trial 3")
+
+lmtemp<-lm(tempcorr~timeseq, data=r3)
+sl3<-lmtemp$coefficients[2]
+round(sl3, digits=2)
+
+## FALTA continuar revisando slopes de trials 4-8
+
+
+#slopes<-as.data.frame(c(sl1, sl2, sl3, sl4, sl5,sl6,sl7,sl8,sl9,sl10,sl11,sl12,sl13))
+#colnames(slopes)<-"uncorr"
+```
+
+
+## Creating dataframe for behavior data
+```{r}
+trial<-c(1,1,2,2,3,3,4,4,4,5,5,5,7,7,8,8,8,6,6,6)
+ind<-c(236,157,358,366,357,365,348,369,142,359,368,347,252,363,259,254,39,261,362,361)
+stage<-c("Female","Female", "Female", "Male", "Tritonymph","Male", "Tritonymph", "Male", "Female","Female", "Male","Tritonymph","Female","Male","Female", "Female","Female","Tritonymph","Male", "Female"  )
+place<-c("side", "bottom", "bottom", "side", "bottom", "side",  "bottom", "bottom", "bottom", "side", "side",  "bottom", "bottom", "bottom", "bottom", "bottom", "bottom","bottom","out of focus", "side")
+rigor.sec<-c((1*3600)+(34*60)+45-34,
+             (1*3600)+(21*60)+48-34,
+             (1*3600)+(19*60)+58-13,
+             (1*3600)+(25*60)+28-13,
+             (1*3600)+(24*60)+06-14,
+             (1*3600)+(38*60)+38-14,
+             (1*3600)+(29*60)+39-15,
+             (1*3600)+(31*60)+55-15,
+             (1*3600)+(25*60)+45-15,
+             (1*3600)+(39*60)+31-8,
+             (1*3600)+(39*60)+47-8,
+             (1*3600)+(15*60)+49-8,
+             (1*3600)+(17*60)+59-6,
+             (1*3600)+(24*60)+27-6,
+             (1*3600)+(10*60)+22-19,
+             (1*3600)+(19*60)+52-19,
+             (1*3600)+(19*60)+58-19,
+             (1*3600)+(15*60)+47-20,
+             0,
+             (1*3600)+(39*60)+27-20)
+
+beh<-data.frame(trial, ind, stage, place,rigor.sec)
+
+#Getting the begining of the trial and calculating the final time where heat rigot occurred
+
+
+timeseq<-all_corr %>%
+  group_by(trial) %>%
+  mutate(logtime=seq(from=0,to=(n()-1)/2, by=0.5))
+
+
+all_corr_beg<-timeseq %>%
+  #select(c("date", "trial", "channel", "ind", "stage", "weight", "ramp")) %>% #selecting the more relevant variables
+  group_by(trial)%>% #Grouping by individual
+  filter(row_number()==1) %>% #getting just the first row for each individual
+  right_join(beh, by="trial") %>% #mergin the dataframes
+  mutate(rigor=datetime2+rigor.sec) %>%
+  rename("time.beg"="datetime2")%>%
+  select(c(trial:time.beg,ind:rigor))
+
+# Getting the temperatures associated with the heat rigor
+#Merging the temperatures
+heatrig<-difference_left_join(all_corr_beg,timeseq, by=c("rigor"="datetime2"), max_dist=30)%>% #Merges dataframes based on the closest logtime value (30 seconds) %>%
+  group_by(ind)%>%
+summarize(tempcorr2=mean(tempcorr),
+          logtime2=mean(logtime)) %>%
+  right_join(beh)%>%
+  ungroup()%>%
+  mutate(stage=fct_relevel(stage, levels=c("Tritonymph",  "Male", "Female")))%>%
+  filter(ind!=362) #Individuals whose heat rigot was not determined
+
+meanrigt<-mean(heatrig$tempcorr2)
+meanrigt
+meanrigtime<-mean(heatrig$logtime2)
+meanrigtime
+#the Topt is 44.25 (±0.16, SE) across all life stages
+#Mean logtime topt: 68.62526 +/- 0.56(standard error)
+
+ggplot(heatrig, aes(x=logtime2, y=tempcorr2, color=stage, shape=place))+
+  geom_point(size=3)+
+  theme_classic()+
+  geom_hline(yintercept=44.25+0.16, linetype="dashed")+ #upper limit of the SE 
+  geom_hline(yintercept=47.31, linetype="dotted") #maximum recorded topt
+
+ggplot(heatrig, aes(y=logtime2))+geom_boxplot()+theme_classic()
+ggplot(heatrig, aes(y=tempcorr2))+geom_boxplot()+theme_classic()
+
+
+#Filtering for only those that stayed at the bottom of the well
+heatrig2<-heatrig%>% 
+  filter(place=="bottom")
+
+meanrigt<-mean(heatrig2$tempcorr2)
+meanrigt
+setemp<-sd(heatrig2$tempcorr2)/sqrt(length(heatrig2$tempcorr2))
+
+meanrigtime<-mean(heatrig2$logtime2)
+meanrigtime
+setime<-sd(heatrig2$logtime2)/sqrt(length(heatrig2$logtime2))
+
+
+#the Topt is 44.25 (±0.16, SE) across all life stages
+#Mean logtime topt: 68.62526 +/- 0.56(standard error)
+
+# Getting colors for stages
+hex <- scales::hue_pal()(5)
+hex # The last 3 are the ones I should use
+
+ggplot(heatrig2, aes(x=logtime2, y=tempcorr2, color=stage))+
+  geom_point(size=3, shape=1, stroke=1.2)+
+  geom_hline(yintercept=44.25+0.16, linetype="dashed")+ #upper limit of the SE 
+  geom_hline(yintercept=47.31, linetype="dotted") + #maximum recorded topt+ 
+  theme_classic()+ theme(text = element_text(size = 15))+
+  scale_color_manual(values=c("#00BF7D", "#00B0F6", "#E76BF3"))+
+  xlab("Logtime (min)")+
+  ylab("Temperature (Celsius)")+
+  geom_point(aes(y = meanrigt, x=meanrigtime),color = "black", size = 3) + 
+  geom_errorbar(aes(x=meanrigtime, ymin = meanrigt-setemp, ymax = meanrigt+setemp), color = "black", inherit.aes = FALSE, width=0.2) + 
+  geom_errorbarh(aes(y=meanrigt, xmin = meanrigtime-setime, xmax = meanrigtime+setime), color = "black", inherit.aes = FALSE, height=0.2)
+
+ggsave(plot=last_plot(),filename="Heatrigor.jpg",  path="Outputs/")
+
+ggplot(heatrig2, aes(y=logtime2))+geom_boxplot()+theme_classic()
+ggplot(heatrig2, aes(y=tempcorr2))+geom_boxplot()+theme_classic()
+
+
+```
 
