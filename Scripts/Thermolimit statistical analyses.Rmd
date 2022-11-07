@@ -31,6 +31,7 @@ library(lmerTest)
 library(emmeans)
 library(reporter)
 library(svglite)
+library(ggpubr)
 ```
 TO DO:
 
@@ -391,7 +392,7 @@ coefTable
 
 # Plotting the raw averages
  dat2b<-dat2b%>% 
-  mutate(stage=fct_relevel(stage, levels=c("Female", "Protonymph", "Deutonymph", "Tritonymph",  "Male"))) %>%
+  mutate(stage=fct_relevel(stage, levels=c("Protonymph", "Deutonymph", "Tritonymph",  "Male", "Female"))) %>%
   arrange(stage)
  
 plot<-ggplot(dat2b, aes(x = stage))+ 
@@ -403,7 +404,7 @@ plot<-ggplot(dat2b, aes(x = stage))+
   xlab("Stage")+
   ylab("Thermal optima (Celsius)")
 plot
-ggsave(plot=last_plot(),filename="Topt_stage_minustrial2and outliers.jpg",  path="Outputs/Statistics/")
+ggsave(plot=last_plot(),filename="Topt_stage_minustrial2and outliers.jpg",  path="Outputs/Statistics/", height=4.5, width=7.29, units="in")
 
 
 #nd<-data.frame(ramp=seq(0.24,0.26,0.005), date=c("2022-06-23"), stage=c("Protonymph", "Deutonymph", "Tritonymph", "Female", "Male"))
@@ -2236,5 +2237,28 @@ ggplot()+
   
 ggsave(plot=last_plot(),filename="Predictionplot2.svg",  path="Outputs/Statistics/",width=7, height=7, units="in")
 ```
+
+# Final figures for manuscript
+
+## TPC figures
+
+I need to have the figure of the object "sex", "all" and "diffsplot" from the Script named "Plot.R", folder: Respirometry. 
+```{r}
+ggarrange(ggarrange(sex, diffsplot, ncol = 2, labels = c("A", "B")), # First row with box and dot plots
+          all,
+          nrow = 2, 
+          labels = "C"                                        # Labels of the scatter plot
+          ) 
+```
+
+library(magick)
+A<-"Plots without outliers 2022/sex2-noOutliers.jpeg"
+B<-"C:/Users/laus1/OneDrive - University of Nebraska-Lincoln/UNL/Courses/Ecological statistics/Segura_Final project final analyses/exposure.png"
+
+URL<-c(A,B)
+
+imgs<-image_read(URL)
+imgs2<-image_montage(imgs, title="1x2")
+
 
 
