@@ -223,7 +223,7 @@ females <- derivs2%>%
 meanline<-mean(micro$means2)
 medianline<-median(micro$means2)
 coeff<-10000
-ggplot()+
+fems<-ggplot()+
   geom_histogram(micro, mapping=aes(x=tempcorr),fill="#d95f02", alpha=0.5)+
   #geom_vline(xintercept=meanline, color="red")+
   geom_vline(xintercept=max(micro$means2), color="#d95f02")+
@@ -235,6 +235,7 @@ ggplot()+
   scale_y_continuous("Frequency", sec.axis = sec_axis(~ ./coeff, name = "Rate optima (Oxygen (mg/L)/ time(min))")) + 
   facet_wrap(vars(ind))+
   labs(colour = "Trial")
+fems
 ggsave(plot=last_plot(),filename="Female_allseason_allarea.jpg",  path="Outputs/Microclimate vs performance/",width=7, height=7, units="in")
   
 ```
@@ -1584,7 +1585,7 @@ females <- derivs2%>%
 meanline<-mean(micro$means2)
 medianline<-median(micro$means2)
 coeff<-10000
-ggplot()+
+fems<-ggplot()+
   geom_histogram(micro, mapping=aes(x=tempcorr),fill="#d95f02", alpha=0.5)+
   geom_histogram(future, mapping=aes(x=temp),fill="#7570b3", alpha=0.5)+
   geom_vline(xintercept=max(micro$means2), color="#d95f02",linetype="solid")+
@@ -1597,6 +1598,7 @@ ggplot()+
   scale_y_continuous("Frequency", sec.axis = sec_axis(~ ./coeff, name = "Rate optima (Oxygen (mg/L)/ time(min))")) + 
   facet_wrap(vars(ind))+
   labs(colour = "Trial")
+fems
 ggsave(plot=last_plot(),filename="Female_allseason_allarea_future.jpg",  path="Outputs/Microclimate vs performance/",width=7, height=7, units="in")
   
 ```

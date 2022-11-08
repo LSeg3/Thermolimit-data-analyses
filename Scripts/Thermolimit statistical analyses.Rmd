@@ -32,10 +32,17 @@ library(emmeans)
 library(reporter)
 library(svglite)
 library(ggpubr)
+
 ```
 TO DO:
 
 Make prediction plot for microenv data
+
+
+# Establishing colors for plots
+```{r}
+colors<-c("#ff7f00", "#e41a1c", "#a65628", "#984ea3", "#377eb8")
+```
 
 
 # Calling data
@@ -395,15 +402,16 @@ coefTable
   mutate(stage=fct_relevel(stage, levels=c("Protonymph", "Deutonymph", "Tritonymph",  "Male", "Female"))) %>%
   arrange(stage)
  
-plot<-ggplot(dat2b, aes(x = stage))+ 
+plottst<-ggplot(dat2b, aes(x = stage))+ 
   geom_point(aes(y = tempcorr, color=stage), size = 3, shape=1, stroke=1.2)  + 
   geom_point(aes(y = mean, color=stage),color = "black", size = 3, data = averages, position=position_nudge(x=0.2)) + 
   geom_errorbar(aes(x=stage, ymin = lwr3, ymax = upr3, group=stage), color = "black", data = averages, inherit.aes = FALSE, position=position_nudge(x=0.2), width=0.2) +
 #geom_point(aes(y = median),color = "red", size = 3, data = averages, position=position_nudge(x=0.2))+ #plotting the median
-  theme_classic()+ theme(text = element_text(size = 15))+ 
+  theme_classic()+ theme(text = element_text(size = 15),legend.position="none")+ 
   xlab("Stage")+
-  ylab("Thermal optima (Celsius)")
-plot
+  ylab("Thermal optima (Celsius)")+
+  scale_color_manual(name="Stage", values=colors)
+plottst
 ggsave(plot=last_plot(),filename="Topt_stage_minustrial2and outliers.jpg",  path="Outputs/Statistics/", height=4.5, width=7.29, units="in")
 
 
@@ -1055,13 +1063,15 @@ datf<-dat2b %>%
   mutate(stage=fct_relevel(stage, levels=c( "Protonymph", "Deutonymph", "Tritonymph",  "Male", "Female"))) %>%
   arrange(stage)
 
-plot<-ggplot(datf, aes(x = weight))+ 
+plottwg<-ggplot(datf, aes(x = weight))+ 
   geom_point(aes(y = tempcorr, color=stage), size = 3, shape=1, stroke=1.2)  + 
-  geom_smooth(aes(y=tempcorr), method = "lm", se = FALSE)+
-  theme_classic()+ theme(text = element_text(size = 15))+ 
+  geom_smooth(aes(y=tempcorr), method = "lm", se = FALSE, color="black")+
+  theme_classic()+ theme(text = element_text(size = 15),legend.position="top")+ 
   xlab("Weight (mg)")+
-  ylab("Thermal optima (Celsius)")
-plot
+  ylab("Thermal optima (Celsius)") +
+  scale_color_manual(name="Stage", values=colors)
+
+plottwg
 
 # Making the plot
 #nd = expand.grid(weight=seq(0.1,2.2,0.05))
@@ -1377,17 +1387,19 @@ t1plot
 
 
 # check Chads code
-ggplot(datf, aes(x=stage, y=ropt2, color=stage))+
+plotrst<-ggplot(datf, aes(x=stage, y=ropt2, color=stage))+
   geom_point(shape=1, size=3, stroke=1.2)+
   scale_fill_brewer(palette="Set1")+
   stat_summary(geom="point", fun=mean, size=3, color="black", position=position_nudge(x=0.2))+
   stat_summary(geom="errorbar", fun.data=mean_se, width=0.1, position=position_nudge(x=0.2), color="black")+
-  theme_classic()+ theme(text = element_text(size = 15))+ 
+  theme_classic()+ theme(text = element_text(size = 15),legend.position="none")+ 
   xlab("Stage")+
-  ylab("Rate optima (Oxygen (mg/L)/ time(min))")
+  ylab("Rate optima (Oxygen (mg/L)/ time(min))")+
+  scale_color_manual(name="Stage", values=colors)
+plotrst
 
 
-ggsave(plot=last_plot(),filename="Ropt_stage_perstage_minustrial2andOutliers.jpg.jpg",  path="Outputs/Statistics/", height=4.5, width=7.29, units="in")
+ggsave(plot=last_plot(),filename="Ropt_stage_perstage_minustrial2andOutliers.jpg",  path="Outputs/Statistics/", height=4.5, width=7.29, units="in")
 ```
 
 
@@ -1488,14 +1500,15 @@ r10plot<-ggplot(datf, aes(x = weight))+
 r10plot
 ggsave(plot=last_plot(),filename="Ropt_weight_minustrial2and outliers.jpg",  path="Outputs/Statistics/")
 
-r10plot<-ggplot(datf, aes(x = weight))+ 
+plotrwg<-ggplot(datf, aes(x = weight))+ 
   geom_point(aes(y = ropt2, color=stage), size = 3, shape=1, stroke=1.2) + #scale_color_gradient(low="#9ecae1", high="#08306b")  + 
   geom_line(aes(y = .fitted), data = predicted.r10, size = 2) + 
   geom_ribbon(aes(ymin = lwr, ymax = upr), data = predicted.r10, alpha = 0.5) + 
-  theme_classic()+ theme(text = element_text(size = 15))+ 
+  theme_classic()+ theme(text = element_text(size = 15),legend.position="top")+ 
   xlab("Weight (mg)")+
-  ylab("Rate optima (Oxygen (mg/L) / time (min))")
-r10plot
+  ylab("Rate optima (Oxygen (mg/L) / time (min))")+
+  scale_color_manual(name="Stage", values=colors)
+plotrwg
 ggsave(plot=last_plot(),filename="Ropt_weight_perstage_minustrial2andOutliers.jpg",  path="Outputs/Statistics/",height=4.5, width=7.29, units="in")
 
 ```
@@ -1559,14 +1572,17 @@ r10plot<-ggplot(datf, aes(x = log(weight)))+
 r10plot
 #ggsave(plot=last_plot(),filename="Ropt_weight_minustrial2and outliers.jpg",  path="Outputs/Statistics/")
 
-r10plot<-ggplot(datf, aes(x = log(weight)))+ 
+plotlogrwg<-ggplot(datf, aes(x = log(weight)))+ 
   geom_point(aes(y = log(ropt2), color=stage), size = 3, stroke=1.2, shape=1) + #scale_color_gradient(low="#9ecae1", high="#08306b")  + 
   geom_line(aes(y = .fitted), data = predicted.r10, size = 2) + 
   geom_ribbon(aes(ymin = lwr, ymax = upr), data = predicted.r10, alpha = 0.5) + 
-  theme_classic()+ theme(text = element_text(size = 15))+ 
+  theme_classic()+ theme(text = element_text(size = 15),legend.position="top")+ 
   xlab("log(Weight)")+
-  ylab("log(Rate optima)")
-r10plot
+  ylab("log(Rate optima)")+
+  scale_color_manual(name="Stage", values=colors)
+  
+
+plotlogrwg
 ggsave(plot=last_plot(),filename="Ropt_logweight_perstage_minustrial2andOutliers.jpg",  path="Outputs/Statistics/")
 
 ```
@@ -1894,15 +1910,18 @@ datf<-dat2b %>%
   mutate(stage=fct_relevel(stage, levels=c( "Protonymph", "Deutonymph", "Tritonymph",  "Male", "Female"))) %>%
   arrange(stage)
 
-plot<-ggplot(datf, aes(x = stage))+ 
+colors<-c("#ff7f00", "#e41a1c", "#a65628", "#984ea3", "#377eb8")
+plotest<-ggplot(datf, aes(x = stage))+ 
   geom_point(aes(y = slope, color=stage), size = 3, shape=1, stroke=1.2)  + 
   geom_point(aes(y = mean, color=stage),color = "black", size = 3, data = averages, position=position_nudge(x=0.2)) + 
   geom_errorbar(aes(x=stage, ymin = lwr3, ymax = upr3, group=stage), color = "black", data = averages, inherit.aes = FALSE, position=position_nudge(x=0.2), width=0.2) +
 #geom_point(aes(y = median),color = "red", size = 3, data = averages, position=position_nudge(x=0.2))+ #plotting the median
-  theme_classic()+ theme(text = element_text(size = 15))+ 
+  theme_classic()+ theme(text = element_text(size = 15), legend.position="none")+ 
   xlab("Stage")+
-  ylab("Activation energy (eV)")
-plot
+  ylab("Activation energy (eV)")+
+  scale_color_manual(name="Stage", values=colors)
+
+plotest
 ggsave(plot=last_plot(),filename="energy_stage_minustrial2andoutliers.jpg",  path="Outputs/Statistics/",height=4.5, width=7.29, units="in")
 confint(t1b3)
 coefTable <- summary(t1b3, ddf = "Kenward-Roger")$coefficients
@@ -2009,13 +2028,16 @@ datf<-dat2b %>%
   mutate(stage=fct_relevel(stage, levels=c( "Protonymph", "Deutonymph", "Tritonymph",  "Male", "Female"))) %>%
   arrange(stage)
 
-plot<-ggplot(datf, aes(x = weight))+ 
+colors<-c("#ff7f00", "#e41a1c", "#a65628", "#984ea3", "#377eb8")
+plotewg<-ggplot(datf, aes(x = weight))+ 
   geom_point(aes(y = slope, color=stage), size = 3, shape=1, stroke=1.2)  + 
-  geom_smooth(aes(y=slope), method = "lm", se = FALSE)+
-  theme_classic()+ theme(text = element_text(size = 15))+ 
+  geom_smooth(aes(y=slope), method = "lm", se = FALSE, color="black")+
+  theme_classic()+ theme(text = element_text(size = 15),legend.position="top")+ 
   xlab("Weight (mg)")+
-  ylab("Activation energy (eV)")
-plot
+  ylab("Activation energy (eV)")+
+  scale_color_manual(name="Stage", values=colors)
+
+plotewg
 ggsave(plot=last_plot(),filename="energy_weight_minustrial2andoutliers.jpg",  path="Outputs/Statistics/",height=4.5, width=7.29, units="in")
 
 
@@ -2107,15 +2129,18 @@ meansplot<-bind_rows(currentmean, futuremean) %>%
   mutate(stage=fct_relevel(stage, levels=c( "Protonymph", "Deutonymph", "Tritonymph",  "Male", "Female"))) %>%
   arrange(stage)
 
+colors<-c("#ff7f00", "#e41a1c", "#a65628", "#984ea3", "#377eb8")
 # check Chads code
-ggplot(meansplot, aes(x=period, y=means, color=stage))+
+means<-ggplot(meansplot, aes(x=period, y=means, color=stage))+
   geom_jitter(shape=1, size=3, stroke=1.2, width=0.1)+
   scale_fill_brewer(palette="Set1")+
   stat_summary(geom="point", fun=mean, size=3, color="black", position=position_nudge(x=0.2))+
   stat_summary(geom="errorbar", fun.data=mean_se, width=0.1, position=position_nudge(x=0.2), color="black")+
-  theme_classic()+ theme(text = element_text(size = 15))+ 
+  theme_classic()+ theme(text = element_text(size = 15),legend.position="top")+ 
   xlab("Period")+
-  ylab("Difference")
+  ylab("Difference")+
+  scale_color_manual(name="Stage", values=colors)
+means
 
 
 ggsave(plot=last_plot(),filename="means_microenv.jpg",  path="Outputs/Statistics/", height=4.5, width=7.29, units="in")
@@ -2134,14 +2159,17 @@ maxsplot<-bind_rows(currentmax, futuremax)%>%
   arrange(stage)
 
 # check Chads code
-ggplot(maxsplot, aes(x=period, y=maxs, color=stage))+
+colors<-c("#ff7f00", "#e41a1c", "#a65628", "#984ea3", "#377eb8")
+maxs<-ggplot(maxsplot, aes(x=period, y=maxs, color=stage))+
   geom_jitter(shape=1, size=3, stroke=1.2, width=0.1)+
   scale_fill_brewer(palette="Set1")+
   stat_summary(geom="point", fun=mean, size=3, color="black", position=position_nudge(x=0.2))+
   stat_summary(geom="errorbar", fun.data=mean_se, width=0.1, position=position_nudge(x=0.2), color="black")+
-  theme_classic()+ theme(text = element_text(size = 15))+ 
+  theme_classic()+ theme(text = element_text(size = 15),legend.position="top")+ 
   xlab("Period")+
-  ylab("Difference")
+  ylab("Difference")+
+  scale_color_manual(name="Stage", values=colors)
+maxs
 
 
 ggsave(plot=last_plot(),filename="maxs_microenv.jpg",  path="Outputs/Statistics/", height=4.5, width=7.29, units="in")
@@ -2242,13 +2270,64 @@ ggsave(plot=last_plot(),filename="Predictionplot2.svg",  path="Outputs/Statistic
 
 ## TPC figures
 
-I need to have the figure of the object "sex", "all" and "diffsplot" from the Script named "Plot.R", folder: Respirometry. 
+
 ```{r}
-ggarrange(ggarrange(sex, diffsplot, ncol = 2, labels = c("A", "B")), # First row with box and dot plots
-          all,
-          nrow = 2, 
-          labels = "C"                                        # Labels of the scatter plot
-          ) 
+library(jpeg)
+library(graphics)
+
+# Fig 1: TPC
+fa<-readJPEG("Outputs/Statistics/TPC/sex1-noOutliers.jpeg")
+fb<-readJPEG("Outputs/Statistics/TPC/Differences.jpg")
+fc<-readJPEG("Outputs/Statistics/TPC/all-noOutliers.jpeg")
+jpeg("Outputs/Statistics/Fig1.jpg", height=8, width=8, units="in", res=300)
+par(mar=rep(0,4))
+layout(matrix(c(1,2,3,3), ncol=2, byrow=TRUE), heights=c(0.4,0.6), widths=c(0.6, 0.4))
+plot(NA,xlim=0:1,ylim=0:1,xaxt="n",yaxt="n",bty="n")
+rasterImage(fa,0,0,1,1)
+plot(NA,xlim=0:1,ylim=0:1,xaxt="n",yaxt="n",bty="n")
+rasterImage(fb,0,0,1,1)
+plot(NA,xlim=0:1,ylim=0:1,xaxt="n",yaxt="n",bty="n")
+rasterImage(fc,0,0,1,1)
+dev.off()
+
+
+
+
+m1<-readJPEG("Outputs/Statistics/means_microenv.jpg")
+m2<-readJPEG("Outputs/Statistics/maxs_microenv.jpg")
+fs<-readJPEG("Outputs/Microclimate vs performance/Female_allseason_allarea_future.jpg")
+
+library(graphics)
+jpeg("Outputs/Statistics/Fig1.jpg", height=12, width=8, units="in", res=300)
+par(mar=rep(0,4))
+layout(matrix(c(1,2,3,3), ncol=2, byrow=TRUE), heights=c(0.2,0.8))
+plot(NA,xlim=0:1,ylim=0:1,xaxt="n",yaxt="n",bty="n")
+rasterImage(m1,0,0,1,1)
+plot(NA,xlim=0:1,ylim=0:1,xaxt="n",yaxt="n",bty="n")
+rasterImage(m2,0,0,1,1)
+plot(NA,xlim=0:1,ylim=0:1,xaxt="n",yaxt="n",bty="n")
+rasterImage(fs,0,0,1,1)
+dev.off()
+
+
+ggarrange(ggarrange(means, maxs, ncol=2, labels=c("A", "B"), common.legend = T , heights=c(1,2)), 
+          fems, nrow=2,lables="C") %>% ggexport("Outputs/Statistics/fig2.jpg")
+fig2
+ggexport(plot=fig2,filename="fig3.jpg",  path="Outputs/Statistics/")
+
+
+library("gridExtra")
+library("cowplot")
+gt <- arrangeGrob(means,maxs, # box plot and scatter plot
+                  fems,# bar plot spaning two columns
+             ncol = 2, nrow = 2, 
+             layout_matrix = rbind(c(1,2), c(3,3)))
+# Add labels to the arranged plots
+p <- as_ggplot(gt) +                                # transform to a ggplot
+  draw_plot_label(label = c("A", "B", "C"), size = 15,
+                  x = c(0, 0, 0.5), y = c(1, 0.5, 0.5)) # Add labels
+p
+
 ```
 
 library(magick)

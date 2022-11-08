@@ -1226,18 +1226,19 @@ setime<-sd(heatrig2$logtime2)/sqrt(length(heatrig2$logtime2))
 hex <- scales::hue_pal()(5)
 hex # The last 3 are the ones I should use
 
-ggplot(heatrig2, aes(x=logtime2, y=tempcorr2, color=stage))+
+rigor<-ggplot(heatrig2, aes(x=logtime2, y=tempcorr2, color=stage))+
   geom_point(size=3, shape=1, stroke=1.2)+
   geom_hline(yintercept=44.25+0.16, linetype="dashed")+ #upper limit of the SE 
   geom_hline(yintercept=47.31, linetype="dotted") + #maximum recorded topt+ 
   theme_classic()+ theme(text = element_text(size = 15))+
-  scale_color_manual(values=c("#00BF7D", "#00B0F6", "#E76BF3"))+
+  scale_color_manual(values=c("#a65628", "#984ea3", "#377eb8"))+
   xlab("Logtime (min)")+
   ylab("Temperature (Celsius)")+
   geom_point(aes(y = meanrigt, x=meanrigtime),color = "black", size = 3) + 
   geom_errorbar(aes(x=meanrigtime, ymin = meanrigt-setemp, ymax = meanrigt+setemp), color = "black", inherit.aes = FALSE, width=0.2) + 
-  geom_errorbarh(aes(y=meanrigt, xmin = meanrigtime-setime, xmax = meanrigtime+setime), color = "black", inherit.aes = FALSE, height=0.2)
-
+  geom_errorbarh(aes(y=meanrigt, xmin = meanrigtime-setime, xmax = meanrigtime+setime), color = "black", inherit.aes = FALSE, height=0.2)+
+  theme(legend.position = "top")
+rigor
 ggsave(plot=last_plot(),filename="Heatrigor.jpg",  path="Outputs/")
 
 ggplot(heatrig2, aes(y=logtime2))+geom_boxplot()+theme_classic()
