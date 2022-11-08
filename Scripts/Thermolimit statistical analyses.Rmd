@@ -2268,65 +2268,13 @@ ggsave(plot=last_plot(),filename="Predictionplot2.svg",  path="Outputs/Statistic
 
 # Final figures for manuscript
 
-## TPC figures
-
+## Microenvironment figures
 
 ```{r}
-library(jpeg)
-library(graphics)
+fig<-ggarrange( maxs+theme(text = element_text(size = 14),legend.position="top"),fems+theme(text = element_text(size = 14)), ncol=1, labels=c("A", "B"), nrow=2, heights=c(1,2))
+fig
+ggsave(plot=fig,filename="figenv.jpg",  path="Outputs/Statistics/",width=7, height=10, units="in")
 
-# Fig 1: TPC
-fa<-readJPEG("Outputs/Statistics/TPC/sex1-noOutliers.jpeg")
-fb<-readJPEG("Outputs/Statistics/TPC/Differences.jpg")
-fc<-readJPEG("Outputs/Statistics/TPC/all-noOutliers.jpeg")
-jpeg("Outputs/Statistics/Fig1.jpg", height=8, width=8, units="in", res=300)
-par(mar=rep(0,4))
-layout(matrix(c(1,2,3,3), ncol=2, byrow=TRUE), heights=c(0.4,0.6), widths=c(0.6, 0.4))
-plot(NA,xlim=0:1,ylim=0:1,xaxt="n",yaxt="n",bty="n")
-rasterImage(fa,0,0,1,1)
-plot(NA,xlim=0:1,ylim=0:1,xaxt="n",yaxt="n",bty="n")
-rasterImage(fb,0,0,1,1)
-plot(NA,xlim=0:1,ylim=0:1,xaxt="n",yaxt="n",bty="n")
-rasterImage(fc,0,0,1,1)
-dev.off()
-
-
-
-
-m1<-readJPEG("Outputs/Statistics/means_microenv.jpg")
-m2<-readJPEG("Outputs/Statistics/maxs_microenv.jpg")
-fs<-readJPEG("Outputs/Microclimate vs performance/Female_allseason_allarea_future.jpg")
-
-library(graphics)
-jpeg("Outputs/Statistics/Fig1.jpg", height=12, width=8, units="in", res=300)
-par(mar=rep(0,4))
-layout(matrix(c(1,2,3,3), ncol=2, byrow=TRUE), heights=c(0.2,0.8))
-plot(NA,xlim=0:1,ylim=0:1,xaxt="n",yaxt="n",bty="n")
-rasterImage(m1,0,0,1,1)
-plot(NA,xlim=0:1,ylim=0:1,xaxt="n",yaxt="n",bty="n")
-rasterImage(m2,0,0,1,1)
-plot(NA,xlim=0:1,ylim=0:1,xaxt="n",yaxt="n",bty="n")
-rasterImage(fs,0,0,1,1)
-dev.off()
-
-
-ggarrange(ggarrange(means, maxs, ncol=2, labels=c("A", "B"), common.legend = T , heights=c(1,2)), 
-          fems, nrow=2,lables="C") %>% ggexport("Outputs/Statistics/fig2.jpg")
-fig2
-ggexport(plot=fig2,filename="fig3.jpg",  path="Outputs/Statistics/")
-
-
-library("gridExtra")
-library("cowplot")
-gt <- arrangeGrob(means,maxs, # box plot and scatter plot
-                  fems,# bar plot spaning two columns
-             ncol = 2, nrow = 2, 
-             layout_matrix = rbind(c(1,2), c(3,3)))
-# Add labels to the arranged plots
-p <- as_ggplot(gt) +                                # transform to a ggplot
-  draw_plot_label(label = c("A", "B", "C"), size = 15,
-                  x = c(0, 0, 0.5), y = c(1, 0.5, 0.5)) # Add labels
-p
 
 ```
 
