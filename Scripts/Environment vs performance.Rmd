@@ -31,6 +31,7 @@ library(lmerTest)
 library(ggpubr)
 library(grid)
 library(purrr)
+library(scales)
 ```
 
 
@@ -138,17 +139,17 @@ protos <- derivs2%>%
   
 meanline<-mean(micro$means2)
 medianline<-median(micro$means2)
-coeff<-10000
+coeff<-4000000000
 ggplot()+
   geom_histogram(micro, mapping=aes(x=tempcorr),fill="#d95f02", alpha=0.5)+
   #geom_vline(xintercept=meanline, color="red")+
   geom_vline(xintercept=max(micro$means2), color="#d95f02")+
   theme_classic()+
    theme(text = element_text(size = 15), plot.title = element_text(size = (12)), strip.text.x = element_blank(),panel.spacing = unit(7, "mm"))+
-  xlab("Temperature (Celsius)")+
+  xlab("Temperature (°C)")+
   scale_x_continuous(limits=c(5,55), breaks=c(5,20,35,50))+
   geom_line(protos, mapping=aes(y=first2*coeff,x=tempcorr))+
-  scale_y_continuous("Frequency", sec.axis = sec_axis(~ ./coeff, name = "Rate optima (Oxygen (mg/L)/ time(min))")) + 
+  scale_y_continuous("Frequency",  sec.axis = sec_axis(~ ./coeff, name = bquote(VO2[Max]~(mg~min^-1)), labels = scales::scientific)) + 
   facet_wrap(vars(ind))+
   labs(colour = "Trial")
 ggsave(plot=last_plot(),filename="Proto_allseason_allarea.jpg",  path="Outputs/Microclimate vs performance/",width=7, height=7, units="in")
@@ -159,17 +160,17 @@ deutos<- derivs2%>%
   
 meanline<-mean(micro$means2)
 medianline<-median(micro$means2)
-coeff<-10000
+coeff<-4000000000
 ggplot()+
   geom_histogram(micro, mapping=aes(x=tempcorr),fill="#d95f02", alpha=0.5)+
   #geom_vline(xintercept=meanline, color="red")+
   geom_vline(xintercept=max(micro$means2), color="#d95f02")+
   theme_classic()+
    theme(text = element_text(size = 15), plot.title = element_text(size = (12)), strip.text.x = element_blank(),panel.spacing = unit(7, "mm"))+
-  xlab("Temperature (Celsius)")+
+  xlab("Temperature (°C)")+
   scale_x_continuous(limits=c(5,55), breaks=c(5,20,35,50))+
   geom_line(deutos, mapping=aes(y=first2*coeff,x=tempcorr))+
-  scale_y_continuous("Frequency", sec.axis = sec_axis(~ ./coeff, name = "Rate optima (Oxygen (mg/L)/ time(min))")) + 
+  scale_y_continuous("Frequency",  sec.axis = sec_axis(~ ./coeff, name = bquote(VO2[Max]~(mg~min^-1)), labels = scales::scientific)) + 
   facet_wrap(vars(ind))+
   labs(colour = "Trial")
 ggsave(plot=last_plot(),filename="Deuto_allseason_allarea.jpg",  path="Outputs/Microclimate vs performance/",width=7, height=7, units="in")
@@ -180,17 +181,17 @@ tritos<- derivs2%>%
   
 meanline<-mean(micro$means2)
 medianline<-median(micro$means2)
-coeff<-10000
+coeff<-4000000000
 ggplot()+
   geom_histogram(micro, mapping=aes(x=tempcorr),fill="#d95f02", alpha=0.5)+
   #geom_vline(xintercept=meanline, color="red")+
   geom_vline(xintercept=max(micro$means2), color="#d95f02")+
   theme_classic()+
    theme(text = element_text(size = 15), plot.title = element_text(size = (12)), strip.text.x = element_blank(),panel.spacing = unit(7, "mm"))+
-  xlab("Temperature (Celsius)")+
+  xlab("Temperature (°C)")+
   scale_x_continuous(limits=c(5,55), breaks=c(5,20,35,50))+
   geom_line(tritos, mapping=aes(y=first2*coeff,x=tempcorr))+
-  scale_y_continuous("Frequency", sec.axis = sec_axis(~ ./coeff, name = "Rate optima (Oxygen (mg/L)/ time(min))")) + 
+  scale_y_continuous("Frequency",  sec.axis = sec_axis(~ ./coeff, name = bquote(VO2[Max]~(mg~min^-1)), labels = scales::scientific)) + 
   facet_wrap(vars(ind))+
   labs(colour = "Trial")
 ggsave(plot=last_plot(),filename="Trito_allseason_allarea.jpg",  path="Outputs/Microclimate vs performance/",width=7, height=7, units="in")
@@ -201,17 +202,17 @@ males <- derivs2%>%
   
 meanline<-mean(micro$means2)
 medianline<-median(micro$means2)
-coeff<-10000
+coeff<-4000000000
 ggplot()+
   geom_histogram(micro, mapping=aes(x=tempcorr),fill="#d95f02", alpha=0.5)+
   #geom_vline(xintercept=meanline, color="red")+
   geom_vline(xintercept=max(micro$means2), color="#d95f02")+
   theme_classic()+
    theme(text = element_text(size = 15), plot.title = element_text(size = (12)), strip.text.x = element_blank(),panel.spacing = unit(7, "mm"))+
-  xlab("Temperature (Celsius)")+
+  xlab("Temperature (°C)")+
   scale_x_continuous(limits=c(5,55), breaks=c(5,20,35,50))+
   geom_line(males, mapping=aes(y=first2*coeff,x=tempcorr))+
-  scale_y_continuous("Frequency", sec.axis = sec_axis(~ ./coeff, name = "Rate optima (Oxygen (mg/L)/ time(min))")) + 
+  scale_y_continuous("Frequency",  sec.axis = sec_axis(~ ./coeff, name = bquote(VO2[Max]~(mg~min^-1)), labels = scales::scientific)) + 
   facet_wrap(vars(ind))+
   labs(colour = "Trial")
 ggsave(plot=last_plot(),filename="Male_allseason_allarea.jpg",  path="Outputs/Microclimate vs performance/",width=7, height=7, units="in")
@@ -222,17 +223,17 @@ females <- derivs2%>%
   
 meanline<-mean(micro$means2)
 medianline<-median(micro$means2)
-coeff<-10000
+coeff<-4000000000
 fems<-ggplot()+
   geom_histogram(micro, mapping=aes(x=tempcorr),fill="#d95f02", alpha=0.5)+
   #geom_vline(xintercept=meanline, color="red")+
   geom_vline(xintercept=max(micro$means2), color="#d95f02")+
   theme_classic()+
    theme(text = element_text(size = 15), plot.title = element_text(size = (12)), strip.text.x = element_blank(),panel.spacing = unit(7, "mm"))+
-  xlab("Temperature (Celsius)")+
+  xlab("Temperature (°C)")+
   scale_x_continuous(limits=c(5,55), breaks=c(5,20,35,50))+
   geom_line(females, mapping=aes(y=first2*coeff,x=tempcorr))+
-  scale_y_continuous("Frequency", sec.axis = sec_axis(~ ./coeff, name = "Rate optima (Oxygen (mg/L)/ time(min))")) + 
+  scale_y_continuous("Frequency",  sec.axis = sec_axis(~ ./coeff, name = bquote(VO2[Max]~(mg~min^-1)), labels = scales::scientific)) + 
   facet_wrap(vars(ind))+
   labs(colour = "Trial")
 fems
@@ -323,7 +324,7 @@ protos6<-protos %>%
 #Choosing individuals for site 3
 protos3<-protos %>%
   filter(site=="site 3")
-coeff<-10000
+coeff<-4000000000
 #Creating plots for site 3
 plotsite3 = function(ind) {
   #Creating histogram for conditions in site 3
@@ -333,7 +334,7 @@ plotsite3 = function(ind) {
   scale_x_continuous(limits=c(5,55), breaks=c(5,20,35,50))+
   theme_classic()+
   theme(text = element_text(size = 15), plot.title = element_text(size = (12)))+
-  xlab("Temperature (Celsius)")
+  xlab("Temperature (°C)")
   
   #Filtering for each individual
    pd<- protos3 %>%
@@ -356,7 +357,7 @@ plotsite6 = function(ind) {
   scale_x_continuous(limits=c(5,55), breaks=c(5,20,35,50))+
   theme_classic()+
   theme(text = element_text(size = 15), plot.title = element_text(size = (12)))+
-  xlab("Temperature (Celsius)")
+  xlab("Temperature (°C)")
   
   #Filtering for each individual
    pd<- protos6 %>%
@@ -384,7 +385,7 @@ protos_all<-ggarrange(plotlist3[[1]]+ rremove("ylab") + rremove("xlab"),
           plotlist6[[8]]+ rremove("ylab") + rremove("xlab"), 
           nrow=3, ncol=4)
 protosall<-annotate_figure(protos_all, left = textGrob("Frequency", rot = 90, vjust = 1, gp = gpar(cex = 1.3)),
-                    bottom = textGrob("Temperature (Celsius)", gp = gpar(cex = 1.3)), right=textGrob("Oxygen consumed ((mg/L)/min)", rot = 270, vjust = 1, gp = gpar(cex = 1.3)))
+                    bottom = textGrob("Temperature (°C)", gp = gpar(cex = 1.3)), right=textGrob("Oxygen consumed ((mg/L)/min)", rot = 270, vjust = 1, gp = gpar(cex = 1.3)))
 protosall
 ggsave(plot=last_plot(),filename="protos_allseason_persite.jpg",  path="Outputs/Microclimate vs performance/",width=10, height=7, units="in")
 ```
@@ -402,7 +403,7 @@ deutos6<-deutos %>%
 #Choosing individuals for site 3
 deutos3<-deutos %>%
   filter(site=="site 3")
-coeff<-10000
+coeff<-4000000000
 #Creating plots for site 3
 plotsite3 = function(ind) {
   #Creating histogram for conditions in site 3
@@ -412,7 +413,7 @@ plotsite3 = function(ind) {
   scale_x_continuous(limits=c(5,55), breaks=c(5,20,35,50))+
   theme_classic()+
   theme(text = element_text(size = 15), plot.title = element_text(size = (12)))+
-  xlab("Temperature (Celsius)")
+  xlab("Temperature (°C)")
   
   #Filtering for each individual
    pd<- deutos3 %>%
@@ -436,7 +437,7 @@ plotsite6 = function(ind) {
   scale_x_continuous(limits=c(5,55), breaks=c(5,20,35,50))+
   theme_classic()+
   theme(text = element_text(size = 15), plot.title = element_text(size = (12)))+
-  xlab("Temperature (Celsius)")
+  xlab("Temperature (°C)")
   
   #Filtering for each individual
    pd<- deutos6 %>%
@@ -476,7 +477,7 @@ deutos_all<-ggarrange(plotlist3[[1]]+ rremove("ylab") + rremove("xlab"),
           plotlist6[[10]]+ rremove("ylab") + rremove("xlab"),
           nrow=5, ncol=5)
 deutosall<-annotate_figure(deutos_all, left = textGrob("Frequency", rot = 90, vjust = 1, gp = gpar(cex = 1.3)),
-                    bottom = textGrob("Temperature (Celsius)", gp = gpar(cex = 1.3)), right=textGrob("Oxygen consumed ((mg/L)/min)", rot = 270, vjust = 1, gp = gpar(cex = 1.3)))
+                    bottom = textGrob("Temperature (°C)", gp = gpar(cex = 1.3)), right=textGrob("Oxygen consumed ((mg/L)/min)", rot = 270, vjust = 1, gp = gpar(cex = 1.3)))
 deutosall
 ggsave(plot=last_plot(),filename="deutos_allseason_persite.jpg",  path="Outputs/Microclimate vs performance/",width=10, height=7, units="in")
 ```
@@ -494,7 +495,7 @@ tritos6<-tritos %>%
 #Choosing individuals for site 3
 tritos3<-tritos %>%
   filter(site=="site 3")
-coeff<-10000
+coeff<-4000000000
 #Creating plots for site 3
 plotsite3 = function(ind) {
   #Creating histogram for conditions in site 3
@@ -504,7 +505,7 @@ plotsite3 = function(ind) {
   scale_x_continuous(limits=c(5,55), breaks=c(5,20,35,50))+
   theme_classic()+
   theme(text = element_text(size = 15), plot.title = element_text(size = (12)))+
-  xlab("Temperature (Celsius)")
+  xlab("Temperature (°C)")
   
   #Filtering for each individual
    pd<- tritos3 %>%
@@ -528,7 +529,7 @@ plotsite6 = function(ind) {
   scale_x_continuous(limits=c(5,55), breaks=c(5,20,35,50))+
   theme_classic()+
   theme(text = element_text(size = 15), plot.title = element_text(size = (12)))+
-  xlab("Temperature (Celsius)")
+  xlab("Temperature (°C)")
   
   #Filtering for each individual
    pd<- tritos6 %>%
@@ -567,7 +568,7 @@ tritos_all<-ggarrange(plotlist3[[1]]+ rremove("ylab") + rremove("xlab"),
           plotlist6[[6]]+ rremove("ylab") + rremove("xlab"), 
           nrow=5, ncol=5)
 tritosall<-annotate_figure(tritos_all, left = textGrob("Frequency", rot = 90, vjust = 1, gp = gpar(cex = 1.3)),
-                    bottom = textGrob("Temperature (Celsius)", gp = gpar(cex = 1.3)), right=textGrob("Oxygen consumed ((mg/L)/min)", rot = 270, vjust = 1, gp = gpar(cex = 1.3)))
+                    bottom = textGrob("Temperature (°C)", gp = gpar(cex = 1.3)), right=textGrob("Oxygen consumed ((mg/L)/min)", rot = 270, vjust = 1, gp = gpar(cex = 1.3)))
 tritosall
 ggsave(plot=last_plot(),filename="tritos_allseason_persite.jpg",  path="Outputs/Microclimate vs performance/",width=10, height=7, units="in")
 ```
@@ -585,7 +586,7 @@ males6<-males %>%
 #Choosing individuals for site 3
 males3<-males %>%
   filter(site=="site 3")
-coeff<-10000
+coeff<-4000000000
 #Creating plots for site 3
 plotsite3 = function(ind) {
   #Creating histogram for conditions in site 3
@@ -595,7 +596,7 @@ plotsite3 = function(ind) {
   scale_x_continuous(limits=c(5,55), breaks=c(5,20,35,50))+
   theme_classic()+
   theme(text = element_text(size = 15), plot.title = element_text(size = (12)))+
-  xlab("Temperature (Celsius)")
+  xlab("Temperature (°C)")
   
   #Filtering for each individual
    pd<- males3 %>%
@@ -619,7 +620,7 @@ plotsite6 = function(ind) {
   scale_x_continuous(limits=c(5,55), breaks=c(5,20,35,50))+
   theme_classic()+
   theme(text = element_text(size = 15), plot.title = element_text(size = (12)))+
-  xlab("Temperature (Celsius)")
+  xlab("Temperature (°C)")
   
   #Filtering for each individual
    pd<- males6 %>%
@@ -658,7 +659,7 @@ males_all<-ggarrange(plotlist3[[1]]+ rremove("ylab") + rremove("xlab"),
           plotlist6[[8]]+ rremove("ylab") + rremove("xlab"), 
           nrow=5, ncol=5)
 malesall<-annotate_figure(males_all, left = textGrob("Frequency", rot = 90, vjust = 1, gp = gpar(cex = 1.3)),
-                    bottom = textGrob("Temperature (Celsius)", gp = gpar(cex = 1.3)), right=textGrob("Oxygen consumed ((mg/L)/min)", rot = 270, vjust = 1, gp = gpar(cex = 1.3)))
+                    bottom = textGrob("Temperature (°C)", gp = gpar(cex = 1.3)), right=textGrob("Oxygen consumed ((mg/L)/min)", rot = 270, vjust = 1, gp = gpar(cex = 1.3)))
 malesall
 ggsave(plot=last_plot(),filename="males_allseason_persite.jpg",  path="Outputs/Microclimate vs performance/",width=10, height=7, units="in")
 ```
@@ -676,7 +677,7 @@ females6<-females %>%
 #Choosing individuals for site 3
 females3<-females %>%
   filter(site=="site 3")
-coeff<-10000
+coeff<-4000000000
 #Creating plots for site 3
 plotsite3 = function(ind) {
   #Creating histogram for conditions in site 3
@@ -686,7 +687,7 @@ plotsite3 = function(ind) {
   scale_x_continuous(limits=c(5,55), breaks=c(5,20,35,50))+
   theme_classic()+
   theme(text = element_text(size = 15), plot.title = element_text(size = (12)))+
-  xlab("Temperature (Celsius)")
+  xlab("Temperature (°C)")
   
   #Filtering for each individual
    pd<- females3 %>%
@@ -710,7 +711,7 @@ plotsite6 = function(ind) {
   scale_x_continuous(limits=c(5,55), breaks=c(5,20,35,50))+
   theme_classic()+
   theme(text = element_text(size = 15), plot.title = element_text(size = (12)))+
-  xlab("Temperature (Celsius)")
+  xlab("Temperature (°C)")
   
   #Filtering for each individual
    pd<- females6 %>%
@@ -751,7 +752,7 @@ females_all<-ggarrange(plotlist3[[1]]+ rremove("ylab") + rremove("xlab"),
           plotlist6[[6]]+ rremove("ylab") + rremove("xlab"), 
           nrow=5, ncol=5)
 femalesall<-annotate_figure(females_all, left = textGrob("Frequency", rot = 90, vjust = 1, gp = gpar(cex = 1.3)),
-                    bottom = textGrob("Temperature (Celsius)", gp = gpar(cex = 1.3)), right=textGrob("Oxygen consumed ((mg/L)/min)", rot = 270, vjust = 1, gp = gpar(cex = 1.3)))
+                    bottom = textGrob("Temperature (°C)", gp = gpar(cex = 1.3)), right=textGrob("Oxygen consumed ((mg/L)/min)", rot = 270, vjust = 1, gp = gpar(cex = 1.3)))
 femalesall
 ggsave(plot=last_plot(),filename="females_allseason_persite.jpg",  path="Outputs/Microclimate vs performance/",width=10, height=7, units="in")
 ```
@@ -808,17 +809,17 @@ protos <- derivs2%>%
 meanline<-mean(july$means2)
 medianline<-median(july$means2)
     
- coeff<-10000
+ coeff<-4000000000
 ggplot()+
   geom_histogram(july,mapping=aes(x=tempcorr),fill="#d95f02", alpha=0.5)+
   #geom_vline(xintercept=meanline, color="red")+
   geom_vline(xintercept=max(july$means2), color="#d95f02")+
   theme_classic()+
   theme(text = element_text(size = 15), plot.title = element_text(size = (12)), strip.text.x = element_blank(),panel.spacing = unit(7, "mm"))+
-  xlab("Temperature (Celsius)")+
+  xlab("Temperature (°C)")+
   scale_x_continuous(limits=c(5,55), breaks=c(5,20,35,50))+
   geom_line(protos, mapping=aes(y=first2*coeff,x=tempcorr))+
-  scale_y_continuous("Frequency", sec.axis = sec_axis(~ ./coeff, name = "Rate optima (Oxygen (mg/L)/ time(min))")) + 
+  scale_y_continuous("Frequency",  sec.axis = sec_axis(~ ./coeff, name = bquote(VO2[Max]~(mg~min^-1)), labels = scales::scientific)) + 
   facet_wrap(vars(ind))+
   labs(colour = "Trial")
 ggsave(plot=last_plot(),filename="Proto_july_allarea.jpg",  path="Outputs/Microclimate vs performance/",width=7, height=7, units="in")
@@ -829,17 +830,17 @@ deutos<- derivs2%>%
   
 meanline<-mean(july$means2)
 medianline<-median(july$means2)
-coeff<-10000
+coeff<-4000000000
 ggplot()+
   geom_histogram(july,mapping=aes(x=tempcorr),fill="#d95f02", alpha=0.5)+
   #geom_vline(xintercept=meanline, color="red")+
   geom_vline(xintercept=max(july$means2), color="#d95f02")+
   theme_classic()+
   theme(text = element_text(size = 15), plot.title = element_text(size = (12)), strip.text.x = element_blank(),panel.spacing = unit(7, "mm"))+
-  xlab("Temperature (Celsius)")+
+  xlab("Temperature (°C)")+
   scale_x_continuous(limits=c(5,55), breaks=c(5,20,35,50))+
   geom_line(deutos, mapping=aes(y=first2*coeff,x=tempcorr))+
-  scale_y_continuous("Frequency", sec.axis = sec_axis(~ ./coeff, name = "Rate optima (Oxygen (mg/L)/ time(min))")) + 
+  scale_y_continuous("Frequency",  sec.axis = sec_axis(~ ./coeff, name = bquote(VO2[Max]~(mg~min^-1)), labels = scales::scientific)) + 
   facet_wrap(vars(ind))+
   labs(colour = "Trial")
 ggsave(plot=last_plot(),filename="Deuto_july_allarea.jpg",  path="Outputs/Microclimate vs performance/",width=7, height=7, units="in")
@@ -850,17 +851,17 @@ tritos<- derivs2%>%
   
 meanline<-mean(july$means2)
 medianline<-median(july$means2)
-coeff<-10000
+coeff<-4000000000
 ggplot()+
   geom_histogram(july,mapping=aes(x=tempcorr),fill="#d95f02", alpha=0.5)+
   #geom_vline(xintercept=meanline, color="red")+
   geom_vline(xintercept=max(july$means2), color="#d95f02")+
   theme_classic()+
   theme(text = element_text(size = 15), plot.title = element_text(size = (12)), strip.text.x = element_blank(),panel.spacing = unit(7, "mm"))+
-  xlab("Temperature (Celsius)")+
+  xlab("Temperature (°C)")+
   scale_x_continuous(limits=c(5,55), breaks=c(5,20,35,50))+
   geom_line(tritos, mapping=aes(y=first2*coeff,x=tempcorr))+
-  scale_y_continuous("Frequency", sec.axis = sec_axis(~ ./coeff, name = "Rate optima (Oxygen (mg/L)/ time(min))")) + 
+  scale_y_continuous("Frequency",  sec.axis = sec_axis(~ ./coeff, name = bquote(VO2[Max]~(mg~min^-1)), labels = scales::scientific)) + 
   facet_wrap(vars(ind))+
   labs(colour = "Trial")
 ggsave(plot=last_plot(),filename="Trito_july_allarea.jpg",  path="Outputs/Microclimate vs performance/",width=7, height=7, units="in")
@@ -871,17 +872,17 @@ males <- derivs2%>%
   
 meanline<-mean(july$means2)
 medianline<-median(july$means2)
-coeff<-10000
+coeff<-4000000000
 ggplot()+
   geom_histogram(july,mapping=aes(x=tempcorr),fill="#d95f02", alpha=0.5)+
   #geom_vline(xintercept=meanline, color="red")+
   geom_vline(xintercept=max(july$means2), color="#d95f02")+
   theme_classic()+
   theme(text = element_text(size = 15), plot.title = element_text(size = (12)), strip.text.x = element_blank(),panel.spacing = unit(7, "mm"))+
-  xlab("Temperature (Celsius)")+
+  xlab("Temperature (°C)")+
   scale_x_continuous(limits=c(5,55), breaks=c(5,20,35,50))+
   geom_line(males, mapping=aes(y=first2*coeff,x=tempcorr))+
-  scale_y_continuous("Frequency", sec.axis = sec_axis(~ ./coeff, name = "Rate optima (Oxygen (mg/L)/ time(min))")) + 
+  scale_y_continuous("Frequency",  sec.axis = sec_axis(~ ./coeff, name = bquote(VO2[Max]~(mg~min^-1)), labels = scales::scientific)) + 
   facet_wrap(vars(ind))+
   labs(colour = "Trial")
 ggsave(plot=last_plot(),filename="Male_july_allarea.jpg",  path="Outputs/Microclimate vs performance/",width=7, height=7, units="in")
@@ -892,17 +893,17 @@ females <- derivs2%>%
   
 meanline<-mean(july$means2)
 medianline<-median(july$means2)
-coeff<-10000
+coeff<-4000000000
 ggplot()+
   geom_histogram(july,mapping=aes(x=tempcorr),fill="#d95f02", alpha=0.5)+
   #geom_vline(xintercept=meanline, color="red")+
   geom_vline(xintercept=max(july$means2), color="#d95f02")+
   theme_classic()+
   theme(text = element_text(size = 15), plot.title = element_text(size = (12)), strip.text.x = element_blank(),panel.spacing = unit(7, "mm"))+
-  xlab("Temperature (Celsius)")+
+  xlab("Temperature (°C)")+
   scale_x_continuous(limits=c(5,55), breaks=c(5,20,35,50))+
   geom_line(females, mapping=aes(y=first2*coeff,x=tempcorr))+
-  scale_y_continuous("Frequency", sec.axis = sec_axis(~ ./coeff, name = "Rate optima (Oxygen (mg/L)/ time(min))")) + 
+  scale_y_continuous("Frequency",  sec.axis = sec_axis(~ ./coeff, name = bquote(VO2[Max]~(mg~min^-1)), labels = scales::scientific)) + 
   facet_wrap(vars(ind))+
   labs(colour = "Trial")
 ggsave(plot=last_plot(),filename="Female_july_allarea.jpg",  path="Outputs/Microclimate vs performance/",width=7, height=7, units="in")
@@ -992,7 +993,7 @@ protos6<-protos %>%
 #Choosing individuals for site 3
 protos3<-protos %>%
   filter(site=="site 3")
-coeff<-10000
+coeff<-4000000000
 #Creating plots for site 3
 plotsite3 = function(ind) {
   #Creating histogram for conditions in site 3
@@ -1002,7 +1003,7 @@ plotsite3 = function(ind) {
   scale_x_continuous(limits=c(5,55), breaks=c(5,20,35,50))+
   theme_classic()+
   theme(text = element_text(size = 15), plot.title = element_text(size = (12)))+
-  xlab("Temperature (Celsius)")
+  xlab("Temperature (°C)")
   
   #Filtering for each individual
    pd<- protos3 %>%
@@ -1025,7 +1026,7 @@ plotsite6 = function(ind) {
   scale_x_continuous(limits=c(5,55), breaks=c(5,20,35,50))+
   theme_classic()+
   theme(text = element_text(size = 15), plot.title = element_text(size = (12)))+
-  xlab("Temperature (Celsius)")
+  xlab("Temperature (°C)")
   
   #Filtering for each individual
    pd<- protos6 %>%
@@ -1053,7 +1054,7 @@ protos_all<-ggarrange(plotlist3[[1]]+ rremove("ylab") + rremove("xlab"),
           plotlist6[[8]]+ rremove("ylab") + rremove("xlab"), 
           nrow=3, ncol=4)
 protosall<-annotate_figure(protos_all, left = textGrob("Frequency", rot = 90, vjust = 1, gp = gpar(cex = 1.3)),
-                    bottom = textGrob("Temperature (Celsius)", gp = gpar(cex = 1.3)), right=textGrob("Oxygen consumed ((mg/L)/min)", rot = 270, vjust = 1, gp = gpar(cex = 1.3)))
+                    bottom = textGrob("Temperature (°C)", gp = gpar(cex = 1.3)), right=textGrob("Oxygen consumed ((mg/L)/min)", rot = 270, vjust = 1, gp = gpar(cex = 1.3)))
 protosall
 ggsave(plot=last_plot(),filename="protos_july_persite.jpg",  path="Outputs/Microclimate vs performance/",width=10, height=7, units="in")
 ```
@@ -1071,7 +1072,7 @@ deutos6<-deutos %>%
 #Choosing individuals for site 3
 deutos3<-deutos %>%
   filter(site=="site 3")
-coeff<-10000
+coeff<-4000000000
 #Creating plots for site 3
 plotsite3 = function(ind) {
   #Creating histogram for conditions in site 3
@@ -1081,7 +1082,7 @@ plotsite3 = function(ind) {
   scale_x_continuous(limits=c(5,55), breaks=c(5,20,35,50))+
   theme_classic()+
   theme(text = element_text(size = 15), plot.title = element_text(size = (12)))+
-  xlab("Temperature (Celsius)")
+  xlab("Temperature (°C)")
   
   #Filtering for each individual
    pd<- deutos3 %>%
@@ -1105,7 +1106,7 @@ plotsite6 = function(ind) {
   scale_x_continuous(limits=c(5,55), breaks=c(5,20,35,50))+
   theme_classic()+
   theme(text = element_text(size = 15), plot.title = element_text(size = (12)))+
-  xlab("Temperature (Celsius)")
+  xlab("Temperature (°C)")
   
   #Filtering for each individual
    pd<- deutos6 %>%
@@ -1145,7 +1146,7 @@ deutos_all<-ggarrange(plotlist3[[1]]+ rremove("ylab") + rremove("xlab"),
           plotlist6[[10]]+ rremove("ylab") + rremove("xlab"),
           nrow=5, ncol=5)
 deutosall<-annotate_figure(deutos_all, left = textGrob("Frequency", rot = 90, vjust = 1, gp = gpar(cex = 1.3)),
-                    bottom = textGrob("Temperature (Celsius)", gp = gpar(cex = 1.3)), right=textGrob("Oxygen consumed ((mg/L)/min)", rot = 270, vjust = 1, gp = gpar(cex = 1.3)))
+                    bottom = textGrob("Temperature (°C)", gp = gpar(cex = 1.3)), right=textGrob("Oxygen consumed ((mg/L)/min)", rot = 270, vjust = 1, gp = gpar(cex = 1.3)))
 deutosall
 ggsave(plot=last_plot(),filename="deutos_july_persite.jpg",  path="Outputs/Microclimate vs performance/",width=10, height=7, units="in")
 ```
@@ -1163,7 +1164,7 @@ tritos6<-tritos %>%
 #Choosing individuals for site 3
 tritos3<-tritos %>%
   filter(site=="site 3")
-coeff<-10000
+coeff<-4000000000
 #Creating plots for site 3
 plotsite3 = function(ind) {
   #Creating histogram for conditions in site 3
@@ -1173,7 +1174,7 @@ plotsite3 = function(ind) {
   scale_x_continuous(limits=c(5,55), breaks=c(5,20,35,50))+
   theme_classic()+
   theme(text = element_text(size = 15), plot.title = element_text(size = (12)))+
-  xlab("Temperature (Celsius)")
+  xlab("Temperature (°C)")
   
   #Filtering for each individual
    pd<- tritos3 %>%
@@ -1197,7 +1198,7 @@ plotsite6 = function(ind) {
   scale_x_continuous(limits=c(5,55), breaks=c(5,20,35,50))+
   theme_classic()+
   theme(text = element_text(size = 15), plot.title = element_text(size = (12)))+
-  xlab("Temperature (Celsius)")
+  xlab("Temperature (°C)")
   
   #Filtering for each individual
    pd<- tritos6 %>%
@@ -1236,7 +1237,7 @@ tritos_all<-ggarrange(plotlist3[[1]]+ rremove("ylab") + rremove("xlab"),
           plotlist6[[6]]+ rremove("ylab") + rremove("xlab"),
           nrow=5, ncol=5)
 tritosall<-annotate_figure(tritos_all, left = textGrob("Frequency", rot = 90, vjust = 1, gp = gpar(cex = 1.3)),
-                    bottom = textGrob("Temperature (Celsius)", gp = gpar(cex = 1.3)), right=textGrob("Oxygen consumed ((mg/L)/min)", rot = 270, vjust = 1, gp = gpar(cex = 1.3)))
+                    bottom = textGrob("Temperature (°C)", gp = gpar(cex = 1.3)), right=textGrob("Oxygen consumed ((mg/L)/min)", rot = 270, vjust = 1, gp = gpar(cex = 1.3)))
 tritosall
 ggsave(plot=last_plot(),filename="tritos_july_persite.jpg",  path="Outputs/Microclimate vs performance/",width=10, height=7, units="in")
 ```
@@ -1254,7 +1255,7 @@ males6<-males %>%
 #Choosing individuals for site 3
 males3<-males %>%
   filter(site=="site 3")
-coeff<-10000
+coeff<-4000000000
 #Creating plots for site 3
 plotsite3 = function(ind) {
   #Creating histogram for conditions in site 3
@@ -1264,7 +1265,7 @@ plotsite3 = function(ind) {
   scale_x_continuous(limits=c(5,55), breaks=c(5,20,35,50))+
   theme_classic()+
   theme(text = element_text(size = 15), plot.title = element_text(size = (12)))+
-  xlab("Temperature (Celsius)")
+  xlab("Temperature (°C)")
   
   #Filtering for each individual
    pd<- males3 %>%
@@ -1288,7 +1289,7 @@ plotsite6 = function(ind) {
   scale_x_continuous(limits=c(5,55), breaks=c(5,20,35,50))+
   theme_classic()+
   theme(text = element_text(size = 15), plot.title = element_text(size = (12)))+
-  xlab("Temperature (Celsius)")
+  xlab("Temperature (°C)")
   
   #Filtering for each individual
    pd<- males6 %>%
@@ -1327,7 +1328,7 @@ males_all<-ggarrange(plotlist3[[1]]+ rremove("ylab") + rremove("xlab"),
           plotlist6[[8]]+ rremove("ylab") + rremove("xlab"), 
           nrow=5, ncol=5)
 malesall<-annotate_figure(males_all, left = textGrob("Frequency", rot = 90, vjust = 1, gp = gpar(cex = 1.3)),
-                    bottom = textGrob("Temperature (Celsius)", gp = gpar(cex = 1.3)), right=textGrob("Oxygen consumed ((mg/L)/min)", rot = 270, vjust = 1, gp = gpar(cex = 1.3)))
+                    bottom = textGrob("Temperature (°C)", gp = gpar(cex = 1.3)), right=textGrob("Oxygen consumed ((mg/L)/min)", rot = 270, vjust = 1, gp = gpar(cex = 1.3)))
 malesall
 ggsave(plot=last_plot(),filename="males_july_persite.jpg",  path="Outputs/Microclimate vs performance/",width=10, height=7, units="in")
 ```
@@ -1345,7 +1346,7 @@ females6<-females %>%
 #Choosing individuals for site 3
 females3<-females %>%
   filter(site=="site 3")
-coeff<-10000
+coeff<-4000000000
 #Creating plots for site 3
 plotsite3 = function(ind) {
   #Creating histogram for conditions in site 3
@@ -1355,7 +1356,7 @@ plotsite3 = function(ind) {
   scale_x_continuous(limits=c(5,55), breaks=c(5,20,35,50))+
   theme_classic()+
   theme(text = element_text(size = 15), plot.title = element_text(size = (12)))+
-  xlab("Temperature (Celsius)")
+  xlab("Temperature (°C)")
   
   #Filtering for each individual
    pd<- females3 %>%
@@ -1379,7 +1380,7 @@ plotsite6 = function(ind) {
   scale_x_continuous(limits=c(5,55), breaks=c(5,20,35,50))+
   theme_classic()+
   theme(text = element_text(size = 15), plot.title = element_text(size = (12)))+
-  xlab("Temperature (Celsius)")
+  xlab("Temperature (°C)")
   
   #Filtering for each individual
    pd<- females6 %>%
@@ -1420,7 +1421,7 @@ females_all<-ggarrange(plotlist3[[1]]+ rremove("ylab") + rremove("xlab"),
           plotlist6[[6]]+ rremove("ylab") + rremove("xlab"), 
           nrow=5, ncol=5)
 femalesall<-annotate_figure(females_all, left = textGrob("Frequency", rot = 90, vjust = 1, gp = gpar(cex = 1.3)),
-                    bottom = textGrob("Temperature (Celsius)", gp = gpar(cex = 1.3)), right=textGrob("Oxygen consumed ((mg/L)/min)", rot = 270, vjust = 1, gp = gpar(cex = 1.3)))
+                    bottom = textGrob("Temperature (°C)", gp = gpar(cex = 1.3)), right=textGrob("Oxygen consumed ((mg/L)/min)", rot = 270, vjust = 1, gp = gpar(cex = 1.3)))
 femalesall
 ggsave(plot=last_plot(),filename="females_july_persite.jpg",  path="Outputs/Microclimate vs performance/",width=10, height=7, units="in")
 ```
@@ -1496,7 +1497,7 @@ protos <- derivs2%>%
   
 meanline<-mean(micro$means2)
 medianline<-median(micro$means2)
-coeff<-10000
+coeff<-7000000000
 ggplot()+
   geom_histogram(micro, mapping=aes(x=tempcorr),fill="#d95f02", alpha=0.5)+
   geom_histogram(future, mapping=aes(x=temp),fill="#7570b3", alpha=0.5)+
@@ -1504,10 +1505,10 @@ ggplot()+
   geom_vline(xintercept=max(future$temp), color="#7570b3", linetype="dashed")+
   theme_classic()+
   theme(text = element_text(size = 15), plot.title = element_text(size = (12)), strip.text.x = element_blank(),panel.spacing = unit(7, "mm"))+
-  xlab("Temperature (Celsius)")+
+  xlab("Temperature (°C)")+
   scale_x_continuous(limits=c(5,55), breaks=c(5,20,35,50))+
   geom_line(protos, mapping=aes(y=first2*coeff,x=tempcorr))+
-  scale_y_continuous("Frequency", sec.axis = sec_axis(~ ./coeff, name = "Rate optima (Oxygen (mg/L)/ time(min))")) + 
+  scale_y_continuous("Frequency",  sec.axis = sec_axis(~ ./coeff, name = bquote(VO2[Max]~(mg~min^-1)), labels = scales::scientific)) + 
   facet_wrap(vars(ind))+
   labs(colour = "Trial")
 ggsave(plot=last_plot(),filename="Proto_allseason_allarea_future.jpg",  path="Outputs/Microclimate vs performance/",width=7, height=7, units="in")
@@ -1518,7 +1519,7 @@ deutos<- derivs2%>%
   
 meanline<-mean(micro$means2)
 medianline<-median(micro$means2)
-coeff<-10000
+coeff<-7000000000
 ggplot()+
   geom_histogram(micro, mapping=aes(x=tempcorr),fill="#d95f02", alpha=0.5)+
   geom_histogram(future, mapping=aes(x=temp),fill="#7570b3", alpha=0.5)+
@@ -1526,10 +1527,10 @@ ggplot()+
   geom_vline(xintercept=max(future$temp), color="#7570b3", linetype="dashed")+
   theme_classic()+
   theme(text = element_text(size = 15), plot.title = element_text(size = (12)),strip.text.x = element_blank(),panel.spacing = unit(7, "mm"))+
-  xlab("Temperature (Celsius)")+
+  xlab("Temperature (°C)")+
   scale_x_continuous(limits=c(5,55), breaks=c(5,20,35,50))+
   geom_line(deutos, mapping=aes(y=first2*coeff,x=tempcorr))+
-  scale_y_continuous("Frequency", sec.axis = sec_axis(~ ./coeff, name = "Rate optima (Oxygen (mg/L)/ time(min))")) + 
+  scale_y_continuous("Frequency",  sec.axis = sec_axis(~ ./coeff, name = bquote(VO2[Max]~(mg~min^-1)), labels = scales::scientific)) + 
   facet_wrap(vars(ind))+
   labs(colour = "Trial")
 ggsave(plot=last_plot(),filename="Deuto_allseason_allarea_future.jpg",  path="Outputs/Microclimate vs performance/",width=7, height=7, units="in")
@@ -1540,7 +1541,7 @@ tritos<- derivs2%>%
   
 meanline<-mean(micro$means2)
 medianline<-median(micro$means2)
-coeff<-10000
+coeff<-7000000000
 ggplot()+
   geom_histogram(micro, mapping=aes(x=tempcorr),fill="#d95f02", alpha=0.5)+
   geom_histogram(future, mapping=aes(x=temp),fill="#7570b3", alpha=0.5)+
@@ -1548,10 +1549,10 @@ ggplot()+
   geom_vline(xintercept=max(future$temp), color="#7570b3", linetype="dashed")+
   theme_classic()+
   theme(text = element_text(size = 15), plot.title = element_text(size = (12)),strip.text.x = element_blank(),panel.spacing = unit(7, "mm"))+
-  xlab("Temperature (Celsius)")+
+  xlab("Temperature (°C)")+
   scale_x_continuous(limits=c(5,55), breaks=c(5,20,35,50))+
   geom_line(tritos, mapping=aes(y=first2*coeff,x=tempcorr))+
-  scale_y_continuous("Frequency", sec.axis = sec_axis(~ ./coeff, name = "Rate optima (Oxygen (mg/L)/ time(min))")) + 
+  scale_y_continuous("Frequency",  sec.axis = sec_axis(~ ./coeff, name = bquote(VO2[Max]~(mg~min^-1)), labels = scales::scientific)) + 
   facet_wrap(vars(ind))+
   labs(colour = "Trial")
 ggsave(plot=last_plot(),filename="Trito_allseason_allarea_future.jpg",  path="Outputs/Microclimate vs performance/",width=7, height=7, units="in")
@@ -1562,7 +1563,7 @@ males <- derivs2%>%
   
 meanline<-mean(micro$means2)
 medianline<-median(micro$means2)
-coeff<-10000
+coeff<-7000000000
 ggplot()+
   geom_histogram(micro, mapping=aes(x=tempcorr),fill="#d95f02", alpha=0.5)+
   geom_histogram(future, mapping=aes(x=temp),fill="#7570b3", alpha=0.5)+
@@ -1570,10 +1571,10 @@ ggplot()+
   geom_vline(xintercept=max(future$temp), color="#7570b3", linetype="dashed")+
   theme_classic()+
   theme(text = element_text(size = 15), plot.title = element_text(size = (12)),strip.text.x = element_blank(),panel.spacing = unit(7, "mm"))+
-  xlab("Temperature (Celsius)")+
+  xlab("Temperature (°C)")+
   scale_x_continuous(limits=c(5,55), breaks=c(5,20,35,50))+
   geom_line(males, mapping=aes(y=first2*coeff,x=tempcorr))+
-  scale_y_continuous("Frequency", sec.axis = sec_axis(~ ./coeff, name = "Rate optima (Oxygen (mg/L)/ time(min))")) + 
+  scale_y_continuous("Frequency",  sec.axis = sec_axis(~ ./coeff, name = bquote(VO2[Max]~(mg~min^-1)), labels = scales::scientific)) + 
   facet_wrap(vars(ind))+
   labs(colour = "Trial")
 ggsave(plot=last_plot(),filename="Male_allseason_allarea_future.jpg",  path="Outputs/Microclimate vs performance/",width=7, height=7, units="in")
@@ -1584,7 +1585,7 @@ females <- derivs2%>%
   
 meanline<-mean(micro$means2)
 medianline<-median(micro$means2)
-coeff<-10000
+coeff<-7000000000
 fems<-ggplot()+
   geom_histogram(micro, mapping=aes(x=tempcorr),fill="#d95f02", alpha=0.5)+
   geom_histogram(future, mapping=aes(x=temp),fill="#7570b3", alpha=0.5)+
@@ -1592,10 +1593,10 @@ fems<-ggplot()+
   geom_vline(xintercept=max(future$temp), color="#7570b3", linetype="dashed")+
   theme_classic()+
   theme(text = element_text(size = 15), plot.title = element_text(size = (12)), strip.text.x = element_blank(),panel.spacing = unit(7, "mm"))+
-  xlab("Temperature (Celsius)")+
+  xlab("Temperature (°C)")+
   scale_x_continuous(limits=c(5,55), breaks=c(5,20,35,50))+
   geom_line(females, mapping=aes(y=first2*coeff,x=tempcorr))+
-  scale_y_continuous("Frequency", sec.axis = sec_axis(~ ./coeff, name = "Rate optima (Oxygen (mg/L)/ time(min))")) + 
+  scale_y_continuous("Frequency",  sec.axis = sec_axis(~ ./coeff, name = bquote(VO2[Max]~(mg~min^-1)), labels = scales::scientific)) + 
   facet_wrap(vars(ind))+
   labs(colour = "Trial")
 fems
@@ -1647,7 +1648,7 @@ protos <- derivs2%>%
   
 meanline<-mean(july$means2)
 medianline<-median(july$means2)
-coeff<-10000
+coeff<-4000000000
 ggplot()+
   geom_histogram(july, mapping=aes(x=tempcorr),fill="#d95f02", alpha=0.5)+
   geom_histogram(julyf, mapping=aes(x=temp),fill="#7570b3", alpha=0.5)+
@@ -1655,10 +1656,10 @@ ggplot()+
   geom_vline(xintercept=max(julyf$temp), color="#7570b3", linetype="dashed")+
   theme_classic()+
   theme(text = element_text(size = 15), plot.title = element_text(size = (12)), strip.text.x = element_blank(),panel.spacing = unit(7, "mm"))+
-  xlab("Temperature (Celsius)")+
+  xlab("Temperature (°C)")+
   scale_x_continuous(limits=c(5,55), breaks=c(5,20,35,50))+
   geom_line(protos, mapping=aes(y=first2*coeff,x=tempcorr))+
-  scale_y_continuous("Frequency", sec.axis = sec_axis(~ ./coeff, name = "Rate optima (Oxygen (mg/L)/ time(min))")) + 
+  scale_y_continuous("Frequency",  sec.axis = sec_axis(~ ./coeff, name = bquote(VO2[Max]~(mg~min^-1)), labels = scales::scientific)) + 
   facet_wrap(vars(ind))+
   labs(colour = "Trial")
 ggsave(plot=last_plot(),filename="Proto_july_allarea_future.jpg",  path="Outputs/Microclimate vs performance/",width=7, height=7, units="in")
@@ -1669,7 +1670,7 @@ deutos<- derivs2%>%
   
 meanline<-mean(july$means2)
 medianline<-median(july$means2)
-coeff<-10000
+coeff<-4000000000
 ggplot()+
   geom_histogram(july, mapping=aes(x=tempcorr),fill="#d95f02", alpha=0.5)+
   geom_histogram(julyf, mapping=aes(x=temp),fill="#7570b3", alpha=0.5)+
@@ -1677,10 +1678,10 @@ ggplot()+
   geom_vline(xintercept=max(julyf$temp), color="#7570b3", linetype="dashed")+
   theme_classic()+
   theme(text = element_text(size = 15), plot.title = element_text(size = (12)),strip.text.x = element_blank(),panel.spacing = unit(7, "mm"))+
-  xlab("Temperature (Celsius)")+
+  xlab("Temperature (°C)")+
   scale_x_continuous(limits=c(5,55), breaks=c(5,20,35,50))+
   geom_line(deutos, mapping=aes(y=first2*coeff,x=tempcorr))+
-  scale_y_continuous("Frequency", sec.axis = sec_axis(~ ./coeff, name = "Rate optima (Oxygen (mg/L)/ time(min))")) + 
+  scale_y_continuous("Frequency",  sec.axis = sec_axis(~ ./coeff, name = bquote(VO2[Max]~(mg~min^-1)), labels = scales::scientific)) + 
   facet_wrap(vars(ind))+
   labs(colour = "Trial")
 ggsave(plot=last_plot(),filename="Deuto_july_allarea_future.jpg",  path="Outputs/Microclimate vs performance/",width=7, height=7, units="in")
@@ -1691,7 +1692,7 @@ tritos<- derivs2%>%
   
 meanline<-mean(july$means2)
 medianline<-median(july$means2)
-coeff<-10000
+coeff<-4000000000
 ggplot()+
   geom_histogram(july, mapping=aes(x=tempcorr),fill="#d95f02", alpha=0.5)+
   geom_histogram(julyf, mapping=aes(x=temp),fill="#7570b3", alpha=0.5)+
@@ -1699,10 +1700,10 @@ ggplot()+
   geom_vline(xintercept=max(julyf$temp), color="#7570b3", linetype="dashed")+
   theme_classic()+
   theme(text = element_text(size = 15), plot.title = element_text(size = (12)),strip.text.x = element_blank(),panel.spacing = unit(7, "mm"))+
-  xlab("Temperature (Celsius)")+
+  xlab("Temperature (°C)")+
   scale_x_continuous(limits=c(5,55), breaks=c(5,20,35,50))+
   geom_line(tritos, mapping=aes(y=first2*coeff,x=tempcorr))+
-  scale_y_continuous("Frequency", sec.axis = sec_axis(~ ./coeff, name = "Rate optima (Oxygen (mg/L)/ time(min))")) + 
+  scale_y_continuous("Frequency",  sec.axis = sec_axis(~ ./coeff, name = bquote(VO2[Max]~(mg~min^-1)), labels = scales::scientific)) + 
   facet_wrap(vars(ind))+
   labs(colour = "Trial")
 ggsave(plot=last_plot(),filename="Trito_july_allarea_future.jpg",  path="Outputs/Microclimate vs performance/",width=7, height=7, units="in")
@@ -1713,7 +1714,7 @@ males <- derivs2%>%
   
 meanline<-mean(july$means2)
 medianline<-median(july$means2)
-coeff<-10000
+coeff<-4000000000
 ggplot()+
   geom_histogram(july, mapping=aes(x=tempcorr),fill="#d95f02", alpha=0.5)+
   geom_histogram(julyf, mapping=aes(x=temp),fill="#7570b3", alpha=0.5)+
@@ -1721,10 +1722,10 @@ ggplot()+
   geom_vline(xintercept=max(julyf$temp), color="#7570b3", linetype="dashed")+
   theme_classic()+
   theme(text = element_text(size = 15), plot.title = element_text(size = (12)),strip.text.x = element_blank(),panel.spacing = unit(7, "mm"))+
-  xlab("Temperature (Celsius)")+
+  xlab("Temperature (°C)")+
   scale_x_continuous(limits=c(5,55), breaks=c(5,20,35,50))+
   geom_line(males, mapping=aes(y=first2*coeff,x=tempcorr))+
-  scale_y_continuous("Frequency", sec.axis = sec_axis(~ ./coeff, name = "Rate optima (Oxygen (mg/L)/ time(min))")) + 
+  scale_y_continuous("Frequency",  sec.axis = sec_axis(~ ./coeff, name = bquote(VO2[Max]~(mg~min^-1)), labels = scales::scientific)) + 
   facet_wrap(vars(ind))+
   labs(colour = "Trial")
 ggsave(plot=last_plot(),filename="Male_july_allarea_future.jpg",  path="Outputs/Microclimate vs performance/",width=7, height=7, units="in")
@@ -1735,7 +1736,7 @@ females <- derivs2%>%
   
 meanline<-mean(july$means2)
 medianline<-median(july$means2)
-coeff<-10000
+coeff<-4000000000
 ggplot()+
   geom_histogram(july, mapping=aes(x=tempcorr),fill="#d95f02", alpha=0.5)+
   geom_histogram(julyf, mapping=aes(x=temp),fill="#7570b3", alpha=0.5)+
@@ -1743,13 +1744,15 @@ ggplot()+
   geom_vline(xintercept=max(julyf$temp), color="#7570b3", linetype="dashed")+
   theme_classic()+
   theme(text = element_text(size = 15), plot.title = element_text(size = (12)), strip.text.x = element_blank(),panel.spacing = unit(7, "mm"))+
-  xlab("Temperature (Celsius)")+
+  xlab("Temperature (°C)")+
   scale_x_continuous(limits=c(5,55), breaks=c(5,20,35,50))+
   geom_line(females, mapping=aes(y=first2*coeff,x=tempcorr))+
-  scale_y_continuous("Frequency", sec.axis = sec_axis(~ ./coeff, name = "Rate optima (Oxygen (mg/L)/ time(min))")) + 
+  scale_y_continuous("Frequency",  sec.axis = sec_axis(~ ./coeff, name = bquote(VO2[Max]~(mg~min^-1)), labels = scales::scientific)) + 
   facet_wrap(vars(ind))+
   labs(colour = "Trial")
 ggsave(plot=last_plot(),filename="Female_july_allarea_future.jpg",  path="Outputs/Microclimate vs performance/",width=7, height=7, units="in")
+
+
 ```
 
 

@@ -43,17 +43,17 @@ library(tidyr)
 library(dplyr)
 library(lubridate)
 library(ggplot2)
+library(fuzzyjoin)
+library(forcats)
+library(ggpubr)
 library(readr)
 library(stringr)
 library(purrr)
 library(knitr)
 library(magick)
 library(jpeg)
-library(fuzzyjoin)
-library(forcats)
-library(ggpubr)
 library(grid)
-library(knitr)
+
 
 
 ```
@@ -63,6 +63,12 @@ library(knitr)
 ## Getting objects from Temperature Analyses 
 ```{r}
 load("Outputs/Temperature analyses.RData")
+
+#I need to correct the measurments for the volume of the container. The genitalia vial had an internal dimension of 2 mm diameter and 4 mm height. Calculating the volume of the cylinder by h*pi*(r^2), I get 12.5663706143592 mm3
+volume<- 12.5663706143592*10^(-6) #converting to Liters
+volume
+
+
 ```
 ## Calling and arranging data
 
@@ -72,7 +78,7 @@ load("Outputs/Temperature analyses.RData")
 2. Merges them into a single file  
 3. Manually adds the information missing to each one. Eg: IDs, weights, stages, etc.  
 4. It then call the temperature data and adds it to the file as well  
-5. Finally, it add the oxygen data (based on the calculations of the spreadsheet that Jon DeLong provided me)  
+5. Finally, it add the oxygen data (based on the calculations of the spreadsheet that Jon DeLong provided me) and convert it to mg O2 instead of mg/L 
 
 
 ### Trial 2
@@ -190,18 +196,19 @@ ox2<-t2 %>% #MODIFY FOR EACH TRIAL
          tempK=tempcorr+273,
          watervapor=exp(52.57-(6690.9/tempK)-4.681*log(tempK)),
          oxysat=(tan((pi/180)*phaseangle)-tan((pi/180)*phase))/tan((pi/180)*phase)*sternvolmer,
-         oxymgl=(atm-watervapor)/1013*oxysat*0.2095*bunsen*1000*(32/22.414)*10)
+         oxymgl=(atm-watervapor)/1013*oxysat*0.2095*bunsen*1000*(32/22.414),
+         oxymg=oxymgl*volume)
 
 head(ox2) #MODIFY FOR EACH TRIAL
 
-ggplot(ox2, aes(x=logtime, y=oxymgl,group=ind, color=stage))+ #MODIFY FOR EACH TRIAL
+ggplot(ox2, aes(x=logtime, y=oxymg,group=ind, color=stage))+ #MODIFY FOR EACH TRIAL
   geom_line()+
   theme_classic()+
   theme(text = element_text(size = 15))+
-  ylim(8.5,12) +
+ # ylim(8.5,12) +
   facet_wrap(~ind)+
   xlab("Time logged (min)")+
-  ylab("Oxygen (mg/L")
+  ylab("Oxygen (mg)")
 
 ```
 
@@ -320,18 +327,19 @@ ox3<-t3 %>% #MODIFY FOR EACH TRIAL
          tempK=tempcorr+273,
          watervapor=exp(52.57-(6690.9/tempK)-4.681*log(tempK)),
          oxysat=(tan((pi/180)*phaseangle)-tan((pi/180)*phase))/tan((pi/180)*phase)*sternvolmer,
-         oxymgl=(atm-watervapor)/1013*oxysat*0.2095*bunsen*1000*(32/22.414)*10)
+         oxymgl=(atm-watervapor)/1013*oxysat*0.2095*bunsen*1000*(32/22.414),
+         oxymg=oxymgl*volume)
 
 head(ox3) #MODIFY FOR EACH TRIAL
 
-ggplot(ox3, aes(x=logtime, y=oxymgl,group=ind, color=stage))+ #MODIFY FOR EACH TRIAL
+ggplot(ox3, aes(x=logtime, y=oxymg,group=ind, color=stage))+ #MODIFY FOR EACH TRIAL
   geom_line()+
   theme_classic()+
   theme(text = element_text(size = 15))+
-  ylim(7,12) +
+  #ylim(7,12) +
   facet_wrap(~ind)+
   xlab("Time logged (min)")+
-  ylab("Oxygen (mg/L")
+  ylab("Oxygen (mg)")
 
 ```
 
@@ -450,18 +458,19 @@ ox4<-t4 %>% #MODIFY FOR EACH TRIAL
          tempK=tempcorr+273,
          watervapor=exp(52.57-(6690.9/tempK)-4.681*log(tempK)),
          oxysat=(tan((pi/180)*phaseangle)-tan((pi/180)*phase))/tan((pi/180)*phase)*sternvolmer,
-         oxymgl=(atm-watervapor)/1013*oxysat*0.2095*bunsen*1000*(32/22.414)*10)
+         oxymgl=(atm-watervapor)/1013*oxysat*0.2095*bunsen*1000*(32/22.414),
+         oxymg=oxymgl*volume)
 
 head(ox4) #MODIFY FOR EACH TRIAL
 
-ggplot(ox4, aes(x=logtime, y=oxymgl,group=ind, color=stage))+ #MODIFY FOR EACH TRIAL
+ggplot(ox4, aes(x=logtime, y=oxymg,group=ind, color=stage))+ #MODIFY FOR EACH TRIAL
   geom_line()+
   theme_classic()+
   theme(text = element_text(size = 15))+
-  ylim(8,12) +
+  #ylim(8,12) +
   facet_wrap(~ind)+
   xlab("Time logged (min)")+
-  ylab("Oxygen (mg/L")
+  ylab("Oxygen (mg)")
 
 ```
 
@@ -580,18 +589,19 @@ ox5<-t5 %>% #MODIFY FOR EACH TRIAL
          tempK=tempcorr+273,
          watervapor=exp(52.57-(6690.9/tempK)-4.681*log(tempK)),
          oxysat=(tan((pi/180)*phaseangle)-tan((pi/180)*phase))/tan((pi/180)*phase)*sternvolmer,
-         oxymgl=(atm-watervapor)/1013*oxysat*0.2095*bunsen*1000*(32/22.414)*10)
+         oxymgl=(atm-watervapor)/1013*oxysat*0.2095*bunsen*1000*(32/22.414),
+         oxymg=oxymgl*volume)
 
 head(ox5) #MODIFY FOR EACH TRIAL
 
-ggplot(ox5, aes(x=logtime, y=oxymgl,group=ind, color=stage))+ #MODIFY FOR EACH TRIAL
+ggplot(ox5, aes(x=logtime, y=oxymg,group=ind, color=stage))+ #MODIFY FOR EACH TRIAL
   geom_line()+
   theme_classic()+
   theme(text = element_text(size = 15))+
-  ylim(8,12) +
+  #ylim(8,12) +
   facet_wrap(~ind)+
   xlab("Time logged (min)")+
-  ylab("Oxygen (mg/L")
+  ylab("Oxygen (mg)")
 
 ```
 
@@ -711,18 +721,19 @@ ox6<-t6 %>% #MODIFY FOR EACH TRIAL
          tempK=tempcorr+273,
          watervapor=exp(52.57-(6690.9/tempK)-4.681*log(tempK)),
          oxysat=(tan((pi/180)*phaseangle)-tan((pi/180)*phase))/tan((pi/180)*phase)*sternvolmer,
-         oxymgl=(atm-watervapor)/1013*oxysat*0.2095*bunsen*1000*(32/22.414)*10)
+         oxymgl=(atm-watervapor)/1013*oxysat*0.2095*bunsen*1000*(32/22.414),
+         oxymg=oxymgl*volume)
 
 head(ox6) #MODIFY FOR EACH TRIAL
 
-ggplot(ox6, aes(x=logtime, y=oxymgl,group=ind, color=stage))+ #MODIFY FOR EACH TRIAL
+ggplot(ox6, aes(x=logtime, y=oxymg,group=ind, color=stage))+ #MODIFY FOR EACH TRIAL
   geom_line()+
   theme_classic()+
   theme(text = element_text(size = 15))+
-  ylim(8,12) +
+ # ylim(8,12) +
   facet_wrap(~ind)+
   xlab("Time logged (min)")+
-  ylab("Oxygen (mg/L")
+  ylab("Oxygen (mg)")
 
 ```
 
@@ -842,18 +853,19 @@ ox7<-t7 %>% #MODIFY FOR EACH TRIAL
          tempK=tempcorr+273,
          watervapor=exp(52.57-(6690.9/tempK)-4.681*log(tempK)),
          oxysat=(tan((pi/180)*phaseangle)-tan((pi/180)*phase))/tan((pi/180)*phase)*sternvolmer,
-         oxymgl=(atm-watervapor)/1013*oxysat*0.2095*bunsen*1000*(32/22.414)*10)
+         oxymgl=(atm-watervapor)/1013*oxysat*0.2095*bunsen*1000*(32/22.414),
+         oxymg=oxymgl*volume)
 
 head(ox7) #MODIFY FOR EACH TRIAL
 
-ggplot(ox7, aes(x=logtime, y=oxymgl,group=ind, color=stage))+ #MODIFY FOR EACH TRIAL
+ggplot(ox7, aes(x=logtime, y=oxymg,group=ind, color=stage))+ #MODIFY FOR EACH TRIAL
   geom_line()+
   theme_classic()+
   theme(text = element_text(size = 15))+
-  ylim(8,12) +
+ # ylim(8,12) +
   facet_wrap(~ind)+
   xlab("Time logged (min)")+
-  ylab("Oxygen (mg/L")
+  ylab("Oxygen (mg)")
 
 ```
 
@@ -973,18 +985,19 @@ ox8<-t8 %>% #MODIFY FOR EACH TRIAL
          tempK=tempcorr+273,
          watervapor=exp(52.57-(6690.9/tempK)-4.681*log(tempK)),
          oxysat=(tan((pi/180)*phaseangle)-tan((pi/180)*phase))/tan((pi/180)*phase)*sternvolmer,
-         oxymgl=(atm-watervapor)/1013*oxysat*0.2095*bunsen*1000*(32/22.414)*10)
+         oxymgl=(atm-watervapor)/1013*oxysat*0.2095*bunsen*1000*(32/22.414),
+         oxymg=oxymgl*volume)
 
 head(ox8) #MODIFY FOR EACH TRIAL
 
-ggplot(ox8, aes(x=logtime, y=oxymgl,group=ind, color=stage))+ #MODIFY FOR EACH TRIAL
+ggplot(ox8, aes(x=logtime, y=oxymg,group=ind, color=stage))+ #MODIFY FOR EACH TRIAL
   geom_line()+
   theme_classic()+
   theme(text = element_text(size = 15))+
-  ylim(8,12) +
+ # ylim(8,12) +
   facet_wrap(~ind)+
   xlab("Time logged (min)")+
-  ylab("Oxygen (mg/L")
+  ylab("Oxygen (mg)")
 
 ```
 
@@ -1104,18 +1117,19 @@ ox9<-t9 %>% #MODIFY FOR EACH TRIAL
          tempK=tempcorr+273,
          watervapor=exp(52.57-(6690.9/tempK)-4.681*log(tempK)),
          oxysat=(tan((pi/180)*phaseangle)-tan((pi/180)*phase))/tan((pi/180)*phase)*sternvolmer,
-         oxymgl=(atm-watervapor)/1013*oxysat*0.2095*bunsen*1000*(32/22.414)*10)
+         oxymgl=(atm-watervapor)/1013*oxysat*0.2095*bunsen*1000*(32/22.414),
+         oxymg=oxymgl*volume)
 
 head(ox9) #MODIFY FOR EACH TRIAL
 
-ggplot(ox9, aes(x=logtime, y=oxymgl,group=ind, color=stage))+ #MODIFY FOR EACH TRIAL
+ggplot(ox9, aes(x=logtime, y=oxymg,group=ind, color=stage))+ #MODIFY FOR EACH TRIAL
   geom_line()+
   theme_classic()+
   theme(text = element_text(size = 15))+
-  ylim(8,12) +
+  #ylim(8,12) +
   facet_wrap(~ind)+
   xlab("Time logged (min)")+
-  ylab("Oxygen (mg/L")
+  ylab("Oxygen (mg)")
 
 ```
 
@@ -1235,18 +1249,19 @@ ox10<-t10 %>% #MODIFY FOR EACH TRIAL
          tempK=tempcorr+273,
          watervapor=exp(52.57-(6690.9/tempK)-4.681*log(tempK)),
          oxysat=(tan((pi/180)*phaseangle)-tan((pi/180)*phase))/tan((pi/180)*phase)*sternvolmer,
-         oxymgl=(atm-watervapor)/1013*oxysat*0.2095*bunsen*1000*(32/22.414)*10)
+         oxymgl=(atm-watervapor)/1013*oxysat*0.2095*bunsen*1000*(32/22.414),
+         oxymg=oxymgl*volume)
 
 head(ox10) #MODIFY FOR EACH TRIAL
 
-ggplot(ox10, aes(x=logtime, y=oxymgl,group=ind, color=stage))+ #MODIFY FOR EACH TRIAL
+ggplot(ox10, aes(x=logtime, y=oxymg,group=ind, color=stage))+ #MODIFY FOR EACH TRIAL
   geom_line()+
   theme_classic()+
   theme(text = element_text(size = 15))+
-  ylim(8,12) +
+  #ylim(8,12) +
   facet_wrap(~ind)+
   xlab("Time logged (min)")+
-  ylab("Oxygen (mg/L")
+  ylab("Oxygen (mg)")
 
 ```
 
@@ -1366,18 +1381,19 @@ ox11<-t11 %>% #MODIFY FOR EACH TRIAL
          tempK=tempcorr+273,
          watervapor=exp(52.57-(6690.9/tempK)-4.681*log(tempK)),
          oxysat=(tan((pi/180)*phaseangle)-tan((pi/180)*phase))/tan((pi/180)*phase)*sternvolmer,
-         oxymgl=(atm-watervapor)/1013*oxysat*0.2095*bunsen*1000*(32/22.414)*10)
+         oxymgl=(atm-watervapor)/1013*oxysat*0.2095*bunsen*1000*(32/22.414),
+         oxymg=oxymgl*volume)
 
 head(ox11) #MODIFY FOR EACH TRIAL
 
-ggplot(ox11, aes(x=logtime, y=oxymgl,group=ind, color=stage))+ #MODIFY FOR EACH TRIAL
+ggplot(ox11, aes(x=logtime, y=oxymg,group=ind, color=stage))+ #MODIFY FOR EACH TRIAL
   geom_line()+
   theme_classic()+
   theme(text = element_text(size = 15))+
-  ylim(8,12) +
+  #ylim(8,12) +
   facet_wrap(~ind)+
   xlab("Time logged (min)")+
-  ylab("Oxygen (mg/L")
+  ylab("Oxygen (mg)")
 
 ```
 
@@ -1497,18 +1513,19 @@ ox12<-t12 %>% #MODIFY FOR EACH TRIAL
          tempK=tempcorr+273,
          watervapor=exp(52.57-(6690.9/tempK)-4.681*log(tempK)),
          oxysat=(tan((pi/180)*phaseangle)-tan((pi/180)*phase))/tan((pi/180)*phase)*sternvolmer,
-         oxymgl=(atm-watervapor)/1013*oxysat*0.2095*bunsen*1000*(32/22.414)*10)
+         oxymgl=(atm-watervapor)/1013*oxysat*0.2095*bunsen*1000*(32/22.414),
+         oxymg=oxymgl*volume)
 
 head(ox12) #MODIFY FOR EACH TRIAL
 
-ggplot(ox12, aes(x=logtime, y=oxymgl,group=ind, color=stage))+ #MODIFY FOR EACH TRIAL
+ggplot(ox12, aes(x=logtime, y=oxymg,group=ind, color=stage))+ #MODIFY FOR EACH TRIAL
   geom_line()+
   theme_classic()+
   theme(text = element_text(size = 15))+
-  ylim(8,12) +
+  #ylim(8,12) +
   facet_wrap(~ind)+
   xlab("Time logged (min)")+
-  ylab("Oxygen (mg/L")
+  ylab("Oxygen (mg")
 
 ```
 
@@ -1628,18 +1645,19 @@ ox13<-t13 %>% #MODIFY FOR EACH TRIAL
          tempK=tempcorr+273,
          watervapor=exp(52.57-(6690.9/tempK)-4.681*log(tempK)),
          oxysat=(tan((pi/180)*phaseangle)-tan((pi/180)*phase))/tan((pi/180)*phase)*sternvolmer,
-         oxymgl=(atm-watervapor)/1013*oxysat*0.2095*bunsen*1000*(32/22.414)*10)
+         oxymgl=(atm-watervapor)/1013*oxysat*0.2095*bunsen*1000*(32/22.414),
+         oxymg=oxymgl*volume)
 
 head(ox13) #MODIFY FOR EACH TRIAL
 
-ggplot(ox13, aes(x=logtime, y=oxymgl,group=ind, color=stage))+ #MODIFY FOR EACH TRIAL
+ggplot(ox13, aes(x=logtime, y=oxymg,group=ind, color=stage))+ #MODIFY FOR EACH TRIAL
   geom_line()+
   theme_classic()+
   theme(text = element_text(size = 15))+
-  ylim(8,12) +
+#  ylim(8,12) +
   facet_wrap(~ind)+
   xlab("Time logged (min)")+
-  ylab("Oxygen (mg/L")
+  ylab("Oxygen (mg")
 
 ```
 
@@ -1680,21 +1698,21 @@ func<-ox7%>%
   filter(duplicated(logtime|n()==2))
 
 #Trying different curves
-fit2<-lm(oxymgl~poly(logtime, 2, raw=TRUE), data=func)
-fit3<-lm(oxymgl~poly(logtime, 3, raw=TRUE), data=func)
-fit4<-lm(oxymgl~poly(logtime, 4, raw=TRUE), data=func)
-fit5<-lm(oxymgl~poly(logtime, 5, raw=TRUE), data=func)
-fit6<-lm(oxymgl~poly(logtime, 6, raw=TRUE), data=func)
-fit7<-lm(oxymgl~poly(logtime, 7, raw=TRUE), data=func)
-fit8<-lm(oxymgl~poly(logtime, 8, raw=TRUE), data=func)
-fit9<-lm(oxymgl~poly(logtime, 9, raw=TRUE), data=func)
-fit10<-lm(oxymgl~poly(logtime, 10, raw=TRUE), data=func)
+fit2<-lm(oxymg~poly(logtime, 2, raw=TRUE), data=func)
+fit3<-lm(oxymg~poly(logtime, 3, raw=TRUE), data=func)
+fit4<-lm(oxymg~poly(logtime, 4, raw=TRUE), data=func)
+fit5<-lm(oxymg~poly(logtime, 5, raw=TRUE), data=func)
+fit6<-lm(oxymg~poly(logtime, 6, raw=TRUE), data=func)
+fit7<-lm(oxymg~poly(logtime, 7, raw=TRUE), data=func)
+fit8<-lm(oxymg~poly(logtime, 8, raw=TRUE), data=func)
+fit9<-lm(oxymg~poly(logtime, 9, raw=TRUE), data=func)
+fit10<-lm(oxymg~poly(logtime, 10, raw=TRUE), data=func)
 
 # CReating a dataframe to build the prediction
 logtime <- seq(1, 125, length=125)  
 
 # Plotting each predicted function line to the real data
-plot(func$logtime, func$oxymgl, pch=19, xlab='Logtime', ylab='Oxygen(mg/l)')
+plot(func$logtime, func$oxymg, pch=19, xlab='Logtime', ylab='Oxygen(mg/l)')
 lines(logtime, predict(fit7, data.frame(x=logtime)), col='grey')
 lines(logtime, predict(fit2, data.frame(x=logtime)), col='red')
 lines(logtime, predict(fit3, data.frame(x=logtime)), col='purple')
@@ -1733,8 +1751,8 @@ form7<-expression((a7*x^7)+(a6*x^6)+(a5*x^5)+(a4*x^4)+(a3*x^3)+(a2*x^2)+(a1*x^1)
 d7<-D(form7, "x") 
 d7b<-D(d7, "x")
 
-ggplot(aes(x=logtime, y=oxymgl), data=func)+geom_point()
-plot(x, func$oxymgl, pch=19, xlab='Logtime', ylab='Oxygen(mg/l)')
+ggplot(aes(x=logtime, y=oxymg), data=func)+geom_point()
+plot(x, func$oxymg, pch=19, xlab='Logtime', ylab='Oxygen(mg)')
 lines(logtime, predict(fit7, data.frame(x=logtime)), col='red')
 
 #Primera derivada: tasa con la que consume oxigeno
@@ -1770,21 +1788,21 @@ func<-ox3%>%
   #filter(duplicated(logtime|n()==2))
 
 #Trying different curves
-fit2<-lm(oxymgl~poly(logtime, 2, raw=TRUE), data=func)
-fit3<-lm(oxymgl~poly(logtime, 3, raw=TRUE), data=func)
-fit4<-lm(oxymgl~poly(logtime, 4, raw=TRUE), data=func)
-fit5<-lm(oxymgl~poly(logtime, 5, raw=TRUE), data=func)
-fit6<-lm(oxymgl~poly(logtime, 6, raw=TRUE), data=func)
-fit7<-lm(oxymgl~poly(logtime, 7, raw=TRUE), data=func)
-fit8<-lm(oxymgl~poly(logtime, 8, raw=TRUE), data=func)
-fit9<-lm(oxymgl~poly(logtime, 9, raw=TRUE), data=func)
-fit10<-lm(oxymgl~poly(logtime, 10, raw=TRUE), data=func)
+fit2<-lm(oxymg~poly(logtime, 2, raw=TRUE), data=func)
+fit3<-lm(oxymg~poly(logtime, 3, raw=TRUE), data=func)
+fit4<-lm(oxymg~poly(logtime, 4, raw=TRUE), data=func)
+fit5<-lm(oxymg~poly(logtime, 5, raw=TRUE), data=func)
+fit6<-lm(oxymg~poly(logtime, 6, raw=TRUE), data=func)
+fit7<-lm(oxymg~poly(logtime, 7, raw=TRUE), data=func)
+fit8<-lm(oxymg~poly(logtime, 8, raw=TRUE), data=func)
+fit9<-lm(oxymg~poly(logtime, 9, raw=TRUE), data=func)
+fit10<-lm(oxymg~poly(logtime, 10, raw=TRUE), data=func)
 
 # CReating a dataframe to build the prediction
 logtime <- seq(1, 125, length=125)  
 
 # Plotting each predicted function line to the real data
-plot(func$logtime, func$oxymgl, pch=19, xlab='Logtime', ylab='Oxygen(mg/l)')
+plot(func$logtime, func$oxymg, pch=19, xlab='Logtime', ylab='Oxygen(mg/l)')
 lines(logtime, predict(fit7, data.frame(x=logtime)), col='grey')
 lines(logtime, predict(fit2, data.frame(x=logtime)), col='red')
 lines(logtime, predict(fit3, data.frame(x=logtime)), col='purple')
@@ -1823,8 +1841,8 @@ form7<-expression((a7*x^7)+(a6*x^6)+(a5*x^5)+(a4*x^4)+(a3*x^3)+(a2*x^2)+(a1*x^1)
 d7<-D(form7, "x") 
 d7b<-D(d7, "x")
 
-ggplot(aes(x=logtime, y=oxymgl), data=func)+geom_point()
-plot(x, func$oxymgl, pch=19, xlab='Logtime', ylab='Oxygen(mg/l)')
+ggplot(aes(x=logtime, y=oxymg), data=func)+geom_point()
+plot(x, func$oxymg, pch=19, xlab='Logtime', ylab='Oxygen(mg)')
 lines(logtime, predict(fit7, data.frame(x=logtime)), col='red')
 
 #Primera derivada: tasa con la que consume oxigeno
@@ -1863,85 +1881,87 @@ inflec<-as.data.frame(inflection)
 ```{r}
 #Calling csv file to avoid running the whole code
 oxall<-read.csv("./Outputs/oxygenall_aftercodedeletion.csv") #Use this one for trimming the traces, but for everything else use the one named: "oxall_trimmed.csv", which is the one produced at the end of this section of the code
+
+
 ```
 ## Individual 22
 ```{r}
 ind22<-oxall %>%
 filter(ind=="22")
-ggplot(aes(x=logtime, y=oxymgl), data=ind22)+geom_point() +theme_classic() + theme(text=element_text(size=15))+scale_x_continuous(breaks = seq(0, 120, by = 5))
+ggplot(aes(x=logtime, y=oxymg), data=ind22)+geom_point() +theme_classic() + theme(text=element_text(size=15))+scale_x_continuous(breaks = seq(0, 120, by = 5))
 ind22<-ind22 %>%
 filter(!between(logtime, 75, 85))
-ggplot(aes(x=logtime, y=oxymgl), data=ind22)+geom_point() +theme_classic() + theme(text=element_text(size=15))+scale_x_continuous(breaks = seq(0, 120, by = 5))
+ggplot(aes(x=logtime, y=oxymg), data=ind22)+geom_point() +theme_classic() + theme(text=element_text(size=15))+scale_x_continuous(breaks = seq(0, 120, by = 5))
 ```
 
 ## Individual 83
 ```{r}
 ind83<-oxall %>%
 filter(ind=="83")
-ggplot(aes(x=logtime, y=oxymgl), data=ind83)+geom_point() +theme_classic() + theme(text=element_text(size=15))+scale_x_continuous(breaks = seq(0, 120, by = 5))
+ggplot(aes(x=logtime, y=oxymg), data=ind83)+geom_point() +theme_classic() + theme(text=element_text(size=15))+scale_x_continuous(breaks = seq(0, 120, by = 5))
 ind83<-ind83 %>%
 filter(!between(logtime, 70, 80))
-ggplot(aes(x=logtime, y=oxymgl), data=ind83)+geom_point() +theme_classic() + theme(text=element_text(size=15))+scale_x_continuous(breaks = seq(0, 120, by = 5))
+ggplot(aes(x=logtime, y=oxymg), data=ind83)+geom_point() +theme_classic() + theme(text=element_text(size=15))+scale_x_continuous(breaks = seq(0, 120, by = 5))
 ```
 
 ## Individual 131
 ```{r}
 ind131<-oxall %>%
 filter(ind=="131")
-ggplot(aes(x=logtime, y=oxymgl), data=ind131)+geom_point() +theme_classic() + theme(text=element_text(size=15))+scale_x_continuous(breaks = seq(0, 120, by = 5))
+ggplot(aes(x=logtime, y=oxymg), data=ind131)+geom_point() +theme_classic() + theme(text=element_text(size=15))+scale_x_continuous(breaks = seq(0, 120, by = 5))
 ind131<-ind131 %>%
 filter(!between(logtime, 72, 82))
-ggplot(aes(x=logtime, y=oxymgl), data=ind131)+geom_point() +theme_classic() + theme(text=element_text(size=15))+scale_x_continuous(breaks = seq(0, 120, by = 5))
+ggplot(aes(x=logtime, y=oxymg), data=ind131)+geom_point() +theme_classic() + theme(text=element_text(size=15))+scale_x_continuous(breaks = seq(0, 120, by = 5))
 ```
 
 ## Individual 136
 ```{r}
 ind136<-oxall %>%
 filter(ind=="136")
-ggplot(aes(x=logtime, y=oxymgl), data=ind136)+geom_point() +theme_classic() + theme(text=element_text(size=15))+scale_x_continuous(breaks = seq(0, 120, by = 5))
+ggplot(aes(x=logtime, y=oxymg), data=ind136)+geom_point() +theme_classic() + theme(text=element_text(size=15))+scale_x_continuous(breaks = seq(0, 120, by = 5))
 ind136<-ind136 %>%
 filter(!between(logtime, 72, 82))
-ggplot(aes(x=logtime, y=oxymgl), data=ind136)+geom_point() +theme_classic() + theme(text=element_text(size=15))+scale_x_continuous(breaks = seq(0, 120, by = 5))
+ggplot(aes(x=logtime, y=oxymg), data=ind136)+geom_point() +theme_classic() + theme(text=element_text(size=15))+scale_x_continuous(breaks = seq(0, 120, by = 5))
 ```
 
 ## Individual 159
 ```{r}
 ind159<-oxall %>%
 filter(ind=="159")
-ggplot(aes(x=logtime, y=oxymgl), data=ind159)+geom_point() +theme_classic() + theme(text=element_text(size=15))+scale_x_continuous(breaks = seq(0, 120, by = 5))
+ggplot(aes(x=logtime, y=oxymg), data=ind159)+geom_point() +theme_classic() + theme(text=element_text(size=15))+scale_x_continuous(breaks = seq(0, 120, by = 5))
 ind159<-ind159 %>%
 filter(!between(logtime, 65, 75))
-ggplot(aes(x=logtime, y=oxymgl), data=ind159)+geom_point() +theme_classic() + theme(text=element_text(size=15))+scale_x_continuous(breaks = seq(0, 120, by = 5))
+ggplot(aes(x=logtime, y=oxymg), data=ind159)+geom_point() +theme_classic() + theme(text=element_text(size=15))+scale_x_continuous(breaks = seq(0, 120, by = 5))
 ```
 
 ## Individual 168
 ```{r}
 ind168<-oxall %>%
 filter(ind=="168")
-ggplot(aes(x=logtime, y=oxymgl), data=ind168)+geom_point() +theme_classic() + theme(text=element_text(size=15))+scale_x_continuous(breaks = seq(0, 120, by = 5))
+ggplot(aes(x=logtime, y=oxymg), data=ind168)+geom_point() +theme_classic() + theme(text=element_text(size=15))+scale_x_continuous(breaks = seq(0, 120, by = 5))
 ind168<-ind168 %>%
 filter(!between(logtime, 75 ,90))
-ggplot(aes(x=logtime, y=oxymgl), data=ind168)+geom_point() +theme_classic() + theme(text=element_text(size=15))+scale_x_continuous(breaks = seq(0, 120, by = 5))
+ggplot(aes(x=logtime, y=oxymg), data=ind168)+geom_point() +theme_classic() + theme(text=element_text(size=15))+scale_x_continuous(breaks = seq(0, 120, by = 5))
 ```
 
 ## Individual 267
 ```{r}
 ind267<-oxall %>%
 filter(ind=="267")
-ggplot(aes(x=logtime, y=oxymgl), data=ind267)+geom_point() +theme_classic() + theme(text=element_text(size=15))+scale_x_continuous(breaks = seq(0, 120, by = 5))
+ggplot(aes(x=logtime, y=oxymg), data=ind267)+geom_point() +theme_classic() + theme(text=element_text(size=15))+scale_x_continuous(breaks = seq(0, 120, by = 5))
 ind267<-ind267 %>%
 filter(!between(logtime, 80, 90))
-ggplot(aes(x=logtime, y=oxymgl), data=ind267)+geom_point() +theme_classic() + theme(text=element_text(size=15))+scale_x_continuous(breaks = seq(0, 120, by = 5))
+ggplot(aes(x=logtime, y=oxymg), data=ind267)+geom_point() +theme_classic() + theme(text=element_text(size=15))+scale_x_continuous(breaks = seq(0, 120, by = 5))
 ```
 
 ## Individual 270
 ```{r}
 ind270<-oxall %>%
 filter(ind=="270")
-ggplot(aes(x=logtime, y=oxymgl), data=ind270)+geom_point() +theme_classic() + theme(text=element_text(size=15))+scale_x_continuous(breaks = seq(0, 120, by = 5))
+ggplot(aes(x=logtime, y=oxymg), data=ind270)+geom_point() +theme_classic() + theme(text=element_text(size=15))+scale_x_continuous(breaks = seq(0, 120, by = 5))
 ind270<-ind270 %>%
 filter(!between(logtime, 70, 80))
-ggplot(aes(x=logtime, y=oxymgl), data=ind270)+geom_point() +theme_classic() + theme(text=element_text(size=15))+scale_x_continuous(breaks = seq(0, 120, by = 5))
+ggplot(aes(x=logtime, y=oxymg), data=ind270)+geom_point() +theme_classic() + theme(text=element_text(size=15))+scale_x_continuous(breaks = seq(0, 120, by = 5))
 ```
 
 ## Creating new dataset with trimmed individuals
@@ -1968,18 +1988,18 @@ protos <- oxall%>%
   filter(stage=="Protonymph")
   
   
-ggplot(protos, aes(x=logtime, y=oxymgl,group=ind, color=as.factor(trial)))+ #MODIFY FOR EACH TRIAL
+ggplot(protos, aes(x=logtime, y=oxymg,group=ind, color=as.factor(trial)))+ #MODIFY FOR EACH TRIAL
   geom_line()+
   theme_classic()+
   theme(text = element_text(size = 15), plot.title = element_text(size = (12)))+
-  ylim(8,12) +
+  ylim(0.00010, 0.00015) +
   facet_wrap(~ind)+
   xlab("Time logged (min)")+
   ylab("Oxygen (mg/L")+
   ggtitle("Protonymphs")+
   labs(colour = "Trial")
 
-ggsave(plot=last_plot(),filename="OxygenTrace_Protonymphs.jpg",  path="../Outputs/Oxygen traces/")
+ggsave(plot=last_plot(),filename="OxygenTrace_Protonymphs.jpg",  path="Outputs/Oxygen traces/")
 
   
 ```
@@ -1989,18 +2009,18 @@ deutos <- oxall%>%
   filter(stage=="Deutonymph")
   
   
-ggplot(deutos, aes(x=logtime, y=oxymgl,group=ind, color=as.factor(trial)))+ #MODIFY FOR EACH TRIAL
+ggplot(deutos, aes(x=logtime, y=oxymg,group=ind, color=as.factor(trial)))+ #MODIFY FOR EACH TRIAL
   geom_line()+
   theme_classic()+
   theme(text = element_text(size = 15), plot.title = element_text(size = (12)))+
-  ylim(8,12) +
+  ylim(0.00010, 0.00015) +
   facet_wrap(~ind)+
   xlab("Time logged (min)")+
   ylab("Oxygen (mg/L")+
   ggtitle("Protonymphs")+
   labs(colour = "Trial")
 
-ggsave(plot=last_plot(),filename="OxygenTrace_Deutonymphs.jpg",  path="../Outputs/Oxygen traces/")
+ggsave(plot=last_plot(),filename="OxygenTrace_Deutonymphs.jpg",  path="Outputs/Oxygen traces/")
 
   
 ```
@@ -2010,18 +2030,18 @@ Tritos <- oxall%>%
   filter(stage=="Tritonymph")
   
   
-ggplot(Tritos, aes(x=logtime, y=oxymgl,group=ind, color=as.factor(trial)))+ #MODIFY FOR EACH TRIAL
+ggplot(Tritos, aes(x=logtime, y=oxymg,group=ind, color=as.factor(trial)))+ #MODIFY FOR EACH TRIAL
   geom_line()+
   theme_classic()+
   theme(text = element_text(size = 15), plot.title = element_text(size = (12)))+
-  ylim(8,12) +
+  ylim(0.00010, 0.00015) +
   facet_wrap(~ind)+
   xlab("Time logged (min)")+
   ylab("Oxygen (mg/L")+
   ggtitle("Tritonymphs")+
   labs(colour = "Trial")
 
-ggsave(plot=last_plot(),filename="OxygenTrace_Tritonymphs.jpg",  path="../Outputs/Oxygen traces/")
+ggsave(plot=last_plot(),filename="OxygenTrace_Tritonymphs.jpg",  path="Outputs/Oxygen traces/")
 
   
 ```
@@ -2031,18 +2051,18 @@ males <- oxall%>%
   filter(stage=="Male")
   
   
-ggplot(males, aes(x=logtime, y=oxymgl,group=ind, color=as.factor(trial)))+ #MODIFY FOR EACH TRIAL
+ggplot(males, aes(x=logtime, y=oxymg,group=ind, color=as.factor(trial)))+ #MODIFY FOR EACH TRIAL
   geom_line()+
   theme_classic()+
   theme(text = element_text(size = 15), plot.title = element_text(size = (12)))+
-  ylim(8,12) +
+  ylim(0.00010, 0.00015) +
   facet_wrap(~ind)+
   xlab("Time logged (min)")+
   ylab("Oxygen (mg/L")+
   ggtitle("Males")+
   labs(colour = "Trial")
 
-ggsave(plot=last_plot(),filename="OxygenTrace_Males.jpg",  path="../Outputs/Oxygen traces/")
+ggsave(plot=last_plot(),filename="OxygenTrace_Males.jpg",  path="Outputs/Oxygen traces/")
 
   
 ```
@@ -2053,18 +2073,18 @@ females <- oxall%>%
   filter(stage=="Female")
   
   
-ggplot(females, aes(x=logtime, y=oxymgl,group=ind, color=as.factor(trial)))+ #MODIFY FOR EACH TRIAL
+ggplot(females, aes(x=logtime, y=oxymg,group=ind, color=as.factor(trial)))+ #MODIFY FOR EACH TRIAL
   geom_line()+
   theme_classic()+
   theme(text = element_text(size = 15), plot.title = element_text(size = (12)))+
-  ylim(8,12) +
+  ylim(0.00010, 0.00015) +
   facet_wrap(~ind)+
   xlab("Time logged (min)")+
   ylab("Oxygen (mg/L")+
   ggtitle("Females")+
   labs(colour = "Trial")
 
-ggsave(plot=last_plot(),filename="OxygenTrace_Females.jpg",  path="../Outputs/Oxygen traces/")
+ggsave(plot=last_plot(),filename="OxygenTrace_Females.jpg",  path="Outputs/Oxygen traces/")
 
   
 ```
@@ -2094,7 +2114,7 @@ dat_list<-split(oxall, oxall$ind)
 ```{r}
 # Creating function for fitting model
 r2 = function(data) {
-fit = lm(oxymgl~poly(logtime, 10, raw=TRUE), data = data) #fitting the model
+fit = lm(oxymg~poly(logtime, 10, raw=TRUE), data = data) #fitting the model
 output<-broom::glance(fit) #Getting adjusted r
 suma<-broom::tidy(summary(fit)) #Getting parameters for model
 merge(output, suma, all=TRUE) #merging both datasets into a single table
@@ -2109,15 +2129,15 @@ write.csv(a,"./Outputs/modelfitting.csv")
 ```{r}
 # Creating plots to see the fit
 r3 = function(data) {
-     fit = lm(oxymgl~poly(logtime, 10, raw=TRUE), data = data) #fitting the model
-     id<-data[1,11] #Getting ID for each individual
+     fit = lm(oxymg~poly(logtime, 10, raw=TRUE), data = data) #fitting the model
+     id<-data[1,12] #Getting ID for each individual
      
      mypath <- file.path("Outputs/Function fit/",paste("Individual_", id, ".jpg", sep = "")) #defining path and name for each individual
 
 
       jpeg(file = mypath, width=20, height=12, units="cm", res=300) 
 
-        plot(data$logtime, data$oxymgl, pch=19, xlab='Logtime', ylab='Oxygen(mg/l)', main=paste("Function fit: Ind", id), cex.lab=1.5, cex.axis=1.25)
+        plot(data$logtime, data$oxymg, pch=19, xlab='Time (min)', ylab='Oxygen(mg)', main=paste("Function fit: Ind", id), cex.lab=1.5, cex.axis=1.25)
 lines(data$logtime, predict(fit, data.frame(logtime=data$logtime)), col='red',lwd=2)
 dev.off()
      }
@@ -2133,7 +2153,7 @@ map_dfr(dat_list, r3, .id = "id") #This applies the function for each table in t
 # Getting the derivatives for each individual
 #a2<-split(a, a$id)
 r4=function(data){
-fit = lm(oxymgl~poly(logtime, 10, raw=TRUE), data = data) #fitting the model
+fit = lm(oxymg~poly(logtime, 10, raw=TRUE), data = data) #fitting the model
 coef7<-as.data.frame(fit$coefficients) #Getting summary data into dataframe to extract each coefficient
 a0<-coef7[1,1] #extracting each coefficient from the summary
 a1<-coef7[2,1]
@@ -2172,7 +2192,7 @@ write.csv(a3, "./Outputs/derivatives.csv")
 
 ## See #3 above for the rest of the annotations. I will only annotate here what is different from above
 r4first=function(data){
-  fit = lm(oxymgl~poly(logtime, 10, raw=TRUE), data = data)
+  fit = lm(oxymg~poly(logtime, 10, raw=TRUE), data = data)
 coef7<-as.data.frame(fit$coefficients)
 a0<-coef7[1,1]
 a1<-coef7[2,1]
@@ -2185,7 +2205,7 @@ a7<-coef7[8,1]
 a8<-coef7[9,1]
 a9<-coef7[10,1]
 a10<-coef7[11,1]
-id<-data[1,11]
+id<-data[1,12]
   #x<-ox3$logtime #Values from raw data
 x <- seq(0, 125, by=0.20) 
  form7<-expression((a10*x^10)+(a9*x^9)+(a8*x^8)+(a7*x^7)+(a6*x^6)+(a5*x^5)+(a4*x^4)+(a3*x^3)+(a2*x^2)+(a1*x^1)+(a0*x^0))
@@ -2201,7 +2221,7 @@ mypath <- file.path("Outputs/First derivative plots/",paste("Individual_", id, "
 
 
 
-plot(d7f.data$logtime, d7f.data$y1*-1, pch=19, xlab='Logtime', ylab='Oxygen(mg/l)', main=paste("First derivative: Ind ", id), cex.lab=1.5, cex.axis=1.25, ylim=c(-0.04,0.04)) #plotting the first derivative
+plot(d7f.data$logtime, d7f.data$y1*-1, pch=19, xlab='Time (min)', ylab='Oxygen consumption rate (mg/min)', main=paste("First derivative: Ind ", id), cex.lab=1.5, cex.axis=1.25, ylim=c((-0.5*10^(-8)), (5*10^(-8)) )) #plotting the first derivative
 dev.off()
 }
 
@@ -2216,7 +2236,7 @@ map(dat_list, r4first) #created plot for each individual
 #Annotations as the same as #3 and #4, the only difference is that this plot the data for the second derivative but the code is pretty much the same
 
 r4second=function(data){
-   fit = lm(oxymgl~poly(logtime, 10, raw=TRUE), data = data)
+   fit = lm(oxymg~poly(logtime, 10, raw=TRUE), data = data)
 coef7<-as.data.frame(fit$coefficients)
 a0<-coef7[1,1]
 a1<-coef7[2,1]
@@ -2229,7 +2249,7 @@ a7<-coef7[8,1]
 a8<-coef7[9,1]
 a9<-coef7[10,1]
 a10<-coef7[11,1]
-id<-data[1,11]
+id<-data[1,12]
   #x<-ox3$logtime #Values from raw data
   x <- seq(0, 125, by=0.20) 
    form7<-expression((a10*x^10)+(a9*x^9)+(a8*x^8)+(a7*x^7)+(a6*x^6)+(a5*x^5)+(a4*x^4)+(a3*x^3)+(a2*x^2)+(a1*x^1)+(a0*x^0))
@@ -2243,7 +2263,7 @@ mypath <- file.path("Outputs/Second derivative plots/",paste("Individual_", id, 
 
 
  jpeg(file = mypath, width=20, height=12, units="cm", res=300)
-plot(d7s.data$logtime, d7s.data$y1, pch=19, xlab='Logtime', ylab='Oxygen(mg/l)', main=paste("Second derivative: Ind", id), cex.lab=1.5, cex.axis=1.25, ylim=c(-0.004,0.004)) #plots the second derivative
+plot(d7s.data$logtime, d7s.data$y1, pch=19, xlab='Time (min)', ylab='Change oxygen cons. rate (mg/min)', main=paste("Second derivative: Ind", id), cex.lab=1.5, cex.axis=1.25, ylim=c((-0.75e-8),(0.75e-8))) #plots the second derivative
 abline(h=0,col="orange", lty=2, lwd=2) #line to visualize the intersection with zero (relevant for the inflection points)
 dev.off()
 }
@@ -2257,7 +2277,7 @@ map(dat_list, r4second) #Plots the second derivative plots for each individual
 # Getting the inflection points: the points where there was a change in the "slope"
 ## Procedure is pretty much the same as above, I will only comment what is different
 r5=function(data){
-  fit = lm(oxymgl~poly(logtime, 10, raw=TRUE), data = data)
+  fit = lm(oxymg~poly(logtime, 10, raw=TRUE), data = data)
 coef7<-as.data.frame(fit$coefficients)
 a0<-coef7[1,1]
 a1<-coef7[2,1]
@@ -2270,7 +2290,7 @@ a7<-coef7[8,1]
 a8<-coef7[9,1]
 a9<-coef7[10,1]
 a10<-coef7[11,1]
-id<-data[1,11]
+id<-data[1,12]
 #x<-ox3$logtime #Values from raw data
 x <- seq(0, 125, by=0.20)
 form7<-expression((a10*x^10)+(a9*x^9)+(a8*x^8)+(a7*x^7)+(a6*x^6)+(a5*x^5)+(a4*x^4)+(a3*x^3)+(a2*x^2)+(a1*x^1)+(a0*x^0))
@@ -2582,7 +2602,7 @@ ggplot(protos, aes(x=logtime, y=first2,color=as.factor(trial)))+ #MODIFY FOR EAC
   theme_classic()+
   theme(text = element_text(size = 15), plot.title = element_text(size = (12)))+
   xlab("Time logged (min)")+
-  ylab("Oxygen (mg/L)/time (min)")+
+  ylab("Oxygen(mg) /time (min)")+
   ggtitle("Protonymphs")+
   labs(colour = "Trial")
 
@@ -2602,7 +2622,7 @@ ggplot(deutos, aes(x=logtime, y=first2,color=as.factor(trial)))+ #MODIFY FOR EAC
   theme_classic()+
   theme(text = element_text(size = 15), plot.title = element_text(size = (12)))+
   xlab("Time logged (min)")+
-  ylab("Oxygen (mg/L)/time (min)")+
+  ylab("Oxygen (mg)/time (min)")+
   ggtitle("Deutonymphs")+
   labs(colour = "Trial")
 
@@ -2622,7 +2642,7 @@ ggplot(Tritos, aes(x=logtime, y=first2,color=as.factor(trial)))+ #MODIFY FOR EAC
   theme_classic()+
   theme(text = element_text(size = 15), plot.title = element_text(size = (12)))+
   xlab("Time logged (min)")+
-  ylab("Oxygen (mg/L)/time (min)")+
+  ylab("Oxygen (mg)/time (min)")+
   ggtitle("Tritonymphs")+
   labs(colour = "Trial")
 
@@ -2643,7 +2663,7 @@ ggplot(males, aes(x=logtime, y=first2,color=as.factor(trial)))+ #MODIFY FOR EACH
   theme_classic()+
   theme(text = element_text(size = 15), plot.title = element_text(size = (12)))+
   xlab("Time logged (min)")+
-  ylab("Oxygen (mg/L)/time (min)")+
+  ylab("Oxygen (mg)/time (min)")+
   ggtitle("Males")+
   labs(colour = "Trial")
 
@@ -2964,7 +2984,7 @@ ggplot(protos, aes(x=logtime, y=first2,color=as.factor(trial)))+ #MODIFY FOR EAC
   theme_classic()+
   theme(text = element_text(size = 15), plot.title = element_text(size = (12)))+
   xlab("Time logged (min)")+
-  ylab("Oxygen (mg/L)/time (min)")+
+  ylab("Oxygen (mg)/time (min)")+
   ggtitle("Protonymphs")+
   labs(colour = "Trial")
 
@@ -2984,7 +3004,7 @@ ggplot(deutos, aes(x=logtime, y=first2,color=as.factor(trial)))+ #MODIFY FOR EAC
   theme_classic()+
   theme(text = element_text(size = 15), plot.title = element_text(size = (12)))+
   xlab("Time logged (min)")+
-  ylab("Oxygen (mg/L)/time (min)")+
+  ylab("Oxygen (mg)/time (min)")+
   ggtitle("Deutonymphs")+
   labs(colour = "Trial")
 
@@ -3004,7 +3024,7 @@ ggplot(Tritos, aes(x=logtime, y=first2,color=as.factor(trial)))+ #MODIFY FOR EAC
   theme_classic()+
   theme(text = element_text(size = 15), plot.title = element_text(size = (12)))+
   xlab("Time logged (min)")+
-  ylab("Oxygen (mg/L)/time (min)")+
+  ylab("Oxygen (mg)/time (min)")+
   ggtitle("Tritonymphs")+
   labs(colour = "Trial")
 
@@ -3025,7 +3045,7 @@ ggplot(males, aes(x=logtime, y=first2,color=as.factor(trial)))+ #MODIFY FOR EACH
   theme_classic()+
   theme(text = element_text(size = 15), plot.title = element_text(size = (12)))+
   xlab("Time logged (min)")+
-  ylab("Oxygen (mg/L)/time (min)")+
+  ylab("Oxygen (mg)/time (min)")+
   ggtitle("Males")+
   labs(colour = "Trial")
 
@@ -3046,7 +3066,7 @@ ggplot(females, aes(x=logtime, y=first2,color=as.factor(trial)))+ #MODIFY FOR EA
   theme_classic()+
   theme(text = element_text(size = 15), plot.title = element_text(size = (12)))+
   xlab("Time logged (min)")+
-  ylab("Oxygen (mg/L)/time (min)")+
+  ylab("Oxygen (mg)/time (min)")+
   ggtitle("Females")+
   labs(colour = "Trial")
 
@@ -3868,14 +3888,15 @@ summary(model)
 slope<-model$coefficients[2]
 intercept<-model$coefficients[1]
 ## 6,7. Creating dataframe for the slope
-data3 %>%  ggplot(aes(x=invtemp, y=lnderiv))+geom_point()+geom_abline(intercept = intercept, slope = slope, color="red", 
-               linetype="solid", size=1.5) + ylim(-5,-3)+ theme_classic()+ theme(text = element_text(size = 15),plot.title = element_text(hjust=0.5))+ ggtitle(label)+
+data3 %>%  ggplot(aes(x=invtemp, y=lnderiv))+geom_point()+geom_abline(intercept = intercept, slope = slope, color="#810f7c", 
+               linetype="solid", size=1.5) + ylim(-16.2,-14.5)+ 
+  theme_classic()+ theme(text = element_text(size = 15),plot.title = element_text(hjust=0.5))+ ggtitle(label)+
   xlab("Temperature(1/kT)")+
-  ylab("ln(First derivative)") #+ #Plotting to see what the line looks like
+  ylab("ln(oxygen consumed, VO2)") #+ #Plotting to see what the line looks like
   #scale_x_continuous(labels=function(n){format(n, scientific=TRUE)})
 name<-paste("Individual_", ind, ".jpg", sep = "")
 mypath <- file.path("Outputs/Activation energy plots/")
-ggsave(plot=last_plot(),filename=name,  path=mypath)
+ggsave(plot=last_plot(),filename=name,  path=mypath, width=17, height=10, units="cm")
      }
 
 map(dat_list, e2)
@@ -4597,7 +4618,7 @@ Convert temperature to Kelvin
 Cut all races t
 
 
-plot1<-ggplot(data1,aes(x=logtime, y=oxymgl)+geom_point( pch=19)+ xlab('Logtime')+ ylab('Oxygen(mg/l)')+main(paste("Individual ", id)) +theme_classic()+theme(size=18)
+plot1<-ggplot(data1,aes(x=logtime, y=oxymg)+geom_point( pch=19)+ xlab('Logtime')+ ylab('Oxygen(mg/l)')+main(paste("Individual ", id)) +theme_classic()+theme(size=18)
 lines(data$logtime, predict(fit, data.frame(logtime=data$logtime)), col='red',lwd=1.2)
 
 

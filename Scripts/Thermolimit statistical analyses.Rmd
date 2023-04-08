@@ -61,6 +61,13 @@ sample<-dat %>%
   group_by(stage) %>%
   summarize(n=n())
 sample
+
+av.weight<-mean(dat$weight)
+av.weight
+
+
+av.ropt<-mean(dat$ropt2)
+av.ropt
 ```
 # Exploring the data
 
@@ -95,6 +102,12 @@ ggplot(dat2, aes(x=ramp, y=tempcorr, color=as.factor(trial)))+geom_point()
 
 ggplot(dat2, aes(y=ramp))+ geom_boxplot()
 
+av.weight<-mean(dat2$weight)
+av.weight
+
+
+av.ropt<-mean(dat2$ropt2)
+av.ropt
 
 
 ```
@@ -387,6 +400,9 @@ Data seems fairly ok. Now I can look at the results:
 
 #### Looking at the results (This is the final model I decided to use)
 ```{r}
+mean(dat2b$tempcorr)
+sd(dat2b$tempcorr)
+
 summary (t1b3)
 sjPlot::tab_model(t1b3, show.se = T, show.ci = F, show.re.var = F, show.intercept = T, 
                   show.icc = FALSE, show.ngroups = F, show.r2 = T,
@@ -409,10 +425,10 @@ plottst<-ggplot(dat2b, aes(x = stage))+
 #geom_point(aes(y = median),color = "red", size = 3, data = averages, position=position_nudge(x=0.2))+ #plotting the median
   theme_classic()+ theme(text = element_text(size = 15),legend.position="none")+ 
   xlab("Stage")+
-  ylab("Thermal optima (Celsius)")+
+  ylab(bquote(T[MetMax]~"(°C)")) +
   scale_color_manual(name="Stage", values=colors)
 plottst
-ggsave(plot=last_plot(),filename="Topt_stage_minustrial2and outliers.jpg",  path="Outputs/Statistics/", height=4.5, width=7.29, units="in")
+ggsave(plot=last_plot(),filename="Topt_stage_minustrial2and outliers.jpg",  path="Outputs/Statistics/", height=10, width=17, units="cm")
 
 
 #nd<-data.frame(ramp=seq(0.24,0.26,0.005), date=c("2022-06-23"), stage=c("Protonymph", "Deutonymph", "Tritonymph", "Female", "Male"))
@@ -1068,7 +1084,7 @@ plottwg<-ggplot(datf, aes(x = weight))+
   geom_smooth(aes(y=tempcorr), method = "lm", se = FALSE, color="black")+
   theme_classic()+ theme(text = element_text(size = 15),legend.position="top")+ 
   xlab("Weight (mg)")+
-  ylab("Thermal optima (Celsius)") +
+  ylab(bquote(T[MetMax]~"(°C)")) +
   scale_color_manual(name="Stage", values=colors)
 
 plottwg
@@ -1104,7 +1120,7 @@ plottwg
 #  xlab("Weight (mg)")+
 #  ylab("Thermal optima (Celsius)")
 #r10plot
-ggsave(plot=last_plot(),filename="Topt_weight_perstage_minustrial2andOutliers.jpg",  path="Outputs/Statistics/")
+ggsave(plot=last_plot(),filename="Topt_weight_perstage_minustrial2andOutliers.jpg",  path="Outputs/Statistics/",height=10, width=20, units="cm")
 
 
 ```
@@ -1306,7 +1322,10 @@ ols_test_normality(t1b5) #Kolmogorov (more than n=50): data is normal
 
 #### Looking at the results
 ```{r}
-
+mean(dat2b$ropt2)
+sd(dat2b$ropt2)
+mean(dat2b$weight)
+sd(dat2b$weight)
 
 summary(t1b5)
 sjPlot::tab_model(t1b5, show.se = T, show.ci = F, show.re.var = F, show.intercept = T, 
@@ -1394,12 +1413,12 @@ plotrst<-ggplot(datf, aes(x=stage, y=ropt2, color=stage))+
   stat_summary(geom="errorbar", fun.data=mean_se, width=0.1, position=position_nudge(x=0.2), color="black")+
   theme_classic()+ theme(text = element_text(size = 15),legend.position="none")+ 
   xlab("Stage")+
-  ylab("Rate optima (Oxygen (mg/L)/ time(min))")+
+  ylab(bquote(VO2[Max]~(mg~min^-1)) +
   scale_color_manual(name="Stage", values=colors)
 plotrst
 
 
-ggsave(plot=last_plot(),filename="Ropt_stage_perstage_minustrial2andOutliers.jpg",  path="Outputs/Statistics/", height=4.5, width=7.29, units="in")
+ggsave(plot=last_plot(),filename="Ropt_stage_perstage_minustrial2andOutliers.jpg",  path="Outputs/Statistics/", height=10, width=17, units="cm")
 ```
 
 
@@ -2179,13 +2198,16 @@ ggsave(plot=last_plot(),filename="maxs_microenv.jpg",  path="Outputs/Statistics/
 data%>%group_by(stage)%>% summarize(n())
 ```
 
-## Making the prediction plots
+## Making the prediction plots microenv vs trace
 
 ```{r}
 
 
 # Dummy microclimate data
-dummy<-data.frame(micro=rnorm(n=500, mean=5))
+#dummy<-data.frame(micro=rnorm(n=500, mean=5))
+#write.csv(dummy,"Outputs/Statistics/Dummydataforprecplots.csv")
+
+dummy<-read.csv("Outputs/Statistics/Dummydataforprecplots.csv")
 
 # Plot scenario 1: "room for adaptation"
 # Dummy topt data
@@ -2198,7 +2220,7 @@ sine <- tibble(x = theta,
                y = sin(theta),
                label = 1:length(theta))
 sine<-sine %>%
-  mutate(x2=x+8, y2=y*50)
+  mutate(x2=x+8, y2=y*100)
 
 sine %>%
   ggplot(aes(x=x2,y=y2))+
@@ -2209,19 +2231,21 @@ meanline<-mean(dummy$micro)
 medianline<-median(dummy$micro)
 
 
+library(ggrepel)
 coeff<-50
 p1<-ggplot()+
-  geom_histogram(dummy, mapping=aes(x=micro),fill="#a6cee3", alpha=1)+
+  geom_histogram(dummy, mapping=aes(x=micro),fill="#a6cee3", alpha=1, binwidth=0.5)+
   geom_vline(xintercept=max(dummy$micro), color="#1f78b4",linetype="solid")+
-  geom_vline(xintercept=mean(dummy$micro), color="#1f78b4",linetype="solid")+
+  #geom_vline(xintercept=mean(dummy$micro), color="#1f78b4",linetype="solid")+
   geom_line(sine, mapping=aes(x=x2, y=y2), size=1.1)+
   theme_classic()+
   theme(text = element_text(size = 15), plot.title = element_text(size = (12)), strip.text.x = element_blank(),panel.spacing = unit(7, "mm"))+
   xlab("Temperature (Celsius)")+
-  scale_x_continuous( breaks=NULL)+
-  scale_y_continuous("Frequency", sec.axis = sec_axis(~ ./coeff, name = "Rate optima (Oxygen (mg/L)/ time(min))", breaks=NULL), breaks=NULL)+
-  geom_segment(aes(x = max(dummy$micro), y = 50, xend = 9.55, yend = 50), linetype="dashed", size=1.2, color="red")+
-  geom_segment(aes(x = mean(dummy$micro), y = 51, xend = 9.55, yend = 51), linetype="dashed", size=1.2, color="red")
+  scale_x_continuous( breaks=NULL,limits=c(-0.50,12))+
+  scale_y_continuous("Environment's temperature frequency", sec.axis = sec_axis(~ ./coeff, name = "Thermal performance", breaks=NULL), breaks=NULL)+
+  geom_segment(aes(x = max(dummy$micro), y = 100, xend = 9.55, yend = 100), linetype="dashed", size=1.2, color="red")+
+  #geom_segment(aes(x = mean(dummy$micro), y = 100, xend = 9.55, yend = 100), linetype="dashed", size=1.2, color="red") +
+  geom_label_repel(label="TMetMax", aes(x=9.55, y=100), nudge_x = 1, nudge_y = 2, arrow = arrow(length = unit(0.015, "npc")),min.segment.length = 0 )
 p1
 ggsave(plot=last_plot(),filename="Predictionplot1.svg",  path="Outputs/Statistics/",width=7, height=7, units="in")
 
@@ -2238,11 +2262,14 @@ sine <- tibble(x = theta,
                y = sin(theta),
                label = 1:length(theta))
 sine<-sine %>%
-  mutate(x2=x-0.5, y2=y*50)
+  mutate(x2=x-0.54, y2=y*100)
 
 sine %>%
   ggplot(aes(x=x2,y=y2))+
   geom_line(color= "red", size = 3)
+
+#sine<-sine %>%
+#  filter(y2>50)
 
 
 meanline<-mean(dummy$micro)
@@ -2250,28 +2277,91 @@ medianline<-median(dummy$micro)
 
 
 coeff<-50
-ggplot()+
-  geom_histogram(dummy, mapping=aes(x=micro),fill="#a6cee3", alpha=1)+
+p2<-ggplot()+
+  geom_histogram(dummy, mapping=aes(x=micro),fill="#a6cee3", alpha=1, binwidth=0.5)+
   geom_vline(xintercept=max(dummy$micro), color="#1f78b4",linetype="solid")+
-  geom_vline(xintercept=mean(dummy$micro), color="#1f78b4",linetype="solid")+
+  #geom_vline(xintercept=mean(dummy$micro), color="#1f78b4",linetype="solid")+
   geom_line(sine, mapping=aes(x=x2, y=y2), size=1.1)+
   theme_classic()+
   theme(text = element_text(size = 15), plot.title = element_text(size = (12)), strip.text.x = element_blank(),panel.spacing = unit(7, "mm"))+
   xlab("Temperature (Celsius)")+
-  scale_x_continuous(breaks=NULL)+
-  scale_y_continuous("Frequency", sec.axis = sec_axis(~ ./coeff, name = "Rate optima (Oxygen (mg/L)/ time(min))", breaks=NULL), breaks=NULL)+
-  geom_segment(aes(xend = max(dummy$micro), y = 50, x = 1.05, yend = 50), linetype="dashed", size=1.2, color="red")+
-  geom_segment(aes(xend = mean(dummy$micro), y = 51, x = 1.05, yend = 51), linetype="dashed", size=1.2, color="red")
-  
+   scale_x_continuous( breaks=NULL, limits=c(-0.5,12))+
+  scale_y_continuous("Environment's temperature frequency", sec.axis = sec_axis(~ ./coeff, name = "Thermal performance" , breaks=NULL), breaks=NULL)+
+  geom_segment(aes(x = max(dummy$micro), y = 100, xend = 1.05, yend = 100), linetype="dashed", size=1.2, color="red")+
+ #geom_segment(aes(xend = mean(dummy$micro), y = 100, x = 1.05, yend = 100), linetype="dashed", size=1.2, color="red")+
+  geom_label_repel(label="TMetMax", aes(x=1.05, y=100), nudge_x = 1, nudge_y = 2, arrow = arrow(length = unit(0.015, "npc")),min.segment.length = 0 )
+p2  
 ggsave(plot=last_plot(),filename="Predictionplot2.svg",  path="Outputs/Statistics/",width=7, height=7, units="in")
+
+
+predicts<-ggarrange(p1,p2, ncol=2, labels=c("A", "B"), font.label = list(size = 18, color = "black", face = "bold", family = NULL))
+predicts
+
+ggsave(plot=last_plot(),filename="Predictionplotcombined.svg",  path="Outputs/Statistics/",width=20, height=12, units="cm")
+ggsave(plot=last_plot(),filename="Predictionplotcombined.jpg",  path="Outputs/Statistics/",width=20, height=12, units="cm")
+
+
 ```
+
+## Making the explanatory plot labeled for Manuscript
+
+```{r}
+#set.seed(35486)                    # Create random distributions
+#data <- data.frame(x1 = rbeta(1000, 10, 2))
+#head(data)                         # Print head of data
+
+library(tidyr)
+#data_long <- data %>%              # Convert wide to long data
+#  pivot_longer(colnames(data)) %>% 
+#  as.data.frame()
+#head(data_long)  
+
+
+
+#write.csv(data_long, "exampleplotdata.csv")
+
+data_long<-read.csv("exampleplotdata.csv")
+
+ggplot(data_long,                  # Draw all densities in ggplot2 plot
+       aes(value)) +
+  geom_density(alpha = 0.25)
+
+
+
+library(ggrepel)
+p3<-ggplot(data_long, aes(value)) +
+  geom_density(size=1.2)+
+  theme_classic()+
+  theme(text = element_text(size = 15), plot.title = element_text(size = (12)), strip.text.x = element_blank(),panel.spacing = unit(7, "mm"))+
+  xlab("Temperature (Celsius)")+
+  scale_x_continuous( breaks=NULL,limits=c(0.6,1), expand=c(0,0))+
+  scale_y_continuous("Performance (Oxygen consumed, VO2)", breaks=NULL, expand=c(0,0))+
+  geom_segment(aes(x = 0.6, y =4.35, xend = 0.9, yend = 4.35), linetype="dashed", size=1.2, color="#02818a")+ #VO2
+  geom_segment(aes(x =0.9, y = 0, xend = 0.9, yend =4.35), linetype="dashed", size=1.2, color="#d94801") + #TMetMax
+  geom_segment(aes(x =0.6, y = 0.34, xend = 0.9, yend =4.35), linetype="dashed", size=1.2, color="#810f7c")+ #Activation energy
+  geom_text(label="VO2max", aes(x=0.75, y=4.3), vjust=0, nudge_y=-0.3, color="#02818a", size=7) + #VO2
+  geom_text(label="TMetMax", aes(x=0.95, y=2.175), hjust=0, nudge_x=-0.13, color="#d94801", size=7)+ #TMetMax
+  geom_text(label="E", aes(x=0.75, y=2.175), hjust=0, nudge_x=-0.05, color="#810f7c", size=7) #Activation energy
+
+p3
+
+
+ggsave(plot=last_plot(),filename="Exampleplot.svg",  path="Outputs/Statistics/",width=17, height=10, units="cm")
+ggsave(plot=last_plot(),filename="Exampleplot.png",  path="Outputs/Statistics/",width=17, height=10, units="cm")
+
+
+
+```
+
+
+
 
 # Final figures for manuscript
 
 ## Microenvironment figures
 
 ```{r}
-fig<-ggarrange( maxs+theme(text = element_text(size = 14),legend.position="top"),fems+theme(text = element_text(size = 14)), ncol=1, labels=c("A", "B"), nrow=2, heights=c(1,2))
+fig<-ggarrange( maxs+theme(text = element_text(size = 14),legend.position="top"),fems+theme(text = element_text(size = 14)), ncol=1, labels=c("A", "B"), nrow=2, heights=c(1,2), font.label = list(size = 16 ))
 fig
 ggsave(plot=fig,filename="figenv.jpg",  path="Outputs/Statistics/",width=7, height=10, units="in")
 
