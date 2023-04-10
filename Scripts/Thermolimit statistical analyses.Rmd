@@ -1362,7 +1362,15 @@ sample2<-dat2b %>%
   summarize(n=n())
 sample2
 ```
+#checking weight and ropt for adults only
+```{r}
+means<-dat2b %>%
+  filter(stage %in% c("Male", "Female"))
 
+mean(means$ropt2)
+mean(means$weight)
+
+```
 
 
 #### Looking at the results
