@@ -100,6 +100,7 @@ micro<-micro%>%
          "PLANTliveleaves_b_site6"="PLANTlive_bottom_leaves6",
          "PLANTliveleaves_site9"="PLANTlive_top_leaves9") %>%
   mutate(means2=apply(micro[,5:35],1, mean, na.rm=T), 
+         sd=apply(micro[,5:35],1, sd, na.rm=T),
          diff=means-means2,
          tempcorr=means2,
          date2=as.POSIXct(date2, format="%m/%d/%y")) 
@@ -149,7 +150,7 @@ ggplot()+
   xlab("Temperature (°C)")+
   scale_x_continuous(limits=c(5,55), breaks=c(5,20,35,50))+
   geom_line(protos, mapping=aes(y=first2*coeff,x=tempcorr))+
-  scale_y_continuous("Frequency",  sec.axis = sec_axis(~ ./coeff, name = bquote(VO2[Max]~(mg~min^-1)), labels = scales::scientific)) + 
+  scale_y_continuous("Frequency",  sec.axis = sec_axis(~ ./coeff, name = bquote(VO[2]~(mg~min^-1)), labels = scales::scientific)) + 
   facet_wrap(vars(ind))+
   labs(colour = "Trial")
 ggsave(plot=last_plot(),filename="Proto_allseason_allarea.jpg",  path="Outputs/Microclimate vs performance/",width=7, height=7, units="in")
@@ -1488,6 +1489,81 @@ ggplot(micro, aes(x=means2))+
 ggsave(plot=last_plot(),filename="Climate_allseason_allarea_future.jpg",  path="Outputs/Microclimate vs performance/",width=7, height=7, units="in")
 ```
 
+### Temperature ranges
+
+```{r}
+
+#For the whole season
+## Current
+round(min(micro$means2), digits=2) #min
+round(max(micro$means2), digits=2) #max
+round((max(micro$means2)-min(micro$means2)), digits=2) #range
+round(mean(micro$means2), digits=2) #mean
+round(sd(micro$means2), digits=2) #sd
+round((sd(micro$means2)/length(micro$means2)), digits=3) #se
+
+## Future
+round(min(future$temp), digits=2) #min
+round(max(future$temp), digits=2) #max
+round((max(future$temp)-min(future$temp)), digits=2) #range
+round(mean(future$temp), digits=2) #mean
+round(sd(future$temp), digits=2) #sd
+round((sd(future$temp)/length(future$temp)), digits=3) #se
+
+
+
+#Per day
+## Current
+dailycurr<- micro %>%
+  group_by(date2) %>%
+  summarize(max=max(means2), min=min(means2), mean=mean(means2), sd=sd(means2)) %>%
+  mutate(range=max-min)
+n<-length(dailycurr$date2)
+
+round(mean(dailycurr$min), digits=2) #min mean
+round(sd(dailycurr$min), digits=2) #min sd
+round((sd(dailycurr$min)/n), digits=2) #min se
+
+round(mean(dailycurr$max), digits=2) #max mean
+round(sd(dailycurr$max), digits=2) #max sd
+round((sd(dailycurr$max)/n), digits=2) #max se
+
+round(mean(dailycurr$range), digits=2) #range
+round(sd(dailycurr$range), digits=2) #range sd
+round((sd(dailycurr$range)/n), digits=2) #range se
+
+round(mean(dailycurr$mean), digits=2) #mean
+round(sd(dailycurr$mean), digits=2) #mean sd
+round((sd(dailycurr$mean)/n), digits=2) #mean se
+
+
+
+## Future
+dailyfut<- future %>%
+  group_by(month2, day) %>%
+  summarize(max=max(temp), min=min(temp), mean=mean(temp), sd=sd(temp)) %>%
+  mutate(range=max-min)
+n<-length(dailyfut$day)
+
+round(mean(dailyfut$min), digits=2) #min mean
+round(sd(dailyfut$min), digits=2) #min sd
+round((sd(dailyfut$min)/n), digits=2) #min se
+
+round(mean(dailyfut$max), digits=2) #max mean
+round(sd(dailyfut$max), digits=2) #max sd
+round((sd(dailyfut$max)/n), digits=2) #max se
+
+round(mean(dailyfut$range), digits=2) #range
+round(sd(dailyfut$range), digits=2) #range sd
+round((sd(dailyfut$range)/n), digits=2) #range se
+
+round(mean(dailyfut$mean), digits=2) #mean
+round(sd(dailyfut$mean), digits=2) #mean sd
+round((sd(dailyfut$mean)/n), digits=2) #mean se
+
+
+```
+
 
 ##### Plotting for all life stages
 ```{r}
@@ -1508,7 +1584,7 @@ ggplot()+
   xlab("Temperature (°C)")+
   scale_x_continuous(limits=c(5,55), breaks=c(5,20,35,50))+
   geom_line(protos, mapping=aes(y=first2*coeff,x=tempcorr))+
-  scale_y_continuous("Frequency",  sec.axis = sec_axis(~ ./coeff, name = bquote(VO2[Max]~(mg~min^-1)), labels = scales::scientific)) + 
+  scale_y_continuous("Frequency",  sec.axis = sec_axis(~ ./coeff, name = bquote(VO[2]~(mg~min^-1)), labels = scales::scientific)) + 
   facet_wrap(vars(ind))+
   labs(colour = "Trial")
 ggsave(plot=last_plot(),filename="Proto_allseason_allarea_future.jpg",  path="Outputs/Microclimate vs performance/",width=7, height=7, units="in")
@@ -1530,7 +1606,7 @@ ggplot()+
   xlab("Temperature (°C)")+
   scale_x_continuous(limits=c(5,55), breaks=c(5,20,35,50))+
   geom_line(deutos, mapping=aes(y=first2*coeff,x=tempcorr))+
-  scale_y_continuous("Frequency",  sec.axis = sec_axis(~ ./coeff, name = bquote(VO2[Max]~(mg~min^-1)), labels = scales::scientific)) + 
+  scale_y_continuous("Frequency",  sec.axis = sec_axis(~ ./coeff, name = bquote(VO[2]~(mg~min^-1)), labels = scales::scientific)) + 
   facet_wrap(vars(ind))+
   labs(colour = "Trial")
 ggsave(plot=last_plot(),filename="Deuto_allseason_allarea_future.jpg",  path="Outputs/Microclimate vs performance/",width=7, height=7, units="in")
@@ -1552,7 +1628,7 @@ ggplot()+
   xlab("Temperature (°C)")+
   scale_x_continuous(limits=c(5,55), breaks=c(5,20,35,50))+
   geom_line(tritos, mapping=aes(y=first2*coeff,x=tempcorr))+
-  scale_y_continuous("Frequency",  sec.axis = sec_axis(~ ./coeff, name = bquote(VO2[Max]~(mg~min^-1)), labels = scales::scientific)) + 
+  scale_y_continuous("Frequency",  sec.axis = sec_axis(~ ./coeff, name = bquote(VO[2]~(mg~min^-1)), labels = scales::scientific)) + 
   facet_wrap(vars(ind))+
   labs(colour = "Trial")
 ggsave(plot=last_plot(),filename="Trito_allseason_allarea_future.jpg",  path="Outputs/Microclimate vs performance/",width=7, height=7, units="in")
@@ -1574,7 +1650,7 @@ ggplot()+
   xlab("Temperature (°C)")+
   scale_x_continuous(limits=c(5,55), breaks=c(5,20,35,50))+
   geom_line(males, mapping=aes(y=first2*coeff,x=tempcorr))+
-  scale_y_continuous("Frequency",  sec.axis = sec_axis(~ ./coeff, name = bquote(VO2[Max]~(mg~min^-1)), labels = scales::scientific)) + 
+  scale_y_continuous("Frequency",  sec.axis = sec_axis(~ ./coeff, name = bquote(VO[2]~(mg~min^-1)), labels = scales::scientific)) + 
   facet_wrap(vars(ind))+
   labs(colour = "Trial")
 ggsave(plot=last_plot(),filename="Male_allseason_allarea_future.jpg",  path="Outputs/Microclimate vs performance/",width=7, height=7, units="in")
@@ -1596,7 +1672,7 @@ fems<-ggplot()+
   xlab("Temperature (°C)")+
   scale_x_continuous(limits=c(5,55), breaks=c(5,20,35,50))+
   geom_line(females, mapping=aes(y=first2*coeff,x=tempcorr))+
-  scale_y_continuous("Frequency",  sec.axis = sec_axis(~ ./coeff, name = bquote(VO2[Max]~(mg~min^-1)), labels = scales::scientific)) + 
+  scale_y_continuous("Frequency",  sec.axis = sec_axis(~ ./coeff, name = bquote(VO[2]~(mg~min^-1)), labels = scales::scientific)) + 
   facet_wrap(vars(ind))+
   labs(colour = "Trial")
 fems

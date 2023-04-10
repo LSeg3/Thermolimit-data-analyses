@@ -145,6 +145,14 @@ plot
 
 ```
 
+## Average weight per stage
+```{r}
+dat2 %>%
+  group_by(stage) %>%
+  summarize(mean=mean(weight), sd=sd(weight))
+```
+
+
 
 
 ## Checking for outliers
@@ -412,6 +420,33 @@ sjPlot::tab_model(t1b3, show.se = T, show.ci = F, show.re.var = F, show.intercep
 confint(t1b3)
 coefTable <- summary(t1b3, ddf = "Kenward-Roger")$coefficients
 coefTable
+
+#Pairwise comparison
+pair<-emmeans(t1b3, pairwise~stage, adjust="holm")
+pair
+means<-as.data.frame(pair$emmeans)
+means<-means %>%
+  mutate(emmean=round(emmean, digits=10),
+         SE=round(SE, digits=10),
+         lower.CL=round(lower.CL, digits=10),
+         upper.CL=round(upper.CL, digits=10))
+
+contrasts<-as.data.frame(pair$contrasts)
+contrasts<-contrasts %>%
+  mutate(estimate=round(estimate, digits=2),
+         SE=round(SE, digits=2),
+         df=round(df, digits=2),
+         t.ratio=round(t.ratio, digits=2),
+         p.value=round(p.value, digits=3))
+
+table1<-  create_table(means)
+table2<-  create_table(contrasts)
+report<-reporter::create_report(file_path = "Outputs/Statistics/Topt_stage_pairwise", output_type = "DOCX",orientation = "portrait",font="Times") %>%
+  add_content(table1) %>%
+  add_content(table2)
+write_report(report)
+
+
 
 # Plotting the raw averages
  dat2b<-dat2b%>% 
@@ -1083,7 +1118,7 @@ plottwg<-ggplot(datf, aes(x = weight))+
   geom_point(aes(y = tempcorr, color=stage), size = 3, shape=1, stroke=1.2)  + 
   geom_smooth(aes(y=tempcorr), method = "lm", se = FALSE, color="black")+
   theme_classic()+ theme(text = element_text(size = 15),legend.position="top")+ 
-  xlab("Weight (mg)")+
+  xlab("Mass (mg)")+
   ylab(bquote(T[MetMax]~"(°C)")) +
   scale_color_manual(name="Stage", values=colors)
 
@@ -1320,6 +1355,16 @@ ols_test_normality(t1b5) #Kolmogorov (more than n=50): data is normal
 
 ```
 
+## Checking sample sizes
+```{r}
+sample2<-dat2b %>%
+  group_by(stage) %>%
+  summarize(n=n())
+sample2
+```
+
+
+
 #### Looking at the results
 ```{r}
 mean(dat2b$ropt2)
@@ -1338,15 +1383,15 @@ pair<-emmeans(t1b5, pairwise~stage, adjust="holm")
 pair
 means<-as.data.frame(pair$emmeans)
 means<-means %>%
-  mutate(emmean=round(emmean, digits=2),
-         SE=round(SE, digits=3),
-         lower.CL=round(lower.CL, digits=2),
-         upper.CL=round(upper.CL, digits=2))
+  mutate(emmean=round(emmean, digits=10),
+         SE=round(SE, digits=10),
+         lower.CL=round(lower.CL, digits=10),
+         upper.CL=round(upper.CL, digits=10))
 
 contrasts<-as.data.frame(pair$contrasts)
 contrasts<-contrasts %>%
-  mutate(estimate=round(estimate, digits=2),
-         SE=round(SE, digits=3),
+  mutate(estimate=round(estimate, digits=10),
+         SE=round(SE, digits=10),
          t.ratio=round(t.ratio, digits=2),
          p.value=round(p.value, digits=3))
 
@@ -1413,7 +1458,7 @@ plotrst<-ggplot(datf, aes(x=stage, y=ropt2, color=stage))+
   stat_summary(geom="errorbar", fun.data=mean_se, width=0.1, position=position_nudge(x=0.2), color="black")+
   theme_classic()+ theme(text = element_text(size = 15),legend.position="none")+ 
   xlab("Stage")+
-  ylab(bquote(VO2[Max]~(mg~min^-1)) +
+  ylab(bquote(VO2[Max]~(mg~min^-1))) +
   scale_color_manual(name="Stage", values=colors)
 plotrst
 
@@ -1524,8 +1569,8 @@ plotrwg<-ggplot(datf, aes(x = weight))+
   geom_line(aes(y = .fitted), data = predicted.r10, size = 2) + 
   geom_ribbon(aes(ymin = lwr, ymax = upr), data = predicted.r10, alpha = 0.5) + 
   theme_classic()+ theme(text = element_text(size = 15),legend.position="top")+ 
-  xlab("Weight (mg)")+
-  ylab("Rate optima (Oxygen (mg/L) / time (min))")+
+  xlab("Mass (mg)")+
+  ylab(bquote(VO2[Max]~(mg~min^-1)))+
   scale_color_manual(name="Stage", values=colors)
 plotrwg
 ggsave(plot=last_plot(),filename="Ropt_weight_perstage_minustrial2andOutliers.jpg",  path="Outputs/Statistics/",height=4.5, width=7.29, units="in")
@@ -1596,13 +1641,13 @@ plotlogrwg<-ggplot(datf, aes(x = log(weight)))+
   geom_line(aes(y = .fitted), data = predicted.r10, size = 2) + 
   geom_ribbon(aes(ymin = lwr, ymax = upr), data = predicted.r10, alpha = 0.5) + 
   theme_classic()+ theme(text = element_text(size = 15),legend.position="top")+ 
-  xlab("log(Weight)")+
-  ylab("log(Rate optima)")+
+  xlab("log(Mass)")+
+  ylab(bquote(log(VO2[Max]))) +
   scale_color_manual(name="Stage", values=colors)
   
 
 plotlogrwg
-ggsave(plot=last_plot(),filename="Ropt_logweight_perstage_minustrial2andOutliers.jpg",  path="Outputs/Statistics/")
+ggsave(plot=last_plot(),filename="Ropt_logweight_perstage_minustrial2andOutliers.jpg",  path="Outputs/Statistics/", width=16, height=10, units="cm")
 
 ```
 ```{r}
@@ -1710,11 +1755,11 @@ abline(h = 4*mean(cooksd, na.rm=T), col="red")  # add cutoff line
 text(x=1:length(cooksd)+1, y=cooksd, labels=ifelse(cooksd>4*mean(cooksd, na.rm=T),names(cooksd),""), col="red")  # add labels
 
 #Removing all influential points
-influential <- as.numeric(names(cooksd)[(cooksd > (4*mean(cooksd)))]) #Identifying row number for the outliers
+influential <- as.numeric(names(cooksd)[(cooksd > (3*mean(cooksd)))]) #Identifying row number for the outliers
 influential
 #removing the top most influential points: this is better, removes the 3 from the boxplot
-#top_x_outlier <- 5
-#influential <- as.numeric(names(sort(cooksd, decreasing = TRUE)[1:top_x_outlier]))
+top_x_outlier <- 2
+influential <- as.numeric(names(sort(cooksd, decreasing = TRUE)[1:top_x_outlier]))
 
 dat2b<-dat2[-influential,]
 out<-dat2[influential,]
@@ -1893,6 +1938,9 @@ ggplot(rr, aes(x = stage, y = .fitted, color=stage)) + geom_point()+geom_jitter(
 
 #### Looking at the results
 ```{r}
+mean(dat2b$slope)
+sd(dat2$slope)
+
 summary (t1b3)
 sjPlot::tab_model(t1b3, show.se = T, show.ci = F, show.re.var = F, show.intercept = T, 
                   show.icc = FALSE, show.ngroups = F, show.r2 = T,
@@ -1906,6 +1954,7 @@ means<-as.data.frame(pair$emmeans)
 means<-means %>%
   mutate(emmean=round(emmean, digits=2),
          SE=round(SE, digits=3),
+         df=round(df, digits=2),
          lower.CL=round(lower.CL, digits=2),
          upper.CL=round(upper.CL, digits=2))
 
@@ -1913,6 +1962,7 @@ contrasts<-as.data.frame(pair$contrasts)
 contrasts<-contrasts %>%
   mutate(estimate=round(estimate, digits=2),
          SE=round(SE, digits=3),
+         df=round(df, digits=2),
          t.ratio=round(t.ratio, digits=2),
          p.value=round(p.value, digits=3))
 
@@ -1932,7 +1982,7 @@ datf<-dat2b %>%
 colors<-c("#ff7f00", "#e41a1c", "#a65628", "#984ea3", "#377eb8")
 plotest<-ggplot(datf, aes(x = stage))+ 
   geom_point(aes(y = slope, color=stage), size = 3, shape=1, stroke=1.2)  + 
-  geom_point(aes(y = mean, color=stage),color = "black", size = 3, data = averages, position=position_nudge(x=0.2)) + 
+  geom_point(aes(y = mean),color = "black", size = 3, data = averages, position=position_nudge(x=0.2)) + 
   geom_errorbar(aes(x=stage, ymin = lwr3, ymax = upr3, group=stage), color = "black", data = averages, inherit.aes = FALSE, position=position_nudge(x=0.2), width=0.2) +
 #geom_point(aes(y = median),color = "red", size = 3, data = averages, position=position_nudge(x=0.2))+ #plotting the median
   theme_classic()+ theme(text = element_text(size = 15), legend.position="none")+ 
@@ -2156,8 +2206,8 @@ means<-ggplot(meansplot, aes(x=period, y=means, color=stage))+
   stat_summary(geom="point", fun=mean, size=3, color="black", position=position_nudge(x=0.2))+
   stat_summary(geom="errorbar", fun.data=mean_se, width=0.1, position=position_nudge(x=0.2), color="black")+
   theme_classic()+ theme(text = element_text(size = 15),legend.position="top")+ 
-  xlab("Period")+
-  ylab("Difference")+
+  xlab("Time period")+
+  ylab("Thermal safety margin")+
   scale_color_manual(name="Stage", values=colors)
 means
 
@@ -2185,8 +2235,8 @@ maxs<-ggplot(maxsplot, aes(x=period, y=maxs, color=stage))+
   stat_summary(geom="point", fun=mean, size=3, color="black", position=position_nudge(x=0.2))+
   stat_summary(geom="errorbar", fun.data=mean_se, width=0.1, position=position_nudge(x=0.2), color="black")+
   theme_classic()+ theme(text = element_text(size = 15),legend.position="top")+ 
-  xlab("Period")+
-  ylab("Difference")+
+  xlab("Time period")+
+  ylab("Thermal safety margin")+
   scale_color_manual(name="Stage", values=colors)
 maxs
 
