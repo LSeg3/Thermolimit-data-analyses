@@ -1573,7 +1573,7 @@ protos <- derivs2%>%
   
 meanline<-mean(micro$means2)
 medianline<-median(micro$means2)
-coeff<-7000000000
+coeff<-700000000
 ggplot()+
   geom_histogram(micro, mapping=aes(x=tempcorr),fill="#d95f02", alpha=0.5)+
   geom_histogram(future, mapping=aes(x=temp),fill="#7570b3", alpha=0.5)+
@@ -1595,7 +1595,7 @@ deutos<- derivs2%>%
   
 meanline<-mean(micro$means2)
 medianline<-median(micro$means2)
-coeff<-7000000000
+coeff<-700000000
 ggplot()+
   geom_histogram(micro, mapping=aes(x=tempcorr),fill="#d95f02", alpha=0.5)+
   geom_histogram(future, mapping=aes(x=temp),fill="#7570b3", alpha=0.5)+
@@ -1617,7 +1617,7 @@ tritos<- derivs2%>%
   
 meanline<-mean(micro$means2)
 medianline<-median(micro$means2)
-coeff<-7000000000
+coeff<-700000000
 ggplot()+
   geom_histogram(micro, mapping=aes(x=tempcorr),fill="#d95f02", alpha=0.5)+
   geom_histogram(future, mapping=aes(x=temp),fill="#7570b3", alpha=0.5)+
@@ -1639,7 +1639,7 @@ males <- derivs2%>%
   
 meanline<-mean(micro$means2)
 medianline<-median(micro$means2)
-coeff<-7000000000
+coeff<-700000000
 ggplot()+
   geom_histogram(micro, mapping=aes(x=tempcorr),fill="#d95f02", alpha=0.5)+
   geom_histogram(future, mapping=aes(x=temp),fill="#7570b3", alpha=0.5)+
@@ -1661,7 +1661,7 @@ females <- derivs2%>%
   
 meanline<-mean(micro$means2)
 medianline<-median(micro$means2)
-coeff<-7000000000
+coeff<-700000000
 fems<-ggplot()+
   geom_histogram(micro, mapping=aes(x=tempcorr),fill="#d95f02", alpha=0.5)+
   geom_histogram(future, mapping=aes(x=temp),fill="#7570b3", alpha=0.5)+
