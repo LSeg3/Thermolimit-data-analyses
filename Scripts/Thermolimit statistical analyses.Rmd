@@ -1309,7 +1309,7 @@ plotlogrwg<-ggplot(datf, aes(x = log(weight)))+
   scale_color_manual(name="Stage", values=colors)
   
 plotlogrwg
-ggsave(plot=last_plot(),filename="Ropt_logweight_perstage_minustrial2andOutliers.jpg",  path="Outputs/Statistics/", width=16, height=10, units="cm")
+ggsave(plot=last_plot(),filename="Ropt_logweight_perstage_minustrial2andOutliers.jpg",  path="Outputs/Statistics/", width=20, height=10, units="cm")
 ```
 ```{r}
 rm(list = ls())
@@ -1854,18 +1854,31 @@ p3<-ggplot(data_long, aes(value)) +
   geom_density(size=1.2)+
   theme_classic()+
   theme(text = element_text(size = 15), plot.title = element_text(size = (12)), strip.text.x = element_blank(),panel.spacing = unit(7, "mm"))+
-  xlab("Temperature (Celsius)")+
+  xlab("Temperature (°C)")+
   scale_x_continuous( breaks=NULL,limits=c(0.6,1), expand=c(0,0))+
   scale_y_continuous("Performance (Oxygen consumed, VO2)", breaks=NULL, expand=c(0,0))+
   geom_segment(aes(x = 0.6, y =4.35, xend = 0.9, yend = 4.35), linetype="dashed", size=1.2, color="#02818a")+ #VO2
   geom_segment(aes(x =0.9, y = 0, xend = 0.9, yend =4.35), linetype="dashed", size=1.2, color="#d94801") + #TMetMax
   geom_segment(aes(x =0.6, y = 0.34, xend = 0.9, yend =4.35), linetype="dashed", size=1.2, color="#810f7c")+ #Activation energy
+   geom_segment(aes(x =1, y = 0, xend = 1, yend =0.8), linetype="dashed", size=1.2, color="#a50f15")+ #CTmax
   geom_text(label="VO2max", aes(x=0.75, y=4.3), vjust=0, nudge_y=-0.3, color="#02818a", size=7) + #VO2
   geom_text(label="TMetMax", aes(x=0.95, y=2.175), hjust=0, nudge_x=-0.13, color="#d94801", size=7)+ #TMetMax
-  geom_text(label="E", aes(x=0.75, y=2.175), hjust=0, nudge_x=-0.05, color="#810f7c", size=7) #Activation energy
+  geom_text(label="E", aes(x=0.75, y=2.175), hjust=0, nudge_x=-0.05, color="#810f7c", size=7)+ #Activation energy
+ geom_text(label="CTmax", aes(x=1, y=0.4), hjust=0, nudge_x=-0.06, color="#a50f15", size=7) #CTmax
+
 p3
 ggsave(plot=last_plot(),filename="Exampleplot.svg",  path="Outputs/Statistics/",width=17, height=10, units="cm")
 ggsave(plot=last_plot(),filename="Exampleplot.png",  path="Outputs/Statistics/",width=17, height=10, units="cm")
+
+
+ggsave(plot=last_plot(),filename="Exampleplot1.png",  path="Outputs/Statistics/",width=17, height=10, units="cm")
+
+ggsave(plot=last_plot(),filename="Exampleplot4.png",  path="Outputs/Statistics/",width=17, height=10, units="cm")
+
+
+
+
+
 ```
 # Final figures for manuscript
 ## Microenvironment figures
