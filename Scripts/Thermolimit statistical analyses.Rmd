@@ -1871,9 +1871,6 @@ ggsave(plot=last_plot(),filename="Exampleplot.svg",  path="Outputs/Statistics/",
 ggsave(plot=last_plot(),filename="Exampleplot.png",  path="Outputs/Statistics/",width=17, height=10, units="cm")
 
 
-ggsave(plot=last_plot(),filename="Exampleplot1.png",  path="Outputs/Statistics/",width=17, height=10, units="cm")
-
-ggsave(plot=last_plot(),filename="Exampleplot4.png",  path="Outputs/Statistics/",width=17, height=10, units="cm")
 
 
 
