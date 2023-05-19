@@ -97,7 +97,7 @@ av.ropt
 
 
 
-# Comparing Topt: 
+# COMPARING TOPT OR TMETMAX
 
 > Research question: Does the Thermal optima differ between life stages?
 ## Plotting from the raw data
@@ -940,7 +940,7 @@ plottwg
 #r10plot
 ggsave(plot=last_plot(),filename="Topt_weight_perstage_minustrial2andOutliers.jpg",  path="Outputs/Statistics/",height=10, width=20, units="cm")
 ```
-# Comparing Ropt
+# COMPARING ROPT OR MAX METABOLIC RATE
 ## Checking for outliers
 ```{r}
 #Comparing boxplots for all data vs separated by sex: points represent data values that alie outside 1.5xIQR (Inter Quartile Range or the ifference between the 75th and 25th quantiles)
@@ -1176,7 +1176,7 @@ plotrst<-ggplot(datf, aes(x=stage, y=ropt2, color=stage))+
   stat_summary(geom="errorbar", fun.data=mean_se, width=0.1, position=position_nudge(x=0.2), color="black")+
   theme_classic()+ theme(text = element_text(size = 15),legend.position="none")+ 
   xlab("Stage")+
-  ylab(bquote(VO2[Max]~(mg~min^-1))) +
+  ylab(bquote(VO2[Max]~(mgO[2]~min^-1))) +
   scale_color_manual(name="Stage", values=colors)
 plotrst
 ggsave(plot=last_plot(),filename="Ropt_stage_perstage_minustrial2andOutliers.jpg",  path="Outputs/Statistics/", height=10, width=17, units="cm")
@@ -1253,7 +1253,7 @@ plotrwg<-ggplot(datf, aes(x = weight))+
   geom_ribbon(aes(ymin = lwr, ymax = upr), data = predicted.r10, alpha = 0.5) + 
   theme_classic()+ theme(text = element_text(size = 15),legend.position="top")+ 
   xlab("Mass (mg)")+
-  ylab(bquote(VO2[Max]~(mg~min^-1)))+
+  ylab(bquote(VO2[Max]~(mgO[2]~min^-1)))+
   scale_color_manual(name="Stage", values=colors)
 plotrwg
 ggsave(plot=last_plot(),filename="Ropt_weight_perstage_minustrial2andOutliers.jpg",  path="Outputs/Statistics/",height=4.5, width=7.29, units="in")
@@ -1314,7 +1314,49 @@ ggsave(plot=last_plot(),filename="Ropt_logweight_perstage_minustrial2andOutliers
 ```{r}
 rm(list = ls())
 ```
-# Comparing Activation energy
+
+## Looking at the Mass Corrected Metabolic Rate (MCMR)
+```{r}
+mcmr1<-lm(log(ropt2)~stage*log(weight), data=dat2b)
+summary(mcmr1)
+car::Anova(mcmr1)
+```
+
+The interaction is no contributing to explain the variance in the data. Since the interaction is non-significant, then I can use the residuals of the log-log plot where I got the scalling factor
+
+```{r}
+t1b5<-lm(log(ropt2)~log(weight), data=dat2b)
+summary(t1b5)
+
+log(mean(dat2b$ropt2))
+mean(log(dat2b$ropt2)) #ASK Kristi which one to use
+
+rownames(dat2b)<-c(dat2b$ind)
+resids<-data.frame(cbind(resid=residuals(t1b5), ind=as.numeric(names(residuals(t1b5)))))
+
+resids2<-dat2b %>%
+  select(ind, stage) %>%
+  full_join(resids) %>%
+  mutate(stage=fct_relevel(stage, levels=c("Protonymph", "Deutonymph", "Tritonymph",  "Male", "Female"))) 
+
+
+res<-ggplot(aes(x=stage, y=resid, color=stage), data=resids2)+
+    geom_boxplot()+
+  geom_jitter(shape=1, size=3, stroke=1.2)+
+  theme_classic()+ theme(text = element_text(size = 15),legend.position="none")+ 
+  xlab("Stage")+
+  ylab("MCMR") +
+  scale_color_manual(name="Stage", values=colors)
+res
+ggsave(plot=last_plot(),filename="MCMR_perstage_minustrial2andOutliers.jpg",  path="Outputs/Statistics/", height=10, width=17, units="cm")
+
+anov<-aov(resid~stage, data=resids2)
+summary(anov)
+```
+
+The anova is non-significant. This means that per unit of mass, all stages have the same metabolic rate. If we have 2 mg of cells of a protonymph, they have the same metabolic rate than 2 mg of cells of an adult. That explains why the raw metabolic rate increases with stage, because the tissues of each stage use the same metabolic rate.
+
+# COMPARING ACTIVATION ENERGY
 ## Calling data
 ```{r}
 dat<-read.csv("Outputs/activation energy final.csv")
