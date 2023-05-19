@@ -196,7 +196,7 @@ ox2<-t2 %>% #MODIFY FOR EACH TRIAL
          tempK=tempcorr+273,
          watervapor=exp(52.57-(6690.9/tempK)-4.681*log(tempK)),
          oxysat=(tan((pi/180)*phaseangle)-tan((pi/180)*phase))/tan((pi/180)*phase)*sternvolmer,
-         oxymgl=(atm-watervapor)/1013*oxysat*0.2095*bunsen*1000*(32/22.414),
+         oxymgl=(atm-watervapor)/1013*oxysat*0.2095*bunsen*1000*(32/22.414)*10,
          oxymg=oxymgl*volume)
 
 head(ox2) #MODIFY FOR EACH TRIAL
@@ -327,7 +327,7 @@ ox3<-t3 %>% #MODIFY FOR EACH TRIAL
          tempK=tempcorr+273,
          watervapor=exp(52.57-(6690.9/tempK)-4.681*log(tempK)),
          oxysat=(tan((pi/180)*phaseangle)-tan((pi/180)*phase))/tan((pi/180)*phase)*sternvolmer,
-         oxymgl=(atm-watervapor)/1013*oxysat*0.2095*bunsen*1000*(32/22.414),
+         oxymgl=(atm-watervapor)/1013*oxysat*0.2095*bunsen*1000*(32/22.414)*10,
          oxymg=oxymgl*volume)
 
 head(ox3) #MODIFY FOR EACH TRIAL
@@ -458,7 +458,7 @@ ox4<-t4 %>% #MODIFY FOR EACH TRIAL
          tempK=tempcorr+273,
          watervapor=exp(52.57-(6690.9/tempK)-4.681*log(tempK)),
          oxysat=(tan((pi/180)*phaseangle)-tan((pi/180)*phase))/tan((pi/180)*phase)*sternvolmer,
-         oxymgl=(atm-watervapor)/1013*oxysat*0.2095*bunsen*1000*(32/22.414),
+         oxymgl=(atm-watervapor)/1013*oxysat*0.2095*bunsen*1000*(32/22.414)*10,
          oxymg=oxymgl*volume)
 
 head(ox4) #MODIFY FOR EACH TRIAL
@@ -589,7 +589,7 @@ ox5<-t5 %>% #MODIFY FOR EACH TRIAL
          tempK=tempcorr+273,
          watervapor=exp(52.57-(6690.9/tempK)-4.681*log(tempK)),
          oxysat=(tan((pi/180)*phaseangle)-tan((pi/180)*phase))/tan((pi/180)*phase)*sternvolmer,
-         oxymgl=(atm-watervapor)/1013*oxysat*0.2095*bunsen*1000*(32/22.414),
+         oxymgl=(atm-watervapor)/1013*oxysat*0.2095*bunsen*1000*(32/22.414)*10,
          oxymg=oxymgl*volume)
 
 head(ox5) #MODIFY FOR EACH TRIAL
@@ -721,7 +721,7 @@ ox6<-t6 %>% #MODIFY FOR EACH TRIAL
          tempK=tempcorr+273,
          watervapor=exp(52.57-(6690.9/tempK)-4.681*log(tempK)),
          oxysat=(tan((pi/180)*phaseangle)-tan((pi/180)*phase))/tan((pi/180)*phase)*sternvolmer,
-         oxymgl=(atm-watervapor)/1013*oxysat*0.2095*bunsen*1000*(32/22.414),
+         oxymgl=(atm-watervapor)/1013*oxysat*0.2095*bunsen*1000*(32/22.414)*10,
          oxymg=oxymgl*volume)
 
 head(ox6) #MODIFY FOR EACH TRIAL
@@ -853,7 +853,7 @@ ox7<-t7 %>% #MODIFY FOR EACH TRIAL
          tempK=tempcorr+273,
          watervapor=exp(52.57-(6690.9/tempK)-4.681*log(tempK)),
          oxysat=(tan((pi/180)*phaseangle)-tan((pi/180)*phase))/tan((pi/180)*phase)*sternvolmer,
-         oxymgl=(atm-watervapor)/1013*oxysat*0.2095*bunsen*1000*(32/22.414),
+         oxymgl=(atm-watervapor)/1013*oxysat*0.2095*bunsen*1000*(32/22.414)*10,
          oxymg=oxymgl*volume)
 
 head(ox7) #MODIFY FOR EACH TRIAL
@@ -985,7 +985,7 @@ ox8<-t8 %>% #MODIFY FOR EACH TRIAL
          tempK=tempcorr+273,
          watervapor=exp(52.57-(6690.9/tempK)-4.681*log(tempK)),
          oxysat=(tan((pi/180)*phaseangle)-tan((pi/180)*phase))/tan((pi/180)*phase)*sternvolmer,
-         oxymgl=(atm-watervapor)/1013*oxysat*0.2095*bunsen*1000*(32/22.414),
+         oxymgl=(atm-watervapor)/1013*oxysat*0.2095*bunsen*1000*(32/22.414)*10,
          oxymg=oxymgl*volume)
 
 head(ox8) #MODIFY FOR EACH TRIAL
@@ -1117,7 +1117,7 @@ ox9<-t9 %>% #MODIFY FOR EACH TRIAL
          tempK=tempcorr+273,
          watervapor=exp(52.57-(6690.9/tempK)-4.681*log(tempK)),
          oxysat=(tan((pi/180)*phaseangle)-tan((pi/180)*phase))/tan((pi/180)*phase)*sternvolmer,
-         oxymgl=(atm-watervapor)/1013*oxysat*0.2095*bunsen*1000*(32/22.414),
+         oxymgl=(atm-watervapor)/1013*oxysat*0.2095*bunsen*1000*(32/22.414)*10,
          oxymg=oxymgl*volume)
 
 head(ox9) #MODIFY FOR EACH TRIAL
@@ -1249,7 +1249,7 @@ ox10<-t10 %>% #MODIFY FOR EACH TRIAL
          tempK=tempcorr+273,
          watervapor=exp(52.57-(6690.9/tempK)-4.681*log(tempK)),
          oxysat=(tan((pi/180)*phaseangle)-tan((pi/180)*phase))/tan((pi/180)*phase)*sternvolmer,
-         oxymgl=(atm-watervapor)/1013*oxysat*0.2095*bunsen*1000*(32/22.414),
+         oxymgl=(atm-watervapor)/1013*oxysat*0.2095*bunsen*1000*(32/22.414)*10,
          oxymg=oxymgl*volume)
 
 head(ox10) #MODIFY FOR EACH TRIAL
@@ -1381,7 +1381,7 @@ ox11<-t11 %>% #MODIFY FOR EACH TRIAL
          tempK=tempcorr+273,
          watervapor=exp(52.57-(6690.9/tempK)-4.681*log(tempK)),
          oxysat=(tan((pi/180)*phaseangle)-tan((pi/180)*phase))/tan((pi/180)*phase)*sternvolmer,
-         oxymgl=(atm-watervapor)/1013*oxysat*0.2095*bunsen*1000*(32/22.414),
+         oxymgl=(atm-watervapor)/1013*oxysat*0.2095*bunsen*1000*(32/22.414)*10,
          oxymg=oxymgl*volume)
 
 head(ox11) #MODIFY FOR EACH TRIAL
@@ -1513,7 +1513,7 @@ ox12<-t12 %>% #MODIFY FOR EACH TRIAL
          tempK=tempcorr+273,
          watervapor=exp(52.57-(6690.9/tempK)-4.681*log(tempK)),
          oxysat=(tan((pi/180)*phaseangle)-tan((pi/180)*phase))/tan((pi/180)*phase)*sternvolmer,
-         oxymgl=(atm-watervapor)/1013*oxysat*0.2095*bunsen*1000*(32/22.414),
+         oxymgl=(atm-watervapor)/1013*oxysat*0.2095*bunsen*1000*(32/22.414)*10,
          oxymg=oxymgl*volume)
 
 head(ox12) #MODIFY FOR EACH TRIAL
@@ -1645,7 +1645,7 @@ ox13<-t13 %>% #MODIFY FOR EACH TRIAL
          tempK=tempcorr+273,
          watervapor=exp(52.57-(6690.9/tempK)-4.681*log(tempK)),
          oxysat=(tan((pi/180)*phaseangle)-tan((pi/180)*phase))/tan((pi/180)*phase)*sternvolmer,
-         oxymgl=(atm-watervapor)/1013*oxysat*0.2095*bunsen*1000*(32/22.414),
+         oxymgl=(atm-watervapor)/1013*oxysat*0.2095*bunsen*1000*(32/22.414)*10,
          oxymg=oxymgl*volume)
 
 head(ox13) #MODIFY FOR EACH TRIAL
@@ -2221,7 +2221,7 @@ mypath <- file.path("Outputs/First derivative plots/",paste("Individual_", id, "
 
 
 
-plot(d7f.data$logtime, d7f.data$y1*-1, pch=19, xlab='Time (min)', ylab='Oxygen consumption rate (mg/min)', main=paste("First derivative: Ind ", id), cex.lab=1.5, cex.axis=1.25, ylim=c((-0.5*10^(-8)), (5*10^(-8)) )) #plotting the first derivative
+plot(d7f.data$logtime, d7f.data$y1*-1, pch=19, xlab='Time (min)', ylab='Oxygen consumption rate (mg/min)', main=paste("First derivative: Ind ", id), cex.lab=1.5, cex.axis=1.25, ylim=c((-0.5*10^(-6)), (0.75*10^(-6)) )) #plotting the first derivative
 dev.off()
 }
 
@@ -2263,7 +2263,7 @@ mypath <- file.path("Outputs/Second derivative plots/",paste("Individual_", id, 
 
 
  jpeg(file = mypath, width=20, height=12, units="cm", res=300)
-plot(d7s.data$logtime, d7s.data$y1, pch=19, xlab='Time (min)', ylab='Change oxygen cons. rate (mg/min)', main=paste("Second derivative: Ind", id), cex.lab=1.5, cex.axis=1.25, ylim=c((-0.75e-8),(0.75e-8))) #plots the second derivative
+plot(d7s.data$logtime, d7s.data$y1, pch=19, xlab='Time (min)', ylab='Change oxygen cons. rate (mg/min)', main=paste("Second derivative: Ind", id), cex.lab=1.5, cex.axis=1.25, ylim=c((-0.75e-7),(0.75e-7))) #plots the second derivative
 abline(h=0,col="orange", lty=2, lwd=2) #line to visualize the intersection with zero (relevant for the inflection points)
 dev.off()
 }
@@ -2984,7 +2984,7 @@ ggplot(protos, aes(x=logtime, y=first2,color=as.factor(trial)))+ #MODIFY FOR EAC
   theme_classic()+
   theme(text = element_text(size = 15), plot.title = element_text(size = (12)))+
   xlab("Time logged (min)")+
-  ylab("Oxygen (mg)/time (min)")+
+  ylab(bquote(VO[2]~(mgO[2]~min^-1)))+
   ggtitle("Protonymphs")+
   labs(colour = "Trial")
 
@@ -3004,7 +3004,7 @@ ggplot(deutos, aes(x=logtime, y=first2,color=as.factor(trial)))+ #MODIFY FOR EAC
   theme_classic()+
   theme(text = element_text(size = 15), plot.title = element_text(size = (12)))+
   xlab("Time logged (min)")+
-  ylab("Oxygen (mg)/time (min)")+
+ ylab(bquote(VO[2]~(mgO[2]~min^-1)))+
   ggtitle("Deutonymphs")+
   labs(colour = "Trial")
 
@@ -3024,7 +3024,7 @@ ggplot(Tritos, aes(x=logtime, y=first2,color=as.factor(trial)))+ #MODIFY FOR EAC
   theme_classic()+
   theme(text = element_text(size = 15), plot.title = element_text(size = (12)))+
   xlab("Time logged (min)")+
-  ylab("Oxygen (mg)/time (min)")+
+  ylab(bquote(VO[2]~(mgO[2]~min^-1)))+
   ggtitle("Tritonymphs")+
   labs(colour = "Trial")
 
@@ -3045,7 +3045,7 @@ ggplot(males, aes(x=logtime, y=first2,color=as.factor(trial)))+ #MODIFY FOR EACH
   theme_classic()+
   theme(text = element_text(size = 15), plot.title = element_text(size = (12)))+
   xlab("Time logged (min)")+
-  ylab("Oxygen (mg)/time (min)")+
+  ylab(bquote(VO[2]~(mgO[2]~min^-1)))+
   ggtitle("Males")+
   labs(colour = "Trial")
 
@@ -3066,7 +3066,7 @@ ggplot(females, aes(x=logtime, y=first2,color=as.factor(trial)))+ #MODIFY FOR EA
   theme_classic()+
   theme(text = element_text(size = 15), plot.title = element_text(size = (12)))+
   xlab("Time logged (min)")+
-  ylab("Oxygen (mg)/time (min)")+
+ ylab(bquote(VO[2]~(mgO[2]~min^-1)))+
   ggtitle("Females")+
   labs(colour = "Trial")
 

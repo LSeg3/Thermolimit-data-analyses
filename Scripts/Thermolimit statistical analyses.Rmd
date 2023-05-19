@@ -906,17 +906,24 @@ datf<-dat2b %>%
   arrange(stage)
 plottwg<-ggplot(datf, aes(x = weight))+ 
   geom_point(aes(y = tempcorr, color=stage), size = 3, shape=1, stroke=1.2)  + 
-  geom_smooth(aes(y=tempcorr), method = "lm", se = FALSE, color="black")+
+  geom_smooth(aes(y=tempcorr), method = "lm", se = TRUE, color="black", size=2, alpha=0.5)+
   theme_classic()+ theme(text = element_text(size = 15),legend.position="top")+ 
   xlab("Mass (mg)")+
   ylab(bquote(T[MetMax]~"(°C)")) +
   scale_color_manual(name="Stage", values=colors)
 plottwg
+
+#Organizing stages for plots
+datf<-dat2b %>%
+  mutate(stage=fct_relevel(stage, levels=c( "Protonymph", "Deutonymph", "Tritonymph",  "Male", "Female"))) %>%
+  arrange(stage)
+ 
+
 # Making the plot
 #nd = expand.grid(weight=seq(0.1,2.2,0.05))
 #predicted.r10 <- augment(t1b3, newdata = nd, se_fit=TRUE)
 #stats.r10<-glance(t1b3)
-# calculate the lower and upper 95% confidence limits on the mean
+#calculate the lower and upper 95% confidence limits on the mean
 #tcrit <- qt(0.975, df = stats.r10$df.residual)
 #predicted.r10$lwr <- with(predicted.r10, .fitted - tcrit * .se.fit)
 #predicted.r10$upr <- with(predicted.r10, .fitted + tcrit * .se.fit)
@@ -1237,6 +1244,8 @@ stats.r10<-glance(t1b5)
 tcrit <- qt(0.975, df = stats.r10$df.residual)
 predicted.r10$lwr <- with(predicted.r10, .fitted - tcrit * .se.fit)
 predicted.r10$upr <- with(predicted.r10, .fitted + tcrit * .se.fit)
+
+
 # Plot with prediction trends, confidence intervals and data
 r10plot<-ggplot(datf, aes(x = weight))+ 
   geom_point(aes(y = ropt2, color=weight), size = 3) + scale_color_gradient(low="#9ecae1", high="#08306b")  + 
@@ -1256,6 +1265,17 @@ plotrwg<-ggplot(datf, aes(x = weight))+
   ylab(bquote(VO2[Max]~(mgO[2]~min^-1)))+
   scale_color_manual(name="Stage", values=colors)
 plotrwg
+
+
+plottwg<-ggplot(datf, aes(x = weight))+ 
+  geom_point(aes(y = ropt2, color=stage), size = 3, shape=1, stroke=1.2)  + 
+  geom_smooth(aes(y=ropt2), method = "lm", se = TRUE, color="black", size=2, alpha=0.5)+
+  theme_classic()+ theme(text = element_text(size = 15),legend.position="top")+ 
+  xlab("Mass (mg)")+
+  ylab(bquote(VO2[Max]~(mgO[2]~min^-1)))+
+  scale_color_manual(name="Stage", values=colors)
+plottwg
+
 ggsave(plot=last_plot(),filename="Ropt_weight_perstage_minustrial2andOutliers.jpg",  path="Outputs/Statistics/",height=4.5, width=7.29, units="in")
 ```
 ## Getting the metabolic scaling component
@@ -1316,20 +1336,25 @@ rm(list = ls())
 ```
 
 ## Looking at the Mass Corrected Metabolic Rate (MCMR)
+### Checking if the slope (escaling exponent) varies per stage
 ```{r}
 mcmr1<-lm(log(ropt2)~stage*log(weight), data=dat2b)
 summary(mcmr1)
 car::Anova(mcmr1)
 ```
 
-The interaction is no contributing to explain the variance in the data. Since the interaction is non-significant, then I can use the residuals of the log-log plot where I got the scalling factor
+The interaction is no contributing to explain the variance in the data, therefore, the scalling exponent does not differ between stages. Since the interaction is non-significant, then I can use the residuals of the log-log plot where I got the scalling factor
+
+### Getting and comparing residuals
 
 ```{r}
+# Model used for the scalling factor
 t1b5<-lm(log(ropt2)~log(weight), data=dat2b)
 summary(t1b5)
 
-log(mean(dat2b$ropt2))
-mean(log(dat2b$ropt2)) #ASK Kristi which one to use
+#int<-t1b5$coefficients[1]
+
+int<-mean(log(dat2b$ropt2)) #average of the Vo2 max of the log values. Use this one to make it more biological
 
 rownames(dat2b)<-c(dat2b$ind)
 resids<-data.frame(cbind(resid=residuals(t1b5), ind=as.numeric(names(residuals(t1b5)))))
@@ -1337,24 +1362,165 @@ resids<-data.frame(cbind(resid=residuals(t1b5), ind=as.numeric(names(residuals(t
 resids2<-dat2b %>%
   select(ind, stage) %>%
   full_join(resids) %>%
-  mutate(stage=fct_relevel(stage, levels=c("Protonymph", "Deutonymph", "Tritonymph",  "Male", "Female"))) 
+  mutate(stage=fct_relevel(stage, levels=c("Protonymph", "Deutonymph", "Tritonymph",  "Male", "Female")),
+         residadd=int+resid) 
+
+#Testing if the residuals varied per group
+## For raw value
+anov<-aov(resid~stage, data=resids2)
+summary(anov)
 
 
+## For mean-added values (use this one)
+anov<-aov(residadd~stage, data=resids2)
+summary(anov)
+```
+
+The anova is non-significant. This means that per unit of mass, all stages have the same metabolic rate. If we have 2 mg of cells of a protonymph, they have the same metabolic rate than 2 mg of cells of an adult. That explains why the raw metabolic rate increases with stage, because the tissues of each stage use the same metabolic rate.
+
+
+### Plotting the raw residual values
+```{r}
+# Plotting the residuals 
 res<-ggplot(aes(x=stage, y=resid, color=stage), data=resids2)+
     geom_boxplot()+
   geom_jitter(shape=1, size=3, stroke=1.2)+
   theme_classic()+ theme(text = element_text(size = 15),legend.position="none")+ 
   xlab("Stage")+
-  ylab("MCMR") +
+   ylab(bquote(Mass~corrected~VO2[Max]))  +
   scale_color_manual(name="Stage", values=colors)
 res
-ggsave(plot=last_plot(),filename="MCMR_perstage_minustrial2andOutliers.jpg",  path="Outputs/Statistics/", height=10, width=17, units="cm")
+#ggsave(plot=last_plot(),filename="MCMR_perstage_minustrial2andOutliers_boxplot.jpg",  path="Outputs/Statistics/", height=10, width=17, units="cm")
 
-anov<-aov(resid~stage, data=resids2)
-summary(anov)
+
+
+
+#plotmcmr<-ggplot(resids2, aes(x=stage, y=resid, color=stage))+
+#  geom_point(shape=1, size=3, stroke=1.2)+
+#  scale_fill_brewer(palette="Set1")+
+#  stat_summary(geom="point", fun=mean, size=3, color="black", position=position_nudge(x=0.2))+
+#  stat_summary(geom="errorbar", fun.data=mean_se, width=0.1, position=position_nudge(x=0.2), color="black")+
+#  theme_classic()+ theme(text = element_text(size = 15),legend.position="none")+ 
+#  xlab("Stage")+
+#  ylab(bquote(VO2[Max]~(mgO[2]~min^-1))) +
+#  scale_color_manual(name="Stage", values=colors)
+#plotmcmr
+
+
+averages<-resids2 %>%
+  group_by(stage) %>%
+  summarize(mean=mean(resid), sd=sd(resid), n=n(), sem=sd/sqrt(n), median=median(resid))
+
+averages
+averages$lwr3 <- with(averages, mean -  sem) #Using just the standard error
+averages$upr3 <- with(averages, mean + sem)
+
+plotmcmr<-ggplot(resids2, aes(x = stage))+ 
+  geom_point(aes(y = resid, color=stage), size = 3, shape=1, stroke=1.2)  + 
+  geom_point(aes(y = mean, color=stage),color = "black", size = 3, data = averages, position=position_nudge(x=0.2)) + 
+  geom_errorbar(aes(x=stage, ymin = lwr3, ymax = upr3, group=stage), color = "black", data = averages, inherit.aes = FALSE, position=position_nudge(x=0.2), width=0.2) +
+#geom_point(aes(y = median),color = "red", size = 3, data = averages, position=position_nudge(x=0.2))+ #plotting the median
+  theme_classic()+ theme(text = element_text(size = 15),legend.position="none")+ 
+  xlab("Stage")+
+  ylab(bquote(Mass~corrected~VO2[Max])) +
+  scale_color_manual(name="Stage", values=colors)
+plotmcmr
 ```
 
-The anova is non-significant. This means that per unit of mass, all stages have the same metabolic rate. If we have 2 mg of cells of a protonymph, they have the same metabolic rate than 2 mg of cells of an adult. That explains why the raw metabolic rate increases with stage, because the tissues of each stage use the same metabolic rate.
+### Plotting the residuals+mean values (use this one)
+```{r}
+# Plotting the residuals + mean
+res2<-ggplot(aes(x=stage, y=residadd, color=stage), data=resids2)+
+    geom_boxplot()+
+  geom_jitter(shape=1, size=3, stroke=1.2)+
+  theme_classic()+ theme(text = element_text(size = 15),legend.position="none")+ 
+  xlab("Stage")+
+  ylab(bquote(Mass~corrected~VO2[Max]~(log(mgO[2]~min^-1)))) +
+  scale_color_manual(name="Stage", values=colors)
+res2
+ggsave(plot=last_plot(),filename="MCMR_perstage_minustrial2andOutliers_boxplot.jpg",  path="Outputs/Statistics/", height=12, width=17, units="cm")
+
+
+
+#plotmcmr<-ggplot(resids2, aes(x=stage, y=residadd, color=stage))+
+#  geom_point(shape=1, size=3, stroke=1.2)+
+#  scale_fill_brewer(palette="Set1")+
+#  stat_summary(geom="point", fun=mean, size=3, color="black", position=position_nudge(x=0.2))+
+#  stat_summary(geom="errorbar", fun.data=mean_se, width=0.1, position=position_nudge(x=0.2), color="black")+
+#  theme_classic()+ theme(text = element_text(size = 15),legend.position="none")+ 
+#  xlab("Stage")+
+#  ylab(bquote(VO2[Max]~(mgO[2]~min^-1))) +
+#  scale_color_manual(name="Stage", values=colors)
+#plotmcmr
+
+
+averages<-resids2 %>%
+  group_by(stage) %>%
+  summarize(mean=mean(residadd), sd=sd(residadd), n=n(), sem=sd/sqrt(n), median=median(residadd))
+
+averages
+averages$lwr3 <- with(averages, mean -  sem) #Using just the standard error
+averages$upr3 <- with(averages, mean + sem)
+
+plotmcmr2<-ggplot(resids2, aes(x = stage))+ 
+  geom_point(aes(y = residadd, color=stage), size = 3, shape=1, stroke=1.2)  + 
+  geom_point(aes(y = mean, color=stage),color = "black", size = 3, data = averages, position=position_nudge(x=0.2)) + 
+  geom_errorbar(aes(x=stage, ymin = lwr3, ymax = upr3, group=stage), color = "black", data = averages, inherit.aes = FALSE, position=position_nudge(x=0.2), width=0.2) +
+#geom_point(aes(y = median),color = "red", size = 3, data = averages, position=position_nudge(x=0.2))+ #plotting the median
+  theme_classic()+ theme(text = element_text(size = 15),legend.position="none")+ 
+  xlab("Stage")+
+  ylab(bquote(atop(Mass~corrected~VO2[Max]~phantom(),(log(mgO[2]~min^-1))))) +
+  scale_color_manual(name="Stage", values=colors)
+plotmcmr2
+
+ggsave(plot=last_plot(),filename="MCMR_perstage_minustrial2andOutliers_meanse.jpg",  path="Outputs/Statistics/", height=12, width=17, units="cm")
+
+# Reversing the log transformation
+plotmcmr3<-ggplot(resids2, aes(x = stage))+ 
+  geom_point(aes(y = exp(residadd), color=stage), size = 3, shape=1, stroke=1.2)  + 
+  geom_point(aes(y = exp(mean), color=stage),color = "black", size = 3, data = averages, position=position_nudge(x=0.2)) + 
+  geom_errorbar(aes(x=stage, ymin = exp(lwr3), ymax = exp(upr3), group=stage), color = "black", data = averages, inherit.aes = FALSE, position=position_nudge(x=0.2), width=0.2) +
+#geom_point(aes(y = median),color = "red", size = 3, data = averages, position=position_nudge(x=0.2))+ #plotting the median
+  theme_classic()+ theme(text = element_text(size = 15),legend.position="none")+ 
+  xlab("Stage")+
+  ylab(bquote(atop(Mass~corrected~VO2[Max]~phantom(),(mgO[2]~min^-1)))) +
+  scale_color_manual(name="Stage", values=colors)
+plotmcmr3
+
+ggsave(plot=last_plot(),filename="MCMR_perstage_minustrial2andOutliers_meanse_reverselog.jpg",  path="Outputs/Statistics/", height=12, width=17, units="cm")
+
+
+
+
+
+```
+
+### Getting the composite figure for VO2max per stage
+
+```{r}
+# Raw residuals
+vo2<-ggarrange(plotrst,plotmcmr, nrow=2, labels=c("A", "B"), font.label = list(size = 18, color = "black", face = "bold", family = NULL), align="v")
+vo2
+ggsave(plot=vo2,filename="VO2maxs_rawresid.jpg",  path="Outputs/Statistics/",width=7, height=10, units="in")
+
+
+# plus the mean of the log values
+vo2<-ggarrange(plotrst,plotmcmr2, nrow=2, labels=c("A", "B"), font.label = list(size = 18, color = "black", face = "bold", family = NULL), align="v")
+vo2
+
+ggsave(plot=vo2,filename="VO2maxs.jpg",  path="Outputs/Statistics/",width=7, height=10, units="in")
+
+# backtransformed mean
+vo2_exp<-ggarrange(plotrst,plotmcmr3, nrow=2, labels=c("A", "B"), font.label = list(size = 18, color = "black", face = "bold", family = NULL), align="v")
+vo2_exp
+
+ggsave(plot=vo2_exp,filename="VO2maxs_backtransformed.jpg",  path="Outputs/Statistics/",width=7, height=10, units="in")
+
+
+```
+
+
+
 
 # COMPARING ACTIVATION ENERGY
 ## Calling data
@@ -1675,7 +1841,7 @@ datf<-dat2b %>%
 colors<-c("#ff7f00", "#e41a1c", "#a65628", "#984ea3", "#377eb8")
 plotewg<-ggplot(datf, aes(x = weight))+ 
   geom_point(aes(y = slope, color=stage), size = 3, shape=1, stroke=1.2)  + 
-  geom_smooth(aes(y=slope), method = "lm", se = FALSE, color="black")+
+  geom_smooth(aes(y=slope), method = "lm", se = TRUE, color="black", size=2, alpha=0.5)+
   theme_classic()+ theme(text = element_text(size = 15),legend.position="top")+ 
   xlab("Mass (mg)")+
   ylab("Activation energy (eV)")+

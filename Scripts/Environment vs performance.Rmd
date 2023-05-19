@@ -1584,7 +1584,7 @@ ggplot()+
   xlab("Temperature (°C)")+
   scale_x_continuous(limits=c(5,55), breaks=c(5,20,35,50))+
   geom_line(protos, mapping=aes(y=first2*coeff,x=tempcorr))+
-  scale_y_continuous("Frequency",  sec.axis = sec_axis(~ ./coeff, name = bquote(VO[2]~(mg~min^-1)), labels = scales::scientific)) + 
+  scale_y_continuous("Frequency",  sec.axis = sec_axis(~ ./coeff, name = bquote(VO[2]~(mgO[2]~min^-1)), labels = scales::scientific)) + 
   facet_wrap(vars(ind))+
   labs(colour = "Trial")
 ggsave(plot=last_plot(),filename="Proto_allseason_allarea_future.jpg",  path="Outputs/Microclimate vs performance/",width=7, height=7, units="in")
@@ -1606,7 +1606,7 @@ ggplot()+
   xlab("Temperature (°C)")+
   scale_x_continuous(limits=c(5,55), breaks=c(5,20,35,50))+
   geom_line(deutos, mapping=aes(y=first2*coeff,x=tempcorr))+
-  scale_y_continuous("Frequency",  sec.axis = sec_axis(~ ./coeff, name = bquote(VO[2]~(mg~min^-1)), labels = scales::scientific)) + 
+  scale_y_continuous("Frequency",  sec.axis = sec_axis(~ ./coeff, name = bquote(VO[2]~(mgO[2]~min^-1)), labels = scales::scientific)) + 
   facet_wrap(vars(ind))+
   labs(colour = "Trial")
 ggsave(plot=last_plot(),filename="Deuto_allseason_allarea_future.jpg",  path="Outputs/Microclimate vs performance/",width=7, height=7, units="in")
@@ -1628,7 +1628,7 @@ ggplot()+
   xlab("Temperature (°C)")+
   scale_x_continuous(limits=c(5,55), breaks=c(5,20,35,50))+
   geom_line(tritos, mapping=aes(y=first2*coeff,x=tempcorr))+
-  scale_y_continuous("Frequency",  sec.axis = sec_axis(~ ./coeff, name = bquote(VO[2]~(mg~min^-1)), labels = scales::scientific)) + 
+  scale_y_continuous("Frequency",  sec.axis = sec_axis(~ ./coeff, name = bquote(VO[2]~(mgO[2]~min^-1)), labels = scales::scientific)) + 
   facet_wrap(vars(ind))+
   labs(colour = "Trial")
 ggsave(plot=last_plot(),filename="Trito_allseason_allarea_future.jpg",  path="Outputs/Microclimate vs performance/",width=7, height=7, units="in")
@@ -1650,7 +1650,7 @@ ggplot()+
   xlab("Temperature (°C)")+
   scale_x_continuous(limits=c(5,55), breaks=c(5,20,35,50))+
   geom_line(males, mapping=aes(y=first2*coeff,x=tempcorr))+
-  scale_y_continuous("Frequency",  sec.axis = sec_axis(~ ./coeff, name = bquote(VO[2]~(mg~min^-1)), labels = scales::scientific)) + 
+  scale_y_continuous("Frequency",  sec.axis = sec_axis(~ ./coeff, name = bquote(VO[2]~(mgO[2]~min^-1)), labels = scales::scientific)) + 
   facet_wrap(vars(ind))+
   labs(colour = "Trial")
 ggsave(plot=last_plot(),filename="Male_allseason_allarea_future.jpg",  path="Outputs/Microclimate vs performance/",width=7, height=7, units="in")
@@ -1672,7 +1672,7 @@ fems<-ggplot()+
   xlab("Temperature (°C)")+
   scale_x_continuous(limits=c(5,55), breaks=c(5,20,35,50))+
   geom_line(females, mapping=aes(y=first2*coeff,x=tempcorr))+
-  scale_y_continuous("Frequency",  sec.axis = sec_axis(~ ./coeff, name = bquote(VO[2]~(mg~min^-1)), labels = scales::scientific)) + 
+  scale_y_continuous("Frequency",  sec.axis = sec_axis(~ ./coeff, name = bquote(VO[2]~(mgO[2]~min^-1)), labels = scales::scientific)) + 
   facet_wrap(vars(ind))+
   labs(colour = "Trial")
 fems
