@@ -1369,7 +1369,9 @@ resids2<-dat2b %>%
 ## For raw value
 anov<-aov(resid~stage, data=resids2)
 summary(anov)
-
+rawlm<-lm(resid~stage, data=resids2)
+summary(rawlm)
+drop1(rawlm, test="Chisq")
 
 ## For mean-added values (use this one)
 anov<-aov(residadd~stage, data=resids2)
@@ -1415,6 +1417,10 @@ averages
 averages$lwr3 <- with(averages, mean -  sem) #Using just the standard error
 averages$upr3 <- with(averages, mean + sem)
 
+exp(mean(resids2$resid))
+exp(sd(resids2$resid))
+
+
 plotmcmr<-ggplot(resids2, aes(x = stage))+ 
   geom_point(aes(y = resid, color=stage), size = 3, shape=1, stroke=1.2)  + 
   geom_point(aes(y = mean, color=stage),color = "black", size = 3, data = averages, position=position_nudge(x=0.2)) + 
@@ -1427,7 +1433,7 @@ plotmcmr<-ggplot(resids2, aes(x = stage))+
 plotmcmr
 ```
 
-### Plotting the residuals+mean values (use this one)
+### Plotting the residuals+mean values 
 ```{r}
 # Plotting the residuals + mean
 res2<-ggplot(aes(x=stage, y=residadd, color=stage), data=resids2)+
@@ -1474,7 +1480,10 @@ plotmcmr2<-ggplot(resids2, aes(x = stage))+
 plotmcmr2
 
 ggsave(plot=last_plot(),filename="MCMR_perstage_minustrial2andOutliers_meanse.jpg",  path="Outputs/Statistics/", height=12, width=17, units="cm")
+```
 
+# Using the back-rtransormed residuals+mean (use this one)
+```{r}
 # Reversing the log transformation
 plotmcmr3<-ggplot(resids2, aes(x = stage))+ 
   geom_point(aes(y = exp(residadd), color=stage), size = 3, shape=1, stroke=1.2)  + 
@@ -1486,6 +1495,10 @@ plotmcmr3<-ggplot(resids2, aes(x = stage))+
   ylab(bquote(atop(Mass~corrected~VO2[Max]~phantom(),(mgO[2]~min^-1)))) +
   scale_color_manual(name="Stage", values=colors)
 plotmcmr3
+
+
+mean(exp(resids2$residadd))
+round(sd(exp(resids2$residadd)), digits=10)
 
 ggsave(plot=last_plot(),filename="MCMR_perstage_minustrial2andOutliers_meanse_reverselog.jpg",  path="Outputs/Statistics/", height=12, width=17, units="cm")
 
