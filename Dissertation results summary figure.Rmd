@@ -1,0 +1,124 @@
+---
+title: "Dissertation results summary figure"
+author: "Laura Segura Hernández"
+date: "10/17/2022"
+output:
+  html_document:
+    df_print: paged
+    theme: cerulean
+    toc: true
+    toc_depth: 4
+    number_sections: true
+    toc_float: false
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_knit$set(root.dir = "C:/Users/laus1/OneDrive - University of Nebraska-Lincoln/UNL/PhD Tesis/Methods/Thermolimit/Thermolimit data analyses")
+getwd()
+```
+
+#Libraries
+```{r}
+library(lme4)
+library(dplyr)
+library(forcats)
+library(NRES803)
+library(olsrr)
+library(broom)
+library(ggplot2)
+library(lmerTest)
+library(ggpubr)
+library(grid)
+library(purrr)
+library(scales)
+```
+
+
+# Getting the data
+
+## Performance curve: extracting data for female 79 (has a clear curve and is one of the closest to the overall average TMetMax for all individuals)
+
+```{r}
+derivs2<-read.csv("Outputs/derivsdemography_manualtrim.csv")
+derivs2<-derivs2%>%
+  rename(ind=id.x)%>%
+  filter(trial!=2) %>%
+  filter(first2>=0) %>%
+  filter(ind == 79) #Removing outliers for ropt (as selected in the "Thermolimit statistical analyses" script)
+data<-read.csv("Data/Environment/Datos pseudos summer 2022 - Data.csv")
+data<-data%>%
+  select(1,2,4) %>%
+  rename(ind=ID)
+derivs2<-left_join(derivs2, data, by="ind")
+```
+
+## Information to be plotted
+```{r}
+#Chapter 1
+tmet<-44.33
+ctm<-46.87
+
+#Chapter 2
+minc<-8.38
+meanc<-25.63
+maxc<-44.07
+minf<-13.25
+meanf<-27.74
+maxf<-46.67
+
+
+#Chapter 3
+avoid<-31.32
+maj<-23.51
+
+phor<-37.5
+
+#Coordinates
+miny=2e-7
+maxy<-max(derivs2$first2)
+```
+
+
+
+
+```{r}
+#p1<-
+  
+  
+ggplot(derivs2, aes(y=first2, x=tempcorr)) +
+  geom_smooth(color="black")+
+  theme_classic()+
+  theme(text = element_text(size = 13), plot.title = element_text(size = (10)), strip.text.x = element_blank(),panel.spacing = unit(7, "mm"))+
+  xlab("Temperature (°C)")+
+  scale_x_continuous(limits=c(8,50), expand=c(0,0), n.breaks=9)+
+  scale_y_continuous("Oxygen consumed (VO2)", expand=c(0,0), limits=c(2e-7, maxy+(maxy*0.05)))+
+  
+   #Chapter 2
+  annotate("rect", xmin = minc, xmax = maxc, ymin = miny, ymax = maxy,alpha = .2,fill = "#d95f02") + #CURRENT
+  geom_segment(aes(x = meanc, y =miny, xend = meanc, yend = maxy), linetype="dotted", size=1.2, color="#d95f02")+ #mean current
+ # geom_text(label="Current", aes(x=meanc, y=maxy*0.525), vjust=0, color="#d95f02", size=4,alpha=0.5) + #mean current
+annotate("rect", xmin = minf, xmax = maxf, ymin = miny, ymax = maxy,alpha = .2,fill = "#7570b3") + #FUTURE
+  geom_segment(aes(x = meanf, y =miny, xend = meanf, yend = maxy), linetype="dotted", size=1.2, color="#7570b3")+ #mean current
+  #geom_text(label="Future", aes(x=meanf, y=maxy*0.475), vjust=0, color="#7570b3", size=4,alpha=0.5) + #mean current
+
+  
+  #Chapter 1
+  geom_segment(aes(x = tmet, y =miny, xend = tmet, yend = maxy), linetype="dashed", size=1.2, color="#cb181d")+ #Tmetmax
+  geom_text(label="TMetMax", aes(x=tmet, y=maxy), vjust=0, color="#cb181d", size=4, nudge_x=-1.3) + #Tmetmax
+  geom_segment(aes(x = ctm, y =miny, xend = ctm, yend = maxy), linetype="dashed", size=1.2, color="#67000d")+ #CTmax
+  geom_text(label="CTmax", aes(x=ctm, y=maxy), vjust=0, color="#67000d", size=4, nudge_x=0.75) + #CTmax
+ 
+  
+  #Chapter 3
+  geom_segment(aes(x = avoid, y =miny, xend = avoid, yend = maxy), linetype="dashed", size=1.2, color="#1d91c0")+ #avoidance
+  geom_text(label="Avoidance", aes(x=avoid, y=maxy), vjust=0, color="#1d91c0", size=4, nudge_x=0) + #Avoidance
+  geom_segment(aes(x = maj, y =miny, xend = maj, yend = maxy), linetype="dashed", size=1.2, color="#02818a")+ #majority temp
+  geom_text(label="Majority temp.", aes(x=maj, y=maxy), vjust=0, color="#02818a", size=4) + #majority temp
+  geom_segment(aes(x = phor, y =miny, xend = phor, yend = maxy), linetype="dashed", size=1.2, color="#253494")+ #phoresy
+  geom_text(label="Phoresy", aes(x=phor, y=maxy), vjust=0, color="#253494", size=4, nudge_x=0)  #phoresy
+
+ggsave(plot=last_plot(),filename="dissertation_summary.png",  path="Outputs/Dissertation summary/",width=16, height=8, units="cm")
+
+```
+
