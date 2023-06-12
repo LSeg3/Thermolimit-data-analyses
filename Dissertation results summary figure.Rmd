@@ -81,13 +81,13 @@ maxy<-max(derivs2$first2)
 
 
 
-
+## Plot with color lines
 ```{r}
 #p1<-
   
   
 ggplot(derivs2, aes(y=first2, x=tempcorr)) +
-  geom_smooth(color="black")+
+  geom_smooth(color="gray32")+
   theme_classic()+
   theme(text = element_text(size = 13), plot.title = element_text(size = (10)), strip.text.x = element_blank(),panel.spacing = unit(7, "mm"))+
   xlab("Temperature (°C)")+
@@ -122,3 +122,45 @@ ggsave(plot=last_plot(),filename="dissertation_summary.png",  path="Outputs/Diss
 
 ```
 
+
+## Plot with black lines
+```{r}
+#p1<-
+  
+  
+ggplot(derivs2, aes(y=first2, x=tempcorr)) +
+  geom_smooth(color="black", size=1.2)+
+  theme_classic()+
+  theme(text = element_text(size = 13), plot.title = element_text(size = (10)), strip.text.x = element_blank(),panel.spacing = unit(7, "mm"))+
+  xlab("Temperature (°C)")+
+  ylab(bquote(Oxygen~consumed~(mgO[2]~min^-1))) +
+  scale_x_continuous(limits=c(8,50), expand=c(0,0), n.breaks=9)+
+  scale_y_continuous(expand=c(0,0), limits=c(2e-7, maxy+(maxy*0.05)))+
+  
+   #Chapter 2
+  annotate("rect", xmin = minc, xmax = maxc, ymin = miny, ymax = maxy,alpha = .3,fill = "#d95f02") + #CURRENT
+  geom_segment(aes(x = meanc, y =miny, xend = meanc, yend = maxy), linetype="dotted", size=1.2, color="#d95f02")+ #mean current
+ # geom_text(label="Current", aes(x=meanc, y=maxy*0.525), vjust=0, color="#d95f02", size=4,alpha=0.5) + #mean current
+annotate("rect", xmin = minf, xmax = maxf, ymin = miny, ymax = maxy,alpha = .3,fill = "#7570b3") + #FUTURE
+  geom_segment(aes(x = meanf, y =miny, xend = meanf, yend = maxy), linetype="dotted", size=1.2, color="#7570b3")+ #mean current
+  #geom_text(label="Future", aes(x=meanf, y=maxy*0.475), vjust=0, color="#7570b3", size=4,alpha=0.5) + #mean current
+
+  
+  #Chapter 1
+  geom_segment(aes(x = tmet, y =miny, xend = tmet, yend = maxy), linetype="dashed", size=1.2, color="black")+ #Tmetmax
+  geom_text(label="TMetMax", aes(x=tmet, y=maxy), vjust=0, color="black", size=4, nudge_x=-1.4) + #Tmetmax
+  geom_segment(aes(x = ctm, y =miny, xend = ctm, yend = maxy), linetype="dashed", size=1.2, color="black")+ #CTmax
+  geom_text(label="CTmax", aes(x=ctm, y=maxy), vjust=0, color="black", size=4, nudge_x=0.85) + #CTmax
+ 
+  
+  #Chapter 3
+  geom_segment(aes(x = avoid, y =miny, xend = avoid, yend = maxy), linetype="dashed", size=1.2, color="black")+ #avoidance
+  geom_text(label="Avoidance", aes(x=avoid, y=maxy), vjust=0, color="black", size=4, nudge_x=0) + #Avoidance
+  geom_segment(aes(x = maj, y =miny, xend = maj, yend = maxy), linetype="dashed", size=1.2, color="black")+ #majority temp
+  geom_text(label="Majority temp.", aes(x=maj, y=maxy), vjust=0, color="black", size=4) + #majority temp
+  geom_segment(aes(x = phor, y =miny, xend = phor, yend = maxy), linetype="dashed", size=1.2, color="black")+ #phoresy
+  geom_text(label="Phoresy", aes(x=phor, y=maxy), vjust=0, color="black", size=4, nudge_x=0)  #phoresy
+
+ggsave(plot=last_plot(),filename="dissertation_summary_black.png",  path="Outputs/Dissertation summary/",width=16, height=8, units="cm")
+
+```
