@@ -12,14 +12,29 @@ output:
     toc_float: false
 ---
 
-#Description
-Here I will type a description of what this code is for
+# Description
+
+In this script I achieve the following:
+
+1. Obtain the final temperature values to then estimate the oxygen consumed by pseudoscorpions in the thermolimit respirometry 
+
+    + I start by reading and structuring the temperature records from both the external HOBO loggers used in the thermolimit respirometry trials. Then I also take the temperatures recorded by hand by both, the thermocouple external sensor, and the recorded temperature by the actual thermal block where the trials took place.And I merge it into a single file to explore the relationship between the different temperature sensors. 
+
+    + I then choose the best/more reliable one to use the most accurate temperature data for the oxygen estimation (separate script).
+
+    + I then used the equation of the line to be able to predict the temperature in the thermal block (the chosen temperature to use) based of the loggers temperatures (for which I have more constant data collected).
+
+    + I use this equation to correct the temperatures of all the trials for the thermolimit respirometry and so be able to further estimate oxygen consumption (separate script)
+
+2. Estimate the heat rigor or CTmax for the pseudoscorpions exposed to the same temperature treatment used in the thermolimit respirometry trials, but scored through behavioral observations (i.e. the point in time and temperature at which they stop moving).
+
+    + For this I used similar steps to the described above.
 
 
 
 ```{r setup, include=FALSE} 
 knitr::opts_chunk$set(warning = FALSE, message = FALSE) 
-knitr::opts_knit$set(root.dir = "C:/Users/laus1/OneDrive - University of Nebraska-Lincoln/UNL/PhD Tesis/Methods/Thermolimit/Thermolimit data analyses")
+knitr::opts_knit$set(root.dir = "C:/Users/laus1/Documents/UNL/Publications/Ch1 Thermal tolerance/Thermolimit data analyses")
 getwd()
 ```
 
@@ -727,8 +742,6 @@ mean(slopes2$corround)
 
 ***
 
-# ASK FOR SECOND OPINION!!!
-
 It seems like either group of slopes (mean corrected = 0.2485 ~ 0.25 or not corrected- mean=0.2446 ~ 0.24) shows similar slopes. I will use the uncorrected ones for the analyses
 
 ***
@@ -737,9 +750,6 @@ It seems like either group of slopes (mean corrected = 0.2485 ~ 0.25 or not corr
 
 
 ## Adding ramping slope to the dataframe
-
-
-
 
 ```{r}
 all_corr<-all_corr %>%
@@ -760,8 +770,8 @@ all_corr<-all_corr %>%
 ```
 
 
-
 ```{r}
+# Saving the file
 write.csv(all_corr, "Outputs/temperatures_corrected.csv")
 ```
 
@@ -868,6 +878,7 @@ save(all_corr,file = "Outputs/Temperature analyses.RData")
 ```
 
 
+
 # Behavioral trials thermolimit
 
 ## Reading files
@@ -880,8 +891,8 @@ tb<-read.csv("Data/Temperature/Thermal_block_test.csv", skip=2, header=F, col.na
 head(tb)
 
 ```
-## Organizing and adding data
 
+## Organizing and adding data
 
 ```{r}
 tb2<- tb %>%
@@ -1055,10 +1066,6 @@ slope<-lm1$coefficients[2]
 int<-lm1$coefficients[1]
 ```
 
-
-
-
-
 ***
 
 > As it is a linear relationship, I can now correct the loggers temps (x) to get the block temperature by using the formula:
@@ -1086,7 +1093,7 @@ ggplot(all_corr, aes(x=datetime2, y=tempcorr)) + geom_line()+ facet_wrap(~trial,
 ## Estimating temperature slope for each trial
 
 ### Without removing bump at the begining of ramp
-```{r, uncorrected}
+```{r, uncorrected2}
 # Trial 1
 r1<-all_corr %>%
   filter(trial==1,
@@ -1191,16 +1198,20 @@ summarize(tempcorr2=mean(tempcorr),
           logtime2=mean(logtime)) %>%
   right_join(beh)%>%
   ungroup()%>%
-  mutate(stage=fct_relevel(stage, levels=c("Tritonymph",  "Male", "Female")))%>%
+  mutate(stage=fct_relevel(stage, "Tritonymph",  "Male", "Female"))%>%
   filter(ind!=362) #Individuals whose heat rigot was not determined
 
 meanrigt<-mean(heatrig$tempcorr2)
 meanrigt
 meanrigtime<-mean(heatrig$logtime2)
 meanrigtime
-#the Topt is 44.25 (±0.16, SE) across all life stages
-#Mean logtime topt: 68.62526 +/- 0.56(standard error)
+#the Topt is 44.25 (±0.16, SE) across all life stages (Based on the estimations done in a separate script)
+#Mean logtime topt: 68.62526 +/- 0.56(standard error) (Based on the estimations done in a separate script)
+```
 
+
+## Plotting to assess the variability of the heat rigor estimates
+```{r}
 ggplot(heatrig, aes(x=logtime2, y=tempcorr2, color=stage, shape=place))+
   geom_point(size=3)+
   theme_classic()+
@@ -1210,8 +1221,14 @@ ggplot(heatrig, aes(x=logtime2, y=tempcorr2, color=stage, shape=place))+
 ggplot(heatrig, aes(y=logtime2))+geom_boxplot()+theme_classic()
 ggplot(heatrig, aes(y=tempcorr2))+geom_boxplot()+theme_classic()
 
+```
 
-#Filtering for only those that stayed at the bottom of the well
+> This shows that the estimate heat rigor is congruent with what one would expect: it should happen after and at a higher temperature than the Topt or Tmetmax. However, since a few individuals moved around and climb to the walls of the well in the thermal block, potentially being exposed to slighlty different temperatures, I wanted to see if removing them would change the data significantly:
+
+
+## Filtering for only those that stayed at the bottom of the well
+
+```{r}
 heatrig2<-heatrig%>% 
   filter(place=="bottom")
 
@@ -1226,7 +1243,13 @@ setime<-sd(heatrig2$logtime2)/sqrt(length(heatrig2$logtime2))
 
 #the Topt is 44.25 (±0.16, SE) across all life stages
 #Mean logtime topt: 68.62526 +/- 0.56(standard error)
+```
+> These estimates are lower but more conservative (since all individuals stayed in the same place within the well), so I decided to use this estimates as the final heat rigor data
 
+
+### Plotting of the final heat rigor data
+
+```{r}
 # Getting colors for stages
 hex <- scales::hue_pal()(5)
 hex # The last 3 are the ones I should use
