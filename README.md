@@ -4,25 +4,12 @@ The scripts used in this project are listed below:
 
 1. Temperature analyses: Used for obtaining the temperatures required to estimating oxygen consumed in the respirometry trials, as well as estimating the heat rigor.
 
-2. 
+2. Oxygen estimation: In which the temperature data from the prior script is used to estimate the rate of oxygen consumed by each individual during the thermolimit respirometry experiment, and then estimates the physiological estimates relevant (Rate optima, thermal optima, activation energy).
 
-The scripts here were written and compiled by L. Segura Hernandez.
+3. Thermolimit statistical analyses
 
-Descriptive  
-List contents of the repository  
-Clearly explains the project to other (intruction manual for the repo)  
-  
-Fundamentals  
-Title  
-Description of technology and why  
-Description of the process and why  
-Table of contents  
-  
-Extras  
-How the project came about   
-motivation behind it  
-Limitations  
-Challenges  
-What proble t solves  
-What the indented use us  
-Credits  
+4. Environment vs Performance:
+
+
+
+The the data and scripts here were collected, compiled and written by L. Segura Hernandez.

@@ -14,26 +14,19 @@ output:
 
 ```{r setup, include=FALSE} 
 knitr::opts_chunk$set(warning = FALSE, message = FALSE) 
-knitr::opts_knit$set(root.dir = "C:/Users/laus1/OneDrive - University of Nebraska-Lincoln/UNL/PhD Tesis/Methods/Thermolimit/Thermolimit data analyses")
+knitr::opts_knit$set(root.dir = "C:/Users/laus1/Documents/UNL/Publications/Ch1 Thermal tolerance/Thermolimit data analyses")
 getwd()
 ```
 
+# Description
+
 This is the final code to use. The other script for oxygen estimation for some reason lost part of the code. I made this copy after that, with hopefully the whole code again. Use this file for the oxygen estimation, not the other (incomplete) one.
 
+In this script I achieve the following:
 
-What to do next (10oct22):  
+1. Wrangle the oxygen and temperature data to create the oxygen consumption rate per temperature for all individuals exposed to the thermolimit respirometry trials.
 
-* **For Activation energy:**
-
-** Check if the max points match those of the Topt data
-** Clean code, add notes and leave only the final version of the working code on this file
-
-* **For microclimate data:**
-
-** Create a separate script
-** plot final curves of Topt  against microclimate
-** Clean code, add notes and leave only the final version of the working code on this file
-
+2. Obtain the estimates of metrics relevant to the physiological responses to temperature (Topt, Ropt, Activation energy)
 
 
 # Libraries
@@ -72,17 +65,21 @@ volume
 ```
 ## Calling and arranging data
 
-> This is what this code does, per trial:  
+> This is what this part of the code does, per trial:  
 
-1. Prepare the files associated with the trial and brings them into R  
+1. Prepares the files associated with the trial and brings them into R
+
 2. Merges them into a single file  
+
 3. Manually adds the information missing to each one. Eg: IDs, weights, stages, etc.  
+
 4. It then call the temperature data and adds it to the file as well  
+
 5. Finally, it add the oxygen data (based on the calculations of the spreadsheet that Jon DeLong provided me) and convert it to mg O2 instead of mg/L 
 
 
 ### Trial 2
-```{r}
+```{r, echo=T, results='hide'}
 # creating vector for columns names
 cnames<-c("date", "time", "logtime", "oxygen", "phase", "amplitude", "temperature")
 
@@ -1870,8 +1867,6 @@ inflec<-as.data.frame(inflection)
 ```
 
 
-
-
 # Trimming traces with weird patterns
 
 > Some traces have some weird drops/fluctuations of oxygen in the middle of the trace. In order to get a better idea of the general oxygen trace, John reccomended I cut those portions of the trace before fitting the polynomial function to the data.
@@ -2089,7 +2084,7 @@ ggsave(plot=last_plot(),filename="OxygenTrace_Females.jpg",  path="Outputs/Oxyge
   
 ```
 
-# Creating a loops to fit polynomial functions for all individuals 
+# Estimating rates of oxygen consumptions: using loops to fit polynomial functions for all individuals 
 
 > The following code will do the following steps for each single individual: 
   1. Fit the polynomial function of 10 degrees to each individual and obtain the adjusted r-square to evaulate model fitting for each individual (file: modelfitting.csv)  
@@ -2187,7 +2182,7 @@ write.csv(a3, "./Outputs/derivatives.csv")
 ```
 
 ## 4. Plotting the first derivative
-```{r}
+```{r, echo=T, results='hide'}
 # Plotting the first derivative
 
 ## See #3 above for the rest of the annotations. I will only annotate here what is different from above
@@ -2230,7 +2225,7 @@ map(dat_list, r4first) #created plot for each individual
 
 ## 5. Plotting the second derivative
 
-```{r}
+```{r,  echo=T, results='hide'}
 # Plotting the second derivative
 
 #Annotations as the same as #3 and #4, the only difference is that this plot the data for the second derivative but the code is pretty much the same
@@ -2321,7 +2316,7 @@ write.csv(inflections, "./Outputs/inflections.csv") #saves the file as a csv fil
 
 ## 7. Making combined figures for the function fit, first and second derivatives
 
-```{r}
+```{r,  echo=T, results='hide'}
 # AS a function
 make_grid <- function(id){
   #Establishing paths
@@ -2355,9 +2350,9 @@ map(groups, make_grid) # creates all the figures for each individual
 ```
 
 
-# Estimating Ropt and Topt
+# Estimating preliminary values of physiological tolerance 
 
-## For all individuals
+## Ropt and Topt for all individuals
 ### Getting the maximum rate of oxygen consumption (Rate optima, Ropt)
 > Once we have the derivatives and their respective plots, we can estimate the point in time where the rate of oxygen consumed was maximized (which represents the Rate optima, Ropt). As the first derivative represent the change in oxygen consumption over time, we can use the first derivative to get this. The maximum point in the trace of the first derivative is the Ropt. 
 
@@ -2367,7 +2362,7 @@ map(groups, make_grid) # creates all the figures for each individual
 
 
 
-```{r}
+```{r,eval=F, echo=T}
 derivs<-read.csv("Outputs/derivatives.csv") #getting the derivative data
 
 
@@ -2400,9 +2395,9 @@ ropt<-derivs %>%
 
 > Here we create the file "ToptandRopts.csv" with the Ropt and Top for all individuals estimated the same way. However, we still need to see if the data makes sense.
 
-```{r}
+```{r,eval=F, echo=T}
 #Merging the temperatures
-topt<-difference_left_join(ropt,oxall, by=c("ind","logtime"), max_dist=0.13) %>% #Merges dataframes based on the closest logtime value (within 0.13). Since the ropt value coms from the derivatives, and the derivatives were estimated based on a sequence of values created for them rather than the real logtime values, the logtime in both dataframes is not exactly the same and we have to use an approximation instead
+topt<-difference_left_join(ropt,oxall, by=c("ind","logtime"), max_dist=0.13) %>% #Merges dataframes based on the closest logtime value (within 0.13). Since the ropt value comes from the derivatives, and the derivatives were estimated based on a sequence of values created for them rather than the real logtime values, the logtime in both dataframes is not exactly the same and we have to use an approximation instead
   group_by(ind.x, logtime.x, first.y1, first2) %>% 
   summarize(tempcorr2=mean(tempcorr)) %>% #averaging the tempcorr for when multiple cells are called
   ungroup()
@@ -2419,7 +2414,7 @@ toptfinal<-oxall %>%
          ropt1=first.y1, 
          ropt2=first2) %>%
   ungroup()%>%
-  mutate(stage=fct_relevel(stage, levels=c("Protonymph", "Deutonymph", "Tritonymph",  "Male", "Female"))) #changing the order of the levels within the factor "stage" 
+  mutate(stage=fct_relevel(stage, "Protonymph", "Deutonymph", "Tritonymph",  "Male", "Female")) #changing the order of the levels within the factor "stage" 
 
 levels(toptfinal$stage)
 
@@ -2440,15 +2435,16 @@ ggplot(toptfinal, aes(x=stage, y=ropt2))+geom_boxplot() +theme_classic() +
 #Saving the file
 write.csv(toptfinal, "Outputs/ToptandRopts.csv")
 ```
+
 ### Evaluating extreme points for topt and ropt
 
 > This would help me see if there are any weird trends with the data. I dropped trial 2 because the ramping rate on it was lower than that of the other trials and was biasing the results 
 
-```{r}
+```{r,eval=F, echo=T}
 # Plot with prediction trends, standard error and data
 dat<-read.csv("Outputs/ToptandRopts.csv")
 dat<-dat%>%
-  mutate(stage=fct_relevel(stage, levels=c("Protonymph", "Deutonymph", "Tritonymph",  "Male","Female" ))) %>%
+  mutate(stage=fct_relevel(stage, "Protonymph", "Deutonymph", "Tritonymph",  "Male","Female" )) %>%
   arrange(stage)
 dat2<-dat%>%filter(trial!=2)
 
@@ -2463,12 +2459,14 @@ plot
 
 > Protonymphs and deutonymphs seems to have some extreme values (over 50 C or so). Looking at the trends of those individuals might help explain what is happening (e.g. if the ropt that was picked up was from the "dying' peak (the one that might be occuring after death) rather than the real Ropt peak)
 
-### Checking the first derivative trend per life stage during ramping only
+# Checking data again after preliminary estimations of physiological values
+
+## Checking the first derivative trend per life stage during ramping only
 
 > To see if the Ropt and topt above were extracted from curves that looked ok, here we plot all the curves for just the period where the ramping happened. If any trace seem off, we can adjust the trimming for a better capture of the real ropt and topt. 
 
-#### Merging the demographic data to the derivative data
-```{r}
+### Merging the demographic data to the derivative data
+```{r,eval=F, echo=T}
 
 oxall<-read.csv("Outputs/oxall_trimmed.csv")
 derivs<-read.csv("Outputs/derivatives.csv") #getting the derivative data
@@ -2589,9 +2587,9 @@ write.csv(derivsdemography, "Outputs/derivsdemography.csv")
 derivs2<-read.csv("Outputs/derivsdemography.csv")
 ```
 
-#### Plotting each derivative trace for each life stage
-##### Protonymphs
-```{r}
+### Plotting each derivative trace for each life stage
+#### Protonymphs
+```{r,eval=F, echo=T}
 protos <- derivs2%>%
   filter(stage=="Protonymph")
   
@@ -2610,8 +2608,8 @@ ggsave(plot=last_plot(),filename="DerivsTrace_Protonymphs.jpg",  path="Outputs/D
 
   
 ```
-##### Deutonymphs
-```{r}
+#### Deutonymphs
+```{r,eval=F, echo=T}
 deutos <- derivs2%>%
   filter(stage=="Deutonymph")
   
@@ -2630,8 +2628,8 @@ ggsave(plot=last_plot(),filename="DerivsnTrace_Deutonymphs.jpg",  path="Outputs/
 
   
 ```
-##### Tritonymphs
-```{r}
+#### Tritonymphs
+```{r,eval=F, echo=T}
 Tritos <- derivs2%>%
   filter(stage=="Tritonymph")
   
@@ -2651,8 +2649,8 @@ ggsave(plot=last_plot(),filename="DerivsTrace_Tritonymphs.jpg",  path="Outputs/D
   
 ```
 
-##### Males
-```{r}
+#### Males
+```{r,eval=F, echo=T}
 males <- derivs2%>%
   filter(stage=="Male")
   
@@ -2672,8 +2670,8 @@ ggsave(plot=last_plot(),filename="DerivsTrace_Males.jpg",  path="Outputs/Derivat
   
 ```
 
-##### Females
-```{r}
+#### Females
+```{r,eval=F, echo=T}
 females <- derivs2%>%
   filter(stage=="Female")
   
@@ -2700,6 +2698,7 @@ ggsave(plot=last_plot(),filename="DerivsTrace_Females.jpg",  path="Outputs/Deriv
 
 
 ## Manually trimming the first derivative for those individuals whose ropt values are on the "dying" peak
+
 ### Trimming for selected individuals
 ```{r}
 derivs<-read.csv("Outputs/derivatives.csv") #getting the derivative data
@@ -3076,9 +3075,10 @@ ggsave(plot=last_plot(),filename="DerivsTrace_FemalesTrim.jpg",  path="Outputs/D
 ```
 
 
+# Estimating final values of physiological tolerance
 
 
-### Getting the maximum rate of oxygen consumption (Rate optima, Ropt) 
+## Getting the maximum rate of oxygen consumption (Rate optima, Ropt) 
 > As we did before, we can now estimate the point in time where the rate of oxygen consumed was maximized (which represents the Rate optima, Ropt) for the newly trimmed traces. 
 
 
@@ -3109,7 +3109,7 @@ ropt<-derivs %>%
 
 ```
 
-### Getting the Temperature optima (Topt)
+## Getting the Temperature optima (Topt)
 
 > Once we know the point in time where the rate was maximize (Ropt), we can look for the temperature associated to that point in time during each trial, for each individual. We can do this by merging the ropt dataframe with the dataframe containing the temperature at each point in time (oxall).
 
@@ -3134,7 +3134,7 @@ toptfinal<-oxall %>%
          ropt1=first.y1, 
          ropt2=first2) %>%
   ungroup()%>%
-  mutate(stage=fct_relevel(stage, levels=c("Protonymph", "Deutonymph", "Tritonymph",  "Male", "Female"))) #changing the order of the levels within the factor "stage" 
+  mutate(stage=fct_relevel(stage, "Protonymph", "Deutonymph", "Tritonymph",  "Male", "Female")) #changing the order of the levels within the factor "stage" 
 
 levels(toptfinal$stage)
 
@@ -3155,6 +3155,7 @@ ggplot(toptfinal, aes(x=stage, y=ropt2))+geom_boxplot() +theme_classic() +
 #Saving the file
 write.csv(toptfinal, "Outputs/ToptandRopts_trim.csv")
 ```
+
 ### Evaluating extreme points for topt and ropt
 
 > This would help me see if there are any weird trends with the data. I dropped trial 2 because the ramping rate on it was lower than that of the other trials and was biasing the results 
@@ -3163,7 +3164,7 @@ write.csv(toptfinal, "Outputs/ToptandRopts_trim.csv")
 # Plot with prediction trends, standard error and data
 dat<-read.csv("Outputs/ToptandRopts_trim.csv")
 dat<-dat%>%
-  mutate(stage=fct_relevel(stage, levels=c("Protonymph", "Deutonymph", "Tritonymph",  "Male","Female" ))) %>%
+  mutate(stage=fct_relevel(stage, "Protonymph", "Deutonymph", "Tritonymph",  "Male","Female")) %>%
   arrange(stage)
 dat2<-dat%>%filter(trial!=2)
 
@@ -3261,7 +3262,7 @@ derivsinf<-derivsinf %>%
 
 
 
-# Getting the activation energy
+## Getting the activation energy
 > The activation energy is how much energy it took the inviduals to reach the Ropt. We can get it by following the procedure described by Brown et al. (2004), which is a modification of the Arrhenius equation. 
 
 For this I need to do the following to each individual:
@@ -3274,7 +3275,7 @@ For this I need to do the following to each individual:
 7. Put everything in a single dataframe
 8. Associate demographic data to each id
 
-## Trimming the first derivative for each individual
+### Trimming the first derivative for each individual
 > Here, I manually select the first part of the slope that leads to the Ropt, just to get some range closer for the final function below
 
 ```{r}
@@ -3848,10 +3849,10 @@ write.csv(derivstrim, "Outputs/derivsmanualtrimforenergy.csv")
 ```
 
 
-## Creating the functions to get the activation energy for each individual
+### Creating the functions to get the activation energy for each individual
 > After trimming the traces, now I can run the following code. There are two functions: one that creates the plots to look at the line whose slope represents the activation energy, and another to store the value of such slope into a dataframe. Both functions follow similar steps. They start by identifying the maximum and minimum points in the trace, then it trims the trace even more by using the min and maximum values as cut-off points. For the function that creates the plots, it does two plots at once: one plot is just to see what the final trimmed trace looks like, and the second one plots the line for the activation energy. To get the data for the second plot, I joined data from the oxall dataframe which had the temperature information, then converted the temperature to kelvin, mutiplied it by the Boltzmann constant, converted it to electron voltz and took the inversion (1/x) of that. Then estimated the linear model of that variable as the predictor for the log-transformed (natural log) first derivative values, , and use the slope and intercept values of that model to plot the line against the raw values. The other function does the last few steps (no plots), and stores the slope value, as well as the minimum and maximum values that were used to trim the trace. 
 
-```{r}
+```{r, echo=T, results='hide'}
 # Creating separate lists, one for each individual
 oxall<-read.csv("Outputs/oxall_trimmed.csv")
 derivstrim<-read.csv("Outputs/derivsmanualtrimforenergy.csv")
@@ -3940,7 +3941,7 @@ write.csv(energy,"Outputs/activation energy.csv")
 
 ```
 
-## Adding the demographic data
+### Adding the demographic data
 ```{r}
 # At the end: adding demographic data (pending modification)
 #getting the other demographic data
@@ -3951,7 +3952,7 @@ energyfinal<-oxall %>%
   filter(row_number()==1) %>%
   right_join(energy, by=c("ind"="ind")) %>%
    ungroup()%>%
-  mutate(stage=fct_relevel(stage, levels=c("Protonymph", "Deutonymph", "Tritonymph", "Female", "Male" ))) %>%
+  mutate(stage=fct_relevel(stage, "Protonymph", "Deutonymph", "Tritonymph", "Female", "Male" )) %>%
   arrange(stage)
 levels(energyfinal$stage)
 
@@ -3960,7 +3961,7 @@ write.csv(energyfinal, "Outputs/activation energy final.csv")
   
 ```
 
-## Assessing the activation energy data
+### Assessing the activation energy data
 
 > Evaluating if there are any particular outliers and the general values at which the activation energy ranges for each life stage
 
@@ -3974,7 +3975,7 @@ ggplot(energyfinal, aes(x=stage, y=slope))+geom_boxplot() +theme_classic() +
 
 ```
 
-## Comparing max of activation energy with those of the Ropt
+### Comparing max of activation energy with those of the Ropt
 ```{r}
 energyfinal<-read.csv("Outputs/activation energy final.csv")
 
@@ -3990,637 +3991,4 @@ energycheck<-energycheck %>%
   mutate(diff=round(logtime.x-logtime.y, digits=3))
 ```
 
-
-
-
-
-# Old code
-
-# Estimating Topt and Ropt from the manual trim trend for those nymphs with very high topts
-
-```{r}
-# Calling the file that was created in code chunk 49 (manually trimming before the activation curves)
-
-derivstrim<-read.csv("Outputs/derivsmanualtrim.csv")
-
-#Individuals to redo
-ids<-c(165,301,36,337,324,154,43,288,274,171,314,300,213,22,270,345,239,168)
-
-
-derivst<-derivstrim %>%
-  #filter(id %in% ids) %>%
-  mutate(first2=first.y1*-1)
-
-
-```
-
-## Getting Ropt for the selected individuals
-```{r}
-
-# Plotting to see if the conversion looks right
-derivst%>%
-  filter(id==165) %>%
-  ggplot(aes(x=first.logtime, y=first2))+geom_line()
-
-derivst%>%
-  filter(id==301) %>%
-  ggplot(aes(x=first.logtime, y=first2))+geom_line()
-
-derivst%>%
-  ggplot(aes(x=first.logtime, y=first2))+geom_line()+facet_wrap(~id)
-
-
-# Getting the row with the maximum value for each individual
-ropt<-derivst %>%
-     group_by(id) %>%
-     slice(which.max(first2))%>%
-  mutate(logtime=first.logtime,
-         ind=id)
-
-
-```
-
-## Getting the temperatures associated with the Ropt (Topt)
-```{r}
-oxall<-read.csv("./Outputs/oxygenall_aftercodedeletion.csv") #Use this one
-
-#Merging the temperatures
-topt<-difference_left_join(ropt,oxall, by=c("ind","logtime"), max_dist=0.13) %>% #Merges dataframes based on the closest logtime value (within 0.13)
-  group_by(ind.x, logtime.x, first.y1, first2) %>%
-  summarize(tempcorr2=mean(tempcorr)) %>% #averaging the tempcorr for when multiple cells are called
-  ungroup()
-
-
-#getting the other demographic data
-toptfinal_selected<-oxall %>%
-  select(c("date", "trial", "channel", "ind", "stage", "weight", "ramp"))%>%
-  #filter(ind %in% ids) %>%
-  group_by(ind)%>%
-  filter(row_number()==1) %>%
-  right_join(topt, by=c("ind"="ind.x")) %>%
-  rename(logtime=logtime.x,
-         tempcorr=tempcorr2,
-         ropt1=first.y1, 
-         ropt2=first2) %>%
-  ungroup()%>%
-  mutate(stage=fct_relevel(stage, levels=c("Protonymph", "Deutonymph", "Tritonymph",  "Male", "Female" )))
-
-levels(toptfinal_selected$stage)
-#Visualizing the topt and Ropt
-
-## Temperature optima
-ggplot(toptfinal_selected, aes(x=stage, y=tempcorr))+geom_boxplot() +theme_classic() + 
-  theme(text = element_text(size = 15))+
-  xlab("Stage")+
-  ylab("Ctmax (Celsius)")
-
-ggplot(toptfinal_selected, aes(x=stage, y=ropt2))+geom_boxplot() +theme_classic() + 
-  theme(text = element_text(size = 15))+
-  xlab("Stage")+
-  ylab("Maximum rate of oxygen consumption")
-
-
-write.csv(toptfinal, "Outputs/ToptandRopts.csv")
-```
-
-
-
-## Replacing old values for selected individuals
-```{r}
-dat<-read.csv("Outputs/ToptandRopts.csv")
-
-topt2<-dat%>%
-filter(!ind%in%ids) %>% #removing individuals that got redone
-bind_rows(toptfinal_selected) %>% 
-  filter_all(all_vars(!is.infinite(.)))
-levels(as.factor(oxall$ind))
-
-
-write.csv(topt2, "Outputs/ToptandRopts_manualtrimforsome.csv")
-```
-
-
-
-
-
-#############################################################################################
-
-# Activation energy First try: one by one, ignore this one
-```{r, eval=FALSE}
-#Ind 2
-## 1. Trim the first derivative from the closests left-sided minimum to the maximum value
-indiv<-derivs%>%
-  filter(id=="2") %>% #filtering to each individual
-  filter(between(first.logtime, 35, 65)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
-indiv %>%  ggplot(aes(x=first.logtime, y=first2))+geom_line() #Plotting to see what the line looks like
-min<-indiv %>% slice(which.min(first2)) %>% select(first.logtime) #Getting the time where the minimum value is at
-max<-indiv %>% slice(which.max(first2)) %>% select(first.logtime) #Getting the time where the maximum value is at
-indiv<-indiv %>% filter(between(first.logtime, min, max))%>% #cutting the data to the max and minimum value
- mutate(logtime=first.logtime, ind=id) #changing variable names to facilitate merging later
-indiv %>%  ggplot(aes(x=logtime, y=first2))+geom_line() #Plotting to see what the line looks like
-## 2, 3, 4: Join data, kelvinf and log transformations
-indiv<-difference_left_join(indiv,oxall, by=c("ind","logtime"), max_dist=0.13) %>% #Merges dataframes based on the closest logtime value (within 0.13)
-  group_by(ind.x, logtime.x, first.y1, first2) %>%
-  summarize(tempcorr2=mean(tempcorr)) %>% #averaging the tempcorr for when multiple cells are called
-  ungroup() %>%
-  mutate(tempk=tempcorr2+273.15, #converting temps to Kelvin
-        #tempboltz=tempk*((1.380649)*(10^-23)), #Mutliplying temperatute in Kelvin by the Boltzmann constant
-         invtemp=1/(tempk*((1.380649)*(10^-23))), #inverting the  temp in Kelvin multiplied by the Boltzmann's constant
-         lnderiv=log(first2)) #Getting the natural log of the derivative values
-
-## 5: Getting the slope
-model<-lm(lnderiv~invtemp, data=indiv)
-summary(model)
-slope<-model$coefficients[2]
-intercept<-model$coefficients[1]
-## 6,7. Creating dataframe for the slope
-ind<-2
-energy<-data.frame(ind, slope,min,max)
-label<-paste("Individual ", ind, sep = "")
-indiv %>%  ggplot(aes(x=invtemp, y=lnderiv))+geom_point()+geom_abline(intercept = intercept, slope = slope, color="red", 
-               linetype="solid", size=1.5) + ylim(-5,-3)+ theme_classic()+ theme(text = element_text(size = 15),plot.title = element_text(hjust=0.5))+ ggtitle(label)+
-  xlab("1/lnTemp (K)")+
-  ylab("ln(First derivative)") +#Plotting to see what the line looks like
-  scale_x_continuous(labels=function(n){format(n, scientific=TRUE)})
-
-name<-paste("Individual_", ind, ".jpg", sep = "")
-mypath <- file.path("Outputs/Activation energy plots/")
-ggsave(plot=last_plot(),filename=name,  path=mypath)
-```
-
-
-```{r, eval=FALSE}
-#Ind 3
-## 1. Trim the first derivative from the closests left-sided minimum to the maximum value
-indiv<-derivs%>%
-  filter(id=="3") %>% #filtering to each individual
-  filter(between(first.logtime, 35, 65)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
-indiv %>%  ggplot(aes(x=first.logtime, y=first2))+geom_line() #Plotting to see what the line looks like
-min<-indiv %>% slice(which.min(first2)) %>% select(first.logtime) #Getting the time where the minimum value is at
-max<-indiv %>% slice(which.max(first2)) %>% select(first.logtime) #Getting the time where the maximum value is at
-indiv<-indiv %>% filter(between(first.logtime, min, max))%>% #cutting the data to the max and minimum value
- mutate(logtime=first.logtime, ind=id) #changing variable names to facilitate merging later
-indiv %>%  ggplot(aes(x=logtime, y=first2))+geom_line() #Plotting to see what the line looks like
-## 2, 3, 4: Join data, kelvinf and log transformations
-indiv<-difference_left_join(indiv,oxall, by=c("ind","logtime"), max_dist=0.13) %>% #Merges dataframes based on the closest logtime value (within 0.13)
-  group_by(ind.x, logtime.x, first.y1, first2) %>%
-  summarize(tempcorr2=mean(tempcorr)) %>% #averaging the tempcorr for when multiple cells are called
-  ungroup() %>%
-  mutate(tempk=tempcorr2+273.15, #converting temps to Kelvin
-         lntempk=log(tempk), #converting kelvin to natural logarithm
-         invlntempk=1/lntempk, #inverting the natural log of temp in K 
-         lnderiv=log(first2)) #Getting the natural log of the derivative values
-## 5: Getting the slope
-model<-lm(lnderiv~invlntempk, data=indiv)
-summary(model)
-slope<-model$coefficients[2]
-intercept<-model$coefficients[1]
-## 6,7. Creating dataframe for the slope
-ind<-3
-dataframe<-data.frame(ind, slope)
-energy<- bind_rows(energy, dataframe)
-label<-paste("Individual ", ind, sep = "")
-indiv %>%  ggplot(aes(x=invlntempk, y=lnderiv))+geom_point()+geom_abline(intercept = intercept, slope = slope, color="red", 
-               linetype="solid", size=1.5) + ylim(-5,-3)+ theme_classic()+ theme(text = element_text(size = 15),plot.title = element_text(hjust=0.5))+ ggtitle(label)+
-  xlab("1/lnTemp (K)")+
-  ylab("ln(First derivative)")#Plotting to see what the line looks like
-name<-paste("Individual_", ind, ".jpg", sep = "")
-mypath <- file.path("Outputs/Activation energy plots/")
-ggsave(plot=last_plot(),filename=name,  path=mypath)
-
-#Ind 4
-## 1. Trim the first derivative from the closests left-sided minimum to the maximum value
-indiv<-derivs%>%
-  filter(id=="4") %>% #filtering to each individual
-  filter(between(first.logtime, 40, 80)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
-indiv %>%  ggplot(aes(x=first.logtime, y=first2))+geom_line() #Plotting to see what the line looks like
-min<-indiv %>% slice(which.min(first2)) %>% select(first.logtime) #Getting the time where the minimum value is at
-max<-indiv %>% slice(which.max(first2)) %>% select(first.logtime) #Getting the time where the maximum value is at
-indiv<-indiv %>% filter(between(first.logtime, min, max))%>% #cutting the data to the max and minimum value
- mutate(logtime=first.logtime, ind=id) #changing variable names to facilitate merging later
-indiv %>%  ggplot(aes(x=logtime, y=first2))+geom_line() #Plotting to see what the line looks like
-## 2, 3, 4: Join data, kelvinf and log transformations
-indiv<-difference_left_join(indiv,oxall, by=c("ind","logtime"), max_dist=0.13) %>% #Merges dataframes based on the closest logtime value (within 0.13)
-  group_by(ind.x, logtime.x, first.y1, first2) %>%
-  summarize(tempcorr2=mean(tempcorr)) %>% #averaging the tempcorr for when multiple cells are called
-  ungroup() %>%
-  mutate(tempk=tempcorr2+273.15, #converting temps to Kelvin
-         lntempk=log(tempk), #converting kelvin to natural logarithm
-         invlntempk=1/lntempk, #inverting the natural log of temp in K 
-         lnderiv=log(first2)) #Getting the natural log of the derivative values
-## 5: Getting the slope
-model<-lm(lnderiv~invlntempk, data=indiv)
-summary(model)
-slope<-model$coefficients[2]
-intercept<-model$coefficients[1]
-## 6,7. Creating dataframe for the slope
-ind<-4
-dataframe<-data.frame(ind, slope)
-energy<- bind_rows(energy, dataframe)
-label<-paste("Individual ", ind, sep = "")
-indiv %>%  ggplot(aes(x=invlntempk, y=lnderiv))+geom_point()+geom_abline(intercept = intercept, slope = slope, color="red", 
-               linetype="solid", size=1.5) + ylim(-5,-3)+ theme_classic()+ theme(text = element_text(size = 15),plot.title = element_text(hjust=0.5))+ ggtitle(label)+
-  xlab("1/lnTemp (K)")+
-  ylab("ln(First derivative)")#Plotting to see what the line looks like
-name<-paste("Individual_", ind, ".jpg", sep = "")
-mypath <- file.path("Outputs/Activation energy plots/")
-ggsave(plot=last_plot(),filename=name,  path=mypath)
-
-#Ind 5
-## 1. Trim the first derivative from the closests left-sided minimum to the maximum value
-indiv<-derivs%>%
-  filter(id=="5") %>% #filtering to each individual
-  filter(between(first.logtime, 40, 75)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
-indiv %>%  ggplot(aes(x=first.logtime, y=first2))+geom_line() #Plotting to see what the line looks like
-min<-indiv %>% slice(which.min(first2)) %>% select(first.logtime) #Getting the time where the minimum value is at
-max<-indiv %>% slice(which.max(first2)) %>% select(first.logtime) #Getting the time where the maximum value is at
-indiv<-indiv %>% filter(between(first.logtime, min, max))%>% #cutting the data to the max and minimum value
- mutate(logtime=first.logtime, ind=id) #changing variable names to facilitate merging later
-indiv %>%  ggplot(aes(x=logtime, y=first2))+geom_line() #Plotting to see what the line looks like
-## 2, 3, 4: Join data, kelvinf and log transformations
-indiv<-difference_left_join(indiv,oxall, by=c("ind","logtime"), max_dist=0.13) %>% #Merges dataframes based on the closest logtime value (within 0.13)
-  group_by(ind.x, logtime.x, first.y1, first2) %>%
-  summarize(tempcorr2=mean(tempcorr)) %>% #averaging the tempcorr for when multiple cells are called
-  ungroup() %>%
-  mutate(tempk=tempcorr2+273.15, #converting temps to Kelvin
-         lntempk=log(tempk), #converting kelvin to natural logarithm
-         invlntempk=1/lntempk, #inverting the natural log of temp in K 
-         lnderiv=log(first2)) #Getting the natural log of the derivative values
-## 5: Getting the slope
-model<-lm(lnderiv~invlntempk, data=indiv)
-summary(model)
-slope<-model$coefficients[2]
-intercept<-model$coefficients[1]
-## 6,7. Creating dataframe for the slope
-ind<-5
-dataframe<-data.frame(ind, slope)
-energy<- bind_rows(energy, dataframe)
-label<-paste("Individual ", ind, sep = "")
-indiv %>%  ggplot(aes(x=invlntempk, y=lnderiv))+geom_point()+geom_abline(intercept = intercept, slope = slope, color="red", 
-               linetype="solid", size=1.5) + ylim(-5,-3)+ theme_classic()+ theme(text = element_text(size = 15),plot.title = element_text(hjust=0.5))+ ggtitle(label)+
-  xlab("1/lnTemp (K)")+
-  ylab("ln(First derivative)")#Plotting to see what the line looks like
-name<-paste("Individual_", ind, ".jpg", sep = "")
-mypath <- file.path("Outputs/Activation energy plots/")
-ggsave(plot=last_plot(),filename=name,  path=mypath)
-
-#Ind 7
-## 1. Trim the first derivative from the closests left-sided minimum to the maximum value
-indiv<-derivs%>%
-  filter(id=="7") %>% #filtering to each individual
-  filter(between(first.logtime, 50, 80)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
-indiv %>%  ggplot(aes(x=first.logtime, y=first2))+geom_line() #Plotting to see what the line looks like
-min<-indiv %>% slice(which.min(first2)) %>% select(first.logtime) #Getting the time where the minimum value is at
-max<-indiv %>% slice(which.max(first2)) %>% select(first.logtime) #Getting the time where the maximum value is at
-indiv<-indiv %>% filter(between(first.logtime, min, max))%>% #cutting the data to the max and minimum value
- mutate(logtime=first.logtime, ind=id) #changing variable names to facilitate merging later
-indiv %>%  ggplot(aes(x=logtime, y=first2))+geom_line() #Plotting to see what the line looks like
-## 2, 3, 4: Join data, kelvinf and log transformations
-indiv<-difference_left_join(indiv,oxall, by=c("ind","logtime"), max_dist=0.13) %>% #Merges dataframes based on the closest logtime value (within 0.13)
-  group_by(ind.x, logtime.x, first.y1, first2) %>%
-  summarize(tempcorr2=mean(tempcorr)) %>% #averaging the tempcorr for when multiple cells are called
-  ungroup() %>%
-  mutate(tempk=tempcorr2+273.15, #converting temps to Kelvin
-         lntempk=log(tempk), #converting kelvin to natural logarithm
-         invlntempk=1/lntempk, #inverting the natural log of temp in K 
-         lnderiv=log(first2)) #Getting the natural log of the derivative values
-## 5: Getting the slope
-model<-lm(lnderiv~invlntempk, data=indiv)
-summary(model)
-slope<-model$coefficients[2]
-intercept<-model$coefficients[1]
-## 6,7. Creating dataframe for the slope
-ind<-7
-dataframe<-data.frame(ind, slope)
-energy<- bind_rows(energy, dataframe)
-label<-paste("Individual ", ind, sep = "")
-indiv %>%  ggplot(aes(x=invlntempk, y=lnderiv))+geom_point()+geom_abline(intercept = intercept, slope = slope, color="red", 
-               linetype="solid", size=1.5) + ylim(-5,-3)+ theme_classic()+ theme(text = element_text(size = 15),plot.title = element_text(hjust=0.5))+ ggtitle(label)+
-  xlab("1/lnTemp (K)")+
-  ylab("ln(First derivative)")#Plotting to see what the line looks like
-name<-paste("Individual_", ind, ".jpg", sep = "")
-mypath <- file.path("Outputs/Activation energy plots/")
-ggsave(plot=last_plot(),filename=name,  path=mypath)
-
-#Ind 10
-## 1. Trim the first derivative from the closests left-sided minimum to the maximum value
-indiv<-derivs%>%
-  filter(id=="10") %>% #filtering to each individual
-  filter(between(first.logtime, 35, 70)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
-indiv %>%  ggplot(aes(x=first.logtime, y=first2))+geom_line() #Plotting to see what the line looks like
-min<-indiv %>% slice(which.min(first2)) %>% select(first.logtime) #Getting the time where the minimum value is at
-max<-indiv %>% slice(which.max(first2)) %>% select(first.logtime) #Getting the time where the maximum value is at
-indiv<-indiv %>% filter(between(first.logtime, min, max))%>% #cutting the data to the max and minimum value
- mutate(logtime=first.logtime, ind=id) #changing variable names to facilitate merging later
-indiv %>%  ggplot(aes(x=logtime, y=first2))+geom_line() #Plotting to see what the line looks like
-## 2, 3, 4: Join data, kelvinf and log transformations
-indiv<-difference_left_join(indiv,oxall, by=c("ind","logtime"), max_dist=0.13) %>% #Merges dataframes based on the closest logtime value (within 0.13)
-  group_by(ind.x, logtime.x, first.y1, first2) %>%
-  summarize(tempcorr2=mean(tempcorr)) %>% #averaging the tempcorr for when multiple cells are called
-  ungroup() %>%
-  mutate(tempk=tempcorr2+273.15, #converting temps to Kelvin
-         lntempk=log(tempk), #converting kelvin to natural logarithm
-         invlntempk=1/lntempk, #inverting the natural log of temp in K 
-         lnderiv=log(first2)) #Getting the natural log of the derivative values
-## 5: Getting the slope
-model<-lm(lnderiv~invlntempk, data=indiv)
-summary(model)
-slope<-model$coefficients[2]
-intercept<-model$coefficients[1]
-## 6,7. Creating dataframe for the slope
-ind<-10
-dataframe<-data.frame(ind, slope)
-energy<- bind_rows(energy, dataframe)
-label<-paste("Individual ", ind, sep = "")
-indiv %>%  ggplot(aes(x=invlntempk, y=lnderiv))+geom_point()+geom_abline(intercept = intercept, slope = slope, color="red", 
-               linetype="solid", size=1.5) + ylim(-5,-3)+ theme_classic()+ theme(text = element_text(size = 15),plot.title = element_text(hjust=0.5))+ ggtitle(label)+
-  xlab("1/lnTemp (K)")+
-  ylab("ln(First derivative)")#Plotting to see what the line looks like
-name<-paste("Individual_", ind, ".jpg", sep = "")
-mypath <- file.path("Outputs/Activation energy plots/")
-ggsave(plot=last_plot(),filename=name,  path=mypath)
-
-#Ind 14
-## 1. Trim the first derivative from the closests left-sided minimum to the maximum value
-indiv<-derivs%>%
-  filter(id=="14") %>% #filtering to each individual
-  filter(between(first.logtime, 35, 70)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
-indiv %>%  ggplot(aes(x=first.logtime, y=first2))+geom_line() #Plotting to see what the line looks like
-min<-indiv %>% slice(which.min(first2)) %>% select(first.logtime) #Getting the time where the minimum value is at
-max<-indiv %>% slice(which.max(first2)) %>% select(first.logtime) #Getting the time where the maximum value is at
-indiv<-indiv %>% filter(between(first.logtime, min, max))%>% #cutting the data to the max and minimum value
- mutate(logtime=first.logtime, ind=id) #changing variable names to facilitate merging later
-indiv %>%  ggplot(aes(x=logtime, y=first2))+geom_line() #Plotting to see what the line looks like
-## 2, 3, 4: Join data, kelvinf and log transformations
-indiv<-difference_left_join(indiv,oxall, by=c("ind","logtime"), max_dist=0.13) %>% #Merges dataframes based on the closest logtime value (within 0.13)
-  group_by(ind.x, logtime.x, first.y1, first2) %>%
-  summarize(tempcorr2=mean(tempcorr)) %>% #averaging the tempcorr for when multiple cells are called
-  ungroup() %>%
-  mutate(tempk=tempcorr2+273.15, #converting temps to Kelvin
-         lntempk=log(tempk), #converting kelvin to natural logarithm
-         invlntempk=1/lntempk, #inverting the natural log of temp in K 
-         lnderiv=log(first2)) #Getting the natural log of the derivative values
-## 5: Getting the slope
-model<-lm(lnderiv~invlntempk, data=indiv)
-summary(model)
-slope<-model$coefficients[2]
-intercept<-model$coefficients[1]
-## 6,7. Creating dataframe for the slope
-ind<-14
-dataframe<-data.frame(ind, slope)
-energy<- bind_rows(energy, dataframe)
-label<-paste("Individual ", ind, sep = "")
-indiv %>%  ggplot(aes(x=invlntempk, y=lnderiv))+geom_point()+geom_abline(intercept = intercept, slope = slope, color="red", 
-               linetype="solid", size=1.5) + ylim(-5,-3)+ theme_classic()+ theme(text = element_text(size = 15),plot.title = element_text(hjust=0.5))+ ggtitle(label)+
-  xlab("1/lnTemp (K)")+
-  ylab("ln(First derivative)")#Plotting to see what the line looks like
-name<-paste("Individual_", ind, ".jpg", sep = "")
-mypath <- file.path("Outputs/Activation energy plots/")
-ggsave(plot=last_plot(),filename=name,  path=mypath)
-
-#Ind 18
-## 1. Trim the first derivative from the closests left-sided minimum to the maximum value
-indiv<-derivs%>%
-  filter(id=="18") %>% #filtering to each individual
-  filter(between(first.logtime, 35, 80)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
-indiv %>%  ggplot(aes(x=first.logtime, y=first2))+geom_line() #Plotting to see what the line looks like
-min<-indiv %>% slice(which.min(first2)) %>% select(first.logtime) #Getting the time where the minimum value is at
-max<-indiv %>% slice(which.max(first2)) %>% select(first.logtime) #Getting the time where the maximum value is at
-indiv<-indiv %>% filter(between(first.logtime, min, max))%>% #cutting the data to the max and minimum value
- mutate(logtime=first.logtime, ind=id) #changing variable names to facilitate merging later
-indiv %>%  ggplot(aes(x=logtime, y=first2))+geom_line() #Plotting to see what the line looks like
-## 2, 3, 4: Join data, kelvinf and log transformations
-indiv<-difference_left_join(indiv,oxall, by=c("ind","logtime"), max_dist=0.13) %>% #Merges dataframes based on the closest logtime value (within 0.13)
-  group_by(ind.x, logtime.x, first.y1, first2) %>%
-  summarize(tempcorr2=mean(tempcorr)) %>% #averaging the tempcorr for when multiple cells are called
-  ungroup() %>%
-  mutate(tempk=tempcorr2+273.15, #converting temps to Kelvin
-         lntempk=log(tempk), #converting kelvin to natural logarithm
-         invlntempk=1/lntempk, #inverting the natural log of temp in K 
-         lnderiv=log(first2)) #Getting the natural log of the derivative values
-## 5: Getting the slope
-model<-lm(lnderiv~invlntempk, data=indiv)
-summary(model)
-slope<-model$coefficients[2]
-intercept<-model$coefficients[1]
-## 6,7. Creating dataframe for the slope
-ind<-18
-dataframe<-data.frame(ind, slope)
-energy<- bind_rows(energy, dataframe)
-label<-paste("Individual ", ind, sep = "")
-indiv %>%  ggplot(aes(x=invlntempk, y=lnderiv))+geom_point()+geom_abline(intercept = intercept, slope = slope, color="red", 
-               linetype="solid", size=1.5) + ylim(-5,-3)+ theme_classic()+ theme(text = element_text(size = 15),plot.title = element_text(hjust=0.5))+ ggtitle(label)+
-  xlab("1/lnTemp (K)")+
-  ylab("ln(First derivative)")#Plotting to see what the line looks like
-name<-paste("Individual_", ind, ".jpg", sep = "")
-mypath <- file.path("Outputs/Activation energy plots/")
-ggsave(plot=last_plot(),filename=name,  path=mypath)
-
-#Ind 22
-## 1. Trim the first derivative from the closests left-sided minimum to the maximum value
-indiv<-derivs%>%
-  filter(id=="22") %>% #filtering to each individual
-  filter(between(first.logtime, 40, 80)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
-indiv %>%  ggplot(aes(x=first.logtime, y=first2))+geom_line() #Plotting to see what the line looks like
-min<-indiv %>% slice(which.min(first2)) %>% select(first.logtime) #Getting the time where the minimum value is at
-max<-indiv %>% slice(which.max(first2)) %>% select(first.logtime) #Getting the time where the maximum value is at
-indiv<-indiv %>% filter(between(first.logtime, min, max))%>% #cutting the data to the max and minimum value
- mutate(logtime=first.logtime, ind=id) #changing variable names to facilitate merging later
-indiv %>%  ggplot(aes(x=logtime, y=first2))+geom_line() #Plotting to see what the line looks like
-## 2, 3, 4: Join data, kelvinf and log transformations
-indiv<-difference_left_join(indiv,oxall, by=c("ind","logtime"), max_dist=0.13) %>% #Merges dataframes based on the closest logtime value (within 0.13)
-  group_by(ind.x, logtime.x, first.y1, first2) %>%
-  summarize(tempcorr2=mean(tempcorr)) %>% #averaging the tempcorr for when multiple cells are called
-  ungroup() %>%
-  mutate(tempk=tempcorr2+273.15, #converting temps to Kelvin
-         lntempk=log(tempk), #converting kelvin to natural logarithm
-         invlntempk=1/lntempk, #inverting the natural log of temp in K 
-         lnderiv=log(first2)) #Getting the natural log of the derivative values
-## 5: Getting the slope
-model<-lm(lnderiv~invlntempk, data=indiv)
-summary(model)
-slope<-model$coefficients[2]
-intercept<-model$coefficients[1]
-## 6,7. Creating dataframe for the slope
-ind<-22
-dataframe<-data.frame(ind, slope)
-energy<- bind_rows(energy, dataframe)
-label<-paste("Individual ", ind, sep = "")
-indiv %>%  ggplot(aes(x=invlntempk, y=lnderiv))+geom_point()+geom_abline(intercept = intercept, slope = slope, color="red", 
-               linetype="solid", size=1.5) + ylim(-5,-3)+ theme_classic()+ theme(text = element_text(size = 15),plot.title = element_text(hjust=0.5))+ ggtitle(label)+
-  xlab("1/lnTemp (K)")+
-  ylab("ln(First derivative)")#Plotting to see what the line looks like
-name<-paste("Individual_", ind, ".jpg", sep = "")
-mypath <- file.path("Outputs/Activation energy plots/")
-ggsave(plot=last_plot(),filename=name,  path=mypath)
-
-#Ind 24
-## 1. Trim the first derivative from the closests left-sided minimum to the maximum value
-indiv<-derivs%>%
-  filter(id=="24") %>% #filtering to each individual
-  filter(between(first.logtime, 40, 80)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
-indiv %>%  ggplot(aes(x=first.logtime, y=first2))+geom_line() #Plotting to see what the line looks like
-min<-indiv %>% slice(which.min(first2)) %>% select(first.logtime) #Getting the time where the minimum value is at
-max<-indiv %>% slice(which.max(first2)) %>% select(first.logtime) #Getting the time where the maximum value is at
-indiv<-indiv %>% filter(between(first.logtime, min, max))%>% #cutting the data to the max and minimum value
- mutate(logtime=first.logtime, ind=id) #changing variable names to facilitate merging later
-indiv %>%  ggplot(aes(x=logtime, y=first2))+geom_line() #Plotting to see what the line looks like
-## 2, 3, 4: Join data, kelvinf and log transformations
-indiv<-difference_left_join(indiv,oxall, by=c("ind","logtime"), max_dist=0.13) %>% #Merges dataframes based on the closest logtime value (within 0.13)
-  group_by(ind.x, logtime.x, first.y1, first2) %>%
-  summarize(tempcorr2=mean(tempcorr)) %>% #averaging the tempcorr for when multiple cells are called
-  ungroup() %>%
-  mutate(tempk=tempcorr2+273.15, #converting temps to Kelvin
-         lntempk=log(tempk), #converting kelvin to natural logarithm
-         invlntempk=1/lntempk, #inverting the natural log of temp in K 
-         lnderiv=log(first2)) #Getting the natural log of the derivative values
-## 5: Getting the slope
-model<-lm(lnderiv~invlntempk, data=indiv)
-summary(model)
-slope<-model$coefficients[2]
-intercept<-model$coefficients[1]
-## 6,7. Creating dataframe for the slope
-ind<-24
-dataframe<-data.frame(ind, slope)
-energy<- bind_rows(energy, dataframe)
-label<-paste("Individual ", ind, sep = "")
-indiv %>%  ggplot(aes(x=invlntempk, y=lnderiv))+geom_point()+geom_abline(intercept = intercept, slope = slope, color="red", 
-               linetype="solid", size=1.5) + ylim(-5,-3)+ theme_classic()+ theme(text = element_text(size = 15),plot.title = element_text(hjust=0.5))+ ggtitle(label)+
-  xlab("1/lnTemp (K)")+
-  ylab("ln(First derivative)")#Plotting to see what the line looks like
-name<-paste("Individual_", ind, ".jpg", sep = "")
-mypath <- file.path("Outputs/Activation energy plots/")
-ggsave(plot=last_plot(),filename=name,  path=mypath)
-
-#Ind 28
-## 1. Trim the first derivative from the closests left-sided minimum to the maximum value
-indiv<-derivs%>%
-  filter(id=="28") %>% #filtering to each individual
-  filter(between(first.logtime, 40, 90)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
-indiv %>%  ggplot(aes(x=first.logtime, y=first2))+geom_line() #Plotting to see what the line looks like
-min<-indiv %>% slice(which.min(first2)) %>% select(first.logtime) #Getting the time where the minimum value is at
-max<-indiv %>% slice(which.max(first2)) %>% select(first.logtime) #Getting the time where the maximum value is at
-indiv<-indiv %>% filter(between(first.logtime, min, max))%>% #cutting the data to the max and minimum value
- mutate(logtime=first.logtime, ind=id) #changing variable names to facilitate merging later
-indiv %>%  ggplot(aes(x=logtime, y=first2))+geom_line() #Plotting to see what the line looks like
-## 2, 3, 4: Join data, kelvinf and log transformations
-indiv<-difference_left_join(indiv,oxall, by=c("ind","logtime"), max_dist=0.13) %>% #Merges dataframes based on the closest logtime value (within 0.13)
-  group_by(ind.x, logtime.x, first.y1, first2) %>%
-  summarize(tempcorr2=mean(tempcorr)) %>% #averaging the tempcorr for when multiple cells are called
-  ungroup() %>%
-  mutate(tempk=tempcorr2+273.15, #converting temps to Kelvin
-         lntempk=log(tempk), #converting kelvin to natural logarithm
-         invlntempk=1/lntempk, #inverting the natural log of temp in K 
-         lnderiv=log(first2)) #Getting the natural log of the derivative values
-## 5: Getting the slope
-model<-lm(lnderiv~invlntempk, data=indiv)
-summary(model)
-slope<-model$coefficients[2]
-intercept<-model$coefficients[1]
-## 6,7. Creating dataframe for the slope
-ind<-28
-dataframe<-data.frame(ind, slope)
-energy<- bind_rows(energy, dataframe)
-label<-paste("Individual ", ind, sep = "")
-indiv %>%  ggplot(aes(x=invlntempk, y=lnderiv))+geom_point()+geom_abline(intercept = intercept, slope = slope, color="red", 
-               linetype="solid", size=1.5) + ylim(-5,-3)+ theme_classic()+ theme(text = element_text(size = 15),plot.title = element_text(hjust=0.5))+ ggtitle(label)+
-  xlab("1/lnTemp (K)")+
-  ylab("ln(First derivative)")#Plotting to see what the line looks like
-name<-paste("Individual_", ind, ".jpg", sep = "")
-mypath <- file.path("Outputs/Activation energy plots/")
-ggsave(plot=last_plot(),filename=name,  path=mypath)
-
-#Ind 30
-## 1. Trim the first derivative from the closests left-sided minimum to the maximum value
-indiv<-derivs%>%
-  filter(id=="30") %>% #filtering to each individual
-  filter(between(first.logtime, 40, 80)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
-indiv %>%  ggplot(aes(x=first.logtime, y=first2))+geom_line() #Plotting to see what the line looks like
-min<-indiv %>% slice(which.min(first2)) %>% select(first.logtime) #Getting the time where the minimum value is at
-max<-indiv %>% slice(which.max(first2)) %>% select(first.logtime) #Getting the time where the maximum value is at
-indiv<-indiv %>% filter(between(first.logtime, min, max))%>% #cutting the data to the max and minimum value
- mutate(logtime=first.logtime, ind=id) #changing variable names to facilitate merging later
-indiv %>%  ggplot(aes(x=logtime, y=first2))+geom_line() #Plotting to see what the line looks like
-## 2, 3, 4: Join data, kelvinf and log transformations
-indiv<-difference_left_join(indiv,oxall, by=c("ind","logtime"), max_dist=0.13) %>% #Merges dataframes based on the closest logtime value (within 0.13)
-  group_by(ind.x, logtime.x, first.y1, first2) %>%
-  summarize(tempcorr2=mean(tempcorr)) %>% #averaging the tempcorr for when multiple cells are called
-  ungroup() %>%
-  mutate(tempk=tempcorr2+273.15, #converting temps to Kelvin
-         lntempk=log(tempk), #converting kelvin to natural logarithm
-         invlntempk=1/lntempk, #inverting the natural log of temp in K 
-         lnderiv=log(first2)) #Getting the natural log of the derivative values
-## 5: Getting the slope
-model<-lm(lnderiv~invlntempk, data=indiv)
-summary(model)
-slope<-model$coefficients[2]
-intercept<-model$coefficients[1]
-## 6,7. Creating dataframe for the slope
-ind<-30
-dataframe<-data.frame(ind, slope)
-energy<- bind_rows(energy, dataframe)
-label<-paste("Individual ", ind, sep = "")
-indiv %>%  ggplot(aes(x=invlntempk, y=lnderiv))+geom_point()+geom_abline(intercept = intercept, slope = slope, color="red", 
-               linetype="solid", size=1.5) + ylim(-5,-3)+ theme_classic()+ theme(text = element_text(size = 15),plot.title = element_text(hjust=0.5))+ ggtitle(label)+
-  xlab("1/lnTemp (K)")+
-  ylab("ln(First derivative)")#Plotting to see what the line looks like
-name<-paste("Individual_", ind, ".jpg", sep = "")
-mypath <- file.path("Outputs/Activation energy plots/")
-ggsave(plot=last_plot(),filename=name,  path=mypath)
-
-#Ind 29
-## 1. Trim the first derivative from the closests left-sided minimum to the maximum value
-indiv<-derivs%>%
-  filter(id=="29") %>% #filtering to each individual
-  filter(between(first.logtime, 40, 70)) # %>% #Triming the timeframe to the approximate relevant times (based on plot)
-indiv %>%  ggplot(aes(x=first.logtime, y=first2))+geom_line() #Plotting to see what the line looks like
-min<-indiv %>% slice(which.min(first2)) %>% select(first.logtime) #Getting the time where the minimum value is at
-max<-indiv %>% slice(which.max(first2)) %>% select(first.logtime) #Getting the time where the maximum value is at
-indiv<-indiv %>% filter(between(first.logtime, min, max))%>% #cutting the data to the max and minimum value
- mutate(logtime=first.logtime, ind=id) #changing variable names to facilitate merging later
-indiv %>%  ggplot(aes(x=logtime, y=first2))+geom_line() #Plotting to see what the line looks like
-## 2, 3, 4: Join data, kelvinf and log transformations
-indiv<-difference_left_join(indiv,oxall, by=c("ind","logtime"), max_dist=0.13) %>% #Merges dataframes based on the closest logtime value (within 0.13)
-  group_by(ind.x, logtime.x, first.y1, first2) %>%
-  summarize(tempcorr2=mean(tempcorr)) %>% #averaging the tempcorr for when multiple cells are called
-  ungroup() %>%
-  mutate(tempk=tempcorr2+273.15, #converting temps to Kelvin
-         lntempk=log(tempk), #converting kelvin to natural logarithm
-         invlntempk=1/lntempk, #inverting the natural log of temp in K 
-         lnderiv=log(first2)) #Getting the natural log of the derivative values
-## 5: Getting the slope
-model<-lm(lnderiv~invlntempk, data=indiv)
-summary(model)
-slope<-model$coefficients[2]
-intercept<-model$coefficients[1]
-## 6,7. Creating dataframe for the slope
-ind<-29
-dataframe<-data.frame(ind, slope)
-energy<- bind_rows(energy, dataframe)
-label<-paste("Individual ", ind, sep = "")
-indiv %>%  ggplot(aes(x=invlntempk, y=lnderiv))+geom_point()+geom_abline(intercept = intercept, slope = slope, color="red", 
-               linetype="solid", size=1.5) + ylim(-5,-3)+ theme_classic()+ theme(text = element_text(size = 15),plot.title = element_text(hjust=0.5))+ ggtitle(label)+
-  xlab("1/lnTemp (K)")+
-  ylab("ln(First derivative)")#Plotting to see what the line looks like
-name<-paste("Individual_", ind, ".jpg", sep = "")
-mypath <- file.path("Outputs/Activation energy plots/")
-ggsave(plot=last_plot(),filename=name,  path=mypath)
-
-```
-
-
-
-
-
-
-
-Convert temperature to Kelvin
-Cut all races t
-
-
-plot1<-ggplot(data1,aes(x=logtime, y=oxymg)+geom_point( pch=19)+ xlab('Logtime')+ ylab('Oxygen(mg/l)')+main(paste("Individual ", id)) +theme_classic()+theme(size=18)
-lines(data$logtime, predict(fit, data.frame(logtime=data$logtime)), col='red',lwd=1.2)
-
-
-
-revisaar si el numero imaginario no tiene un valor despreciable y no esta replicado, ahi si es de cuidado
+There is no difference (diff=0) as it should be. This means there is a match between the topt and the maximum point of the estimation of the slope line that leads to the activation energy. 
